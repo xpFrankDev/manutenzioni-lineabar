@@ -11,7 +11,7 @@ Applicazione mobile-first per registrare interventi, boletas, ricambi e pianific
 
 ## Avvio locale
 
-```powershell
+```bash
 cd frontend
 npm install
 npm run dev
@@ -19,9 +19,9 @@ npm run dev
 
 In un secondo terminale:
 
-```powershell
+```bash
 cd backend
-Copy-Item .env.example .env
+cp .env.example .env
 # Impostare DATABASE_URL e JWT_SECRET con valori reali.
 npm install
 npm run dev
