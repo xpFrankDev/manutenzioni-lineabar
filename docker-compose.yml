@@ -1,0 +1,61 @@
+services:
+  mariadb:
+    image: mariadb:10.11
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MARIADB_DATABASE: ${MARIADB_DATABASE}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+    volumes:
+      - lineabar_mariadb:/var/lib/mysql
+      - ./infraestructura/mariadb/inicializar-usuarios.sh:/docker-entrypoint-initdb.d/10-inicializar-usuarios.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h localhost -uroot -p$$MARIADB_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  inicializacion:
+    image: mariadb:10.11
+    restart: on-failure
+    env_file: .env
+    volumes:
+      - ./backend/migrations:/migraciones:ro
+      - ./infraestructura/mariadb/aplicar-esquema.sh:/aplicar-esquema.sh:ro
+    command: ["sh", "/aplicar-esquema.sh"]
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PORT: 3001
+      NODE_ENV: production
+      CORS_ORIGIN: http://vps-5586828-x.dattaweb.com
+      DB_HOST: mariadb
+      DB_PORT: 3306
+    expose:
+      - "3001"
+    depends_on:
+      inicializacion:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/api/salute').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 4s
+      retries: 5
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${LINEABAR_PORT:-8091}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  lineabar_mariadb:
