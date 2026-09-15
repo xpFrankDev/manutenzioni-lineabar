@@ -2,3 +2,4 @@ node_modules/
 dist/
 .env
 .impeccable/review/
+.build-lineabar.log
