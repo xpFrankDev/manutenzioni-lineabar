@@ -1,0 +1,23 @@
+:root {
+  --ink: #10223d;
+  --muted: #68778a;
+  --line: #e5ebf3;
+  --blue: #145dd7;
+  --pale: #eaf2ff;
+  --surface: #fff;
+  --bg: #f5f7fa;
+  --shadow: 0 12px 30px #10223d16;
+  color-scheme: light;
+}
+
+html[data-theme=dark] {
+  --ink: #eaf2ff;
+  --muted: #aab8c9;
+  --line: #2a3c55;
+  --blue: #76abff;
+  --pale: #1b3150;
+  --surface: #13243a;
+  --bg: #0b1727;
+  --shadow: 0 12px 30px #0006;
+  color-scheme: dark;
+}

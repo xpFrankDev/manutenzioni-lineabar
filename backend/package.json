@@ -3,6 +3,22 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "scripts": { "dev": "node --watch src/server.js", "start": "node src/server.js" },
-  "dependencies": { "bcryptjs": "latest", "cors": "latest", "dotenv": "latest", "express": "latest", "express-rate-limit": "latest", "helmet": "latest", "jsonwebtoken": "latest", "mysql2": "latest", "zod": "latest" }
+  "scripts": {
+    "dev": "node --watch src/servidor.js",
+    "start": "node src/servidor.js",
+    "migraciones": "node src/base-datos/migraciones/ejecutar.js",
+    "sembrar": "node src/base-datos/semillas/sembrar.js",
+    "verificar": "node scripts/verificar-sintaxis.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "mysql2": "^3.24.4",
+    "zod": "^4.6.5"
+  }
 }

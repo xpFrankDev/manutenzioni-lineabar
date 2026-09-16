@@ -33,7 +33,8 @@ Technicians visit client locations in Italy, often using a mobile phone. A clien
 - All persistent entities use audit fields: `creato_at`, `modificato_at`, `utente_crea`, `utente_modifica`, and `stato`.
 - The UI must be mobile-first, validate required input, preserve user sessions, and expose modular configuration/master data.
 - Required records include providers, customers, machines and brands, maintenance, parts and characteristics, receipts, technicians, tasks, and a maintenance calendar.
-- The initial visual implementation uses realistic illustrative data; it is not a production database or deployed Nginx configuration yet.
+- Demonstration records live in a separate seed file and load only with `LINEABAR_CARGAR_DEMO=1`; production installations start with real master data only.
+- The application is deployed behind the shared Nginx host under the `/lineabar/` prefix, with the frontend container listening only on loopback.
 
 ## Brand Commitments
 

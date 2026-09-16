@@ -9,6 +9,9 @@ services:
     volumes:
       - lineabar_mariadb:/var/lib/mysql
       - ./infraestructura/mariadb/inicializar-usuarios.sh:/docker-entrypoint-initdb.d/10-inicializar-usuarios.sh:ro
+    ports:
+      # Solo en loopback: útil para DBeaver con túnel SSH, nunca expuesto a Internet.
+      - "127.0.0.1:${LINEABAR_DB_PORT:-3308}:3306"
     healthcheck:
       test: ["CMD-SHELL", "mariadb-admin ping -h localhost -uroot -p$$MARIADB_ROOT_PASSWORD --silent"]
       interval: 5s
@@ -16,25 +19,33 @@ services:
       retries: 20
 
   inicializacion:
-    image: mariadb:10.11
-    restart: on-failure
+    build:
+      context: ./backend
+      target: production
+    restart: "on-failure:3"
     env_file: .env
-    volumes:
-      - ./backend/migrations:/migraciones:ro
-      - ./infraestructura/mariadb/aplicar-esquema.sh:/aplicar-esquema.sh:ro
-    command: ["sh", "/aplicar-esquema.sh"]
+    environment:
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      # Migraciones y semilla necesitan permisos DDL: usan el usuario de migraciones.
+      LINEABAR_DB_USER: ${LINEABAR_MIGRATIONS_USER}
+      LINEABAR_DB_PASSWORD: ${LINEABAR_MIGRATIONS_PASSWORD}
+      LINEABAR_CARGAR_DEMO: ${LINEABAR_CARGAR_DEMO:-0}
+    command: ["sh", "-c", "npm run migraciones && npm run sembrar"]
     depends_on:
       mariadb:
         condition: service_healthy
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      target: production
     restart: unless-stopped
     env_file: .env
     environment:
       PORT: 3001
       NODE_ENV: production
-      CORS_ORIGIN: http://vps-5586828-x.dattaweb.com
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://vps-5586828-x.dattaweb.com}
       DB_HOST: mariadb
       DB_PORT: 3306
     expose:
@@ -56,6 +67,11 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/lineabar/ || exit 1"]
+      interval: 15s
+      timeout: 4s
+      retries: 5
 
 volumes:
   lineabar_mariadb:

@@ -12,6 +12,7 @@ Linea Bar is an operational field log: calm, high-contrast surfaces designed for
 - Primary: `#145dd7`; primary pale: `#ebf3ff`; service cyan: `#0a9bb3`; attention orange: `#c56c07`.
 - Type: Manrope for headings and metrics, DM Sans for controls and operational copy.
 - Spacing uses 4 px increments; panels use a 14 px radius; touch targets are at least 44 px.
+- The light and dark variables live in `frontend/src/estilos/tokens.css`; the theme is applied through the `data-theme` attribute on `html` and persisted in local storage.
 
 ## Interaction
 

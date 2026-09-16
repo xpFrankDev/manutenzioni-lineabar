@@ -3,3 +3,8 @@ dist/
 .env
 .impeccable/review/
 .build-lineabar.log
+*.log
+coverage/
+npm-debug.log*
+.env.local
+.env.*.local
