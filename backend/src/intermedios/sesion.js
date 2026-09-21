@@ -7,7 +7,7 @@ export function exigirSesion(req, res, siguiente) {
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (!token) return res.status(401).json({ errore: 'Sessione richiesta' });
   try {
-    req.utente = jwt.verify(token, entorno.sesion.secreto, { issuer: entorno.sesion.emisor });
+    req.utente = jwt.verify(token, entorno.sesion.secreto, { issuer: entorno.sesion.emisor, algorithms: ['HS256'] });
     return siguiente();
   } catch {
     return res.status(401).json({ errore: 'Sessione non valida o scaduta' });

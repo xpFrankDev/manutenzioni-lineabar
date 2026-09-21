@@ -1,11 +1,14 @@
-import { Building2, Coffee, Factory, Package, Settings } from 'lucide-react';
+import { Building2, Coffee, Factory, Package, Palette, Settings, SlidersHorizontal, Users } from 'lucide-react';
 
 export const RECURSOS_CONFIGURABLES = [
   ['fornitori', Factory, 'suppliers'],
   ['clienti', Building2, 'clients'],
   ['macchine', Coffee, 'machines'],
+  ['marche', Palette, 'brands'],
   ['pezzi', Package, 'pieces'],
-  ['caratteristiche', Settings, 'characteristics']
+  ['caratteristiche', Settings, 'characteristics'],
+  ['utenti', Users, 'users'],
+  ['parametri', SlidersHorizontal, 'parameters']
 ];
 
 export function metadatosDeRecurso(recurso) {

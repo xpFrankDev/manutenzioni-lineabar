@@ -1,8 +1,8 @@
 -- Datos de demostración: clientes, máquinas y registros ilustrativos de
 -- septiembre de 2026. Solo se cargan cuando LINEABAR_CARGAR_DEMO=1, de modo que
 -- una instalación de producción no recibe registros ficticios.
--- Procede de la antigua semilla de infraestructura y de
--- backend/migrations/004_registri_dimostrativi.sql.
+-- El orden importa: las claves foráneas exigen que manutenzioni exista antes
+-- que el calendario que la referencia.
 
 INSERT IGNORE INTO clienti (id, fk_fornitore, tipo_cliente, codice, nome, indirizzo, citta) VALUES
   (1, 1, 'fornitore', 'CIMBALI-0001', 'Caffè Roma', 'Via Torino 22', 'Milano'),
@@ -14,10 +14,29 @@ INSERT IGNORE INTO macchine (id, fk_cliente, fk_marca, codice_unico, tipo_macchi
   (2, 2, 4, 'MC-BWT-0018', 'addolcitore', 'Bestmax Premium'),
   (3, 3, 3, 'MC-WIN-0009', 'lavastoviglie', 'UC-L');
 
-INSERT IGNORE INTO calendario_manutenzioni_macchine (id, fk_macchina, fk_pezzo, frequenza_mesi, ultima_esecuzione, prossima_manutenzione) VALUES
-  (1, 1, 1, 5, '2026-05-14', '2026-10-14'),
-  (2, 2, 3, 12, '2026-01-10', '2027-01-10'),
-  (3, 3, 4, 12, '2026-03-02', '2027-03-02');
+INSERT IGNORE INTO manutenzioni (id,fk_cliente,fk_tecnico,data,ubicazione,note,esito,ore,persone,utente_crea,utente_modifica) VALUES
+  (101,1,1,'2026-09-03','cliente','Sostituita la guarnizione del gruppo e controllata l’erogazione.','risolto',1.5,1,1,1),
+  (102,2,1,'2026-09-08','cliente','Sostituita cartuccia filtro e verificata la durezza dell’acqua.','risolto',1,1,1,1),
+  (103,3,1,'2026-09-12','cliente','Sostituita guarnizione porta e testato ciclo di lavaggio.','risolto',1,1,1,1),
+  (104,1,1,'2026-09-15','magazzino','Controllo preventivo in magazzino: gruppo erogatore e raccordi.','parziale',2,2,1,1),
+  (105,2,1,'2026-09-17','magazzino','Preparazione addolcitore e test cartuccia di ricambio.','risolto',1,1,1,1),
+  (106,3,1,'2026-09-20','magazzino','Diagnosi pompa e sensore per lavastoviglie UC-L.','da_rifare',1.5,1,1,1);
+
+-- Las filas de demostración ya existentes se actualizan con las horas reales.
+UPDATE manutenzioni SET ore=1.5,persone=1 WHERE id=101 AND ore=0;
+UPDATE manutenzioni SET ore=1,persone=1 WHERE id=102 AND ore=0;
+UPDATE manutenzioni SET ore=1,persone=1 WHERE id=103 AND ore=0;
+UPDATE manutenzioni SET ore=2,persone=2 WHERE id=104 AND ore=0;
+UPDATE manutenzioni SET ore=1,persone=1 WHERE id=105 AND ore=0;
+UPDATE manutenzioni SET ore=1.5,persone=1 WHERE id=106 AND ore=0;
+
+INSERT IGNORE INTO macchine_manutenzioni (fk_macchina,fk_manutenzione,utente_crea,utente_modifica) VALUES
+  (1,101,1,1),(2,102,1,1),(3,103,1,1),(1,104,1,1),(2,105,1,1),(3,106,1,1);
+
+INSERT IGNORE INTO calendario_manutenzioni_macchine (id, fk_macchina, fk_pezzo, fk_manutenzione_origine, frequenza_mesi, ultima_esecuzione, prossima_manutenzione) VALUES
+  (1, 1, 1, 101, 5, '2026-05-14', '2026-10-14'),
+  (2, 2, 3, 102, 12, '2026-01-10', '2027-01-10'),
+  (3, 3, 4, 103, 12, '2026-03-02', '2027-03-02');
 
 INSERT IGNORE INTO attivita (id, fk_cliente, fk_macchina, fk_assegnato, titolo, scadenza, priorita) VALUES
   (1, 2, 2, 1, 'Controllo addolcitore', '2026-09-18', 'alta'),
@@ -26,16 +45,9 @@ INSERT IGNORE INTO attivita (id, fk_cliente, fk_macchina, fk_assegnato, titolo, 
 INSERT IGNORE INTO attivita_tecnici (fk_attivita, fk_tecnico, utente_crea, utente_modifica) VALUES
   (1, 1, 1, 1), (2, 1, 1, 1);
 
-INSERT IGNORE INTO manutenzioni (id,fk_cliente,fk_tecnico,data,ubicazione,note,esito,utente_crea,utente_modifica) VALUES
-  (101,1,1,'2026-09-03','cliente','Sostituita la guarnizione del gruppo e controllata l’erogazione.','risolto',1,1),
-  (102,2,1,'2026-09-08','cliente','Sostituita cartuccia filtro e verificata la durezza dell’acqua.','risolto',1,1),
-  (103,3,1,'2026-09-12','cliente','Sostituita guarnizione porta e testato ciclo di lavaggio.','risolto',1,1),
-  (104,1,1,'2026-09-15','magazzino','Controllo preventivo in magazzino: gruppo erogatore e raccordi.','parziale',1,1),
-  (105,2,1,'2026-09-17','magazzino','Preparazione addolcitore e test cartuccia di ricambio.','risolto',1,1),
-  (106,3,1,'2026-09-20','magazzino','Diagnosi pompa e sensore per lavastoviglie UC-L.','da_rifare',1,1);
-
-INSERT IGNORE INTO macchine_manutenzioni (fk_macchina,fk_manutenzione,utente_crea,utente_modifica) VALUES
-  (1,101,1,1),(2,102,1,1),(3,103,1,1),(1,104,1,1),(2,105,1,1),(3,106,1,1);
+-- Las tareas de demostración ya existen para estas programaciones del calendario.
+UPDATE calendario_manutenzioni_macchine SET fk_attivita=2 WHERE id=1 AND fk_attivita IS NULL;
+UPDATE calendario_manutenzioni_macchine SET fk_attivita=1 WHERE id=2 AND fk_attivita IS NULL;
 
 INSERT IGNORE INTO pezzi_manutenzioni (fk_manutenzione,fk_pezzo,quantita,prezzo_unitario,utente_crea,utente_modifica) VALUES
   (101,1,1,18.00,1,1),(102,3,1,24.00,1,1),(103,4,1,22.00,1,1),

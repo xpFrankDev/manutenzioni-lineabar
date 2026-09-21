@@ -1,19 +1,26 @@
+import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { consultarUno, pool } from '../../base-datos/pool.js';
+import { crearCliente, normalizarCliente } from '../clientes/servicio.js';
+import { actualizarMaquina, crearMaquina, normalizarMaquina, TIPOS_MAQUINA } from '../maquinas/servicio.js';
 
-export const TIPOS_MAQUINA = ['macchina_caffe', 'produttore_ghiaccio', 'lavastoviglie', 'filtro', 'addolcitore'];
+const ROLES_USUARIO = ['amministratore', 'tecnico'];
 
-const tablaPorRecurso = {
-  fornitori: 'fornitori',
-  clienti: 'clienti',
-  macchine: 'macchine',
-  pezzi: 'pezzi',
-  caratteristiche: 'tipi_caratteristiche'
-};
+export { TIPOS_MAQUINA };
+
+const esquemaCaracteristicas = z
+  .array(
+    z.object({
+      tipoCaratteristicaId: z.coerce.number().int().positive(),
+      quantita: z.coerce.number().positive().max(99999)
+    })
+  )
+  .max(30)
+  .default([]);
 
 export const catalogoConfigurable = {
   fornitori: {
-    tabla: tablaPorRecurso.fornitori,
+    tabla: 'fornitori',
     columnas: ['codice', 'nome', 'stato'],
     listado: 'SELECT id,codice,nome,stato FROM fornitori ORDER BY stato DESC,nome',
     validar: (datos) => ({
@@ -23,40 +30,35 @@ export const catalogoConfigurable = {
     })
   },
   clienti: {
-    tabla: tablaPorRecurso.clienti,
-    columnas: ['fk_fornitore', 'tipo_cliente', 'codice', 'nome', 'indirizzo', 'citta', 'stato'],
+    tabla: 'clienti',
+    propio: true,
     listado:
-      'SELECT c.id,c.codice,c.nome,c.tipo_cliente,c.indirizzo,c.citta,c.fk_fornitore,c.stato,f.nome fornitore FROM clienti c LEFT JOIN fornitori f ON f.id=c.fk_fornitore ORDER BY c.stato DESC,c.nome',
-    validar: (datos) => ({
-      fk_fornitore: datos.fk_fornitore ? z.coerce.number().int().positive().parse(datos.fk_fornitore) : null,
-      tipo_cliente: datos.tipo_cliente === 'fornitore' ? 'fornitore' : 'privato',
-      codice: datos.codice ? z.string().trim().min(5).max(45).parse(datos.codice).toUpperCase() : null,
-      nome: z.string().trim().min(2).max(160).parse(datos.nome),
-      indirizzo: z.string().trim().min(3).max(255).parse(datos.indirizzo),
-      citta: z.string().trim().min(2).max(120).parse(datos.citta),
-      stato: datos.stato === 'inattivo' ? 'inattivo' : 'attivo'
-    })
+      'SELECT c.id,c.codice,c.nome,c.tipo_cliente,c.indirizzo,c.citta,c.fk_fornitore,c.ultimo_manutenzione,c.stato,f.nome fornitore FROM clienti c LEFT JOIN fornitori f ON f.id=c.fk_fornitore ORDER BY c.stato DESC,c.nome',
+    validar: (datos) => normalizarCliente(datos)
   },
   macchine: {
-    tabla: tablaPorRecurso.macchine,
-    columnas: ['fk_cliente', 'fk_fornitore', 'codice_unico', 'tipo_macchina', 'modello', 'stato'],
+    tabla: 'macchine',
+    propio: true,
     listado:
-      'SELECT m.id,m.codice_unico,m.tipo_macchina,m.modello,m.fk_cliente,m.fk_fornitore,m.stato,c.nome cliente,c.indirizzo,COALESCE(f.nome,ma.nome) fornitore FROM macchine m JOIN clienti c ON c.id=m.fk_cliente LEFT JOIN fornitori f ON f.id=m.fk_fornitore LEFT JOIN marche ma ON ma.id=m.fk_marca ORDER BY m.stato DESC,c.nome,m.modello',
+      'SELECT m.id,m.codice_unico,m.tipo_macchina,m.modello,m.fk_cliente,m.fk_fornitore,m.fk_marca,m.stato,c.nome cliente,c.indirizzo,COALESCE(f.nome,ma.nome) fornitore FROM macchine m JOIN clienti c ON c.id=m.fk_cliente LEFT JOIN fornitori f ON f.id=m.fk_fornitore LEFT JOIN marche ma ON ma.id=m.fk_marca ORDER BY m.stato DESC,c.nome,m.modello',
+    validar: (datos) => normalizarMaquina(datos)
+  },
+  marche: {
+    tabla: 'marche',
+    columnas: ['nome', 'stato'],
+    listado: 'SELECT id,nome,stato FROM marche ORDER BY stato DESC,nome',
     validar: (datos) => ({
-      fk_cliente: z.coerce.number().int().positive().parse(datos.fk_cliente),
-      fk_fornitore: datos.fk_fornitore ? z.coerce.number().int().positive().parse(datos.fk_fornitore) : null,
-      codice_unico: z.string().trim().min(4).max(50).parse(datos.codice_unico).toUpperCase(),
-      tipo_macchina: z.enum(TIPOS_MAQUINA).parse(datos.tipo_macchina),
-      modello: z.string().trim().max(100).optional().parse(datos.modello || '') || null,
+      nome: z.string().trim().min(2).max(100).parse(datos.nome),
       stato: datos.stato === 'inattivo' ? 'inattivo' : 'attivo'
     })
   },
   pezzi: {
-    tabla: tablaPorRecurso.pezzi,
-    columnas: ['nome', 'codice_unico', 'tipo_macchina', 'prezzo', 'intervallo_mesi', 'stato'],
+    tabla: 'pezzi',
+    columnas: ['fk_marca', 'nome', 'codice_unico', 'tipo_macchina', 'prezzo', 'intervallo_mesi', 'stato'],
     listado:
-      'SELECT p.id,p.nome,p.codice_unico,p.tipo_macchina,CAST(p.prezzo AS DECIMAL(10,2)) prezzo,p.intervallo_mesi,p.stato,ma.nome fornitore FROM pezzi p LEFT JOIN marche ma ON ma.id=p.fk_marca ORDER BY p.stato DESC,p.nome',
+      'SELECT p.id,p.nome,p.codice_unico,p.tipo_macchina,CAST(p.prezzo AS DECIMAL(10,2)) prezzo,p.intervallo_mesi,p.fk_marca,p.stato,ma.nome marca,(SELECT GROUP_CONCAT(CONCAT(ptc.fk_tipo_caratteristica,":",CAST(ptc.quantita AS DOUBLE)) SEPARATOR ";") FROM pezzi_tipi_caratteristiche ptc WHERE ptc.fk_pezzo=p.id AND ptc.stato="attivo") caratteristiche,(SELECT GROUP_CONCAT(CONCAT(t.nome," ",CAST(ptc.quantita AS DOUBLE),COALESCE(CONCAT(" ",t.unita_misura),"")) SEPARATOR ", ") FROM pezzi_tipi_caratteristiche ptc JOIN tipi_caratteristiche t ON t.id=ptc.fk_tipo_caratteristica WHERE ptc.fk_pezzo=p.id AND ptc.stato="attivo") caratteristiche_label FROM pezzi p LEFT JOIN marche ma ON ma.id=p.fk_marca ORDER BY p.stato DESC,p.nome',
     validar: (datos) => ({
+      fk_marca: datos.fk_marca ? z.coerce.number().int().positive().parse(datos.fk_marca) : null,
       nome: z.string().trim().min(2).max(150).parse(datos.nome),
       codice_unico: z.string().trim().min(4).max(60).parse(datos.codice_unico).toUpperCase(),
       tipo_macchina: z.enum(TIPOS_MAQUINA).parse(datos.tipo_macchina),
@@ -65,17 +67,44 @@ export const catalogoConfigurable = {
         datos.intervallo_mesi === '' || datos.intervallo_mesi == null
           ? null
           : z.coerce.number().int().min(1).max(120).parse(datos.intervallo_mesi),
-      stato: datos.stato === 'inattivo' ? 'inattivo' : 'attivo'
+      stato: datos.stato === 'inattivo' ? 'inattivo' : 'attivo',
+      caratteristiche: esquemaCaracteristicas.parse(datos.caratteristiche ?? [])
     })
   },
   caratteristiche: {
-    tabla: tablaPorRecurso.caratteristiche,
+    tabla: 'tipi_caratteristiche',
     columnas: ['codice_unico', 'nome', 'unita_misura', 'stato'],
     listado: 'SELECT id,codice_unico,nome,unita_misura,stato FROM tipi_caratteristiche ORDER BY stato DESC,nome',
     validar: (datos) => ({
       codice_unico: z.string().trim().min(2).max(50).parse(datos.codice_unico).toUpperCase(),
       nome: z.string().trim().min(2).max(120).parse(datos.nome),
       unita_misura: z.string().trim().max(30).optional().parse(datos.unita_misura || '') || null,
+      stato: datos.stato === 'inattivo' ? 'inattivo' : 'attivo'
+    })
+  },
+  utenti: {
+    tabla: 'utenti',
+    propio: true,
+    protegido: true,
+    listado:
+      'SELECT u.id,u.codice_usuario,u.nome,u.email,u.stato,r.codice ruolo FROM utenti u JOIN ruoli r ON r.id=u.fk_ruolo ORDER BY u.stato DESC,u.nome',
+    validar: (datos) => ({
+      nome: z.string().trim().min(2).max(120).parse(datos.nome),
+      codice_usuario: z.string().trim().min(5).max(40).parse(datos.codice_usuario).toLowerCase(),
+      email: z.string().trim().email().max(190).parse(datos.email),
+      ruolo: z.enum(ROLES_USUARIO).parse(datos.ruolo ?? 'tecnico'),
+      password: datos.password ? z.string().min(8).max(128).parse(datos.password) : null,
+      stato: datos.stato === 'inattivo' ? 'inattivo' : 'attivo'
+    })
+  },
+  parametri: {
+    tabla: 'parametros',
+    columnas: ['chiave', 'valore', 'descrizione', 'stato'],
+    listado: 'SELECT id,chiave,valore,descrizione,stato FROM parametros ORDER BY chiave',
+    validar: (datos) => ({
+      chiave: z.string().trim().min(3).max(60).parse(datos.chiave).toLowerCase().replace(/\s+/g, '_'),
+      valore: z.union([z.string().trim().min(1).max(190), z.coerce.number()]).parse(datos.valore).toString(),
+      descrizione: z.string().trim().max(255).optional().parse(datos.descrizione || '') || null,
       stato: datos.stato === 'inattivo' ? 'inattivo' : 'attivo'
     })
   }
@@ -85,52 +114,89 @@ export function obtenerCatalogo(recurso) {
   return catalogoConfigurable[recurso] ?? null;
 }
 
-async function codigoCliente(datos) {
-  if (datos.codice) return datos.codice;
-  const prefijo =
-    datos.tipo_cliente === 'privato'
-      ? 'PRIV'
-      : (await consultarUno('SELECT codice FROM fornitori WHERE id=?', [datos.fk_fornitore]))?.codice;
-  if (!prefijo) throw new Error('Seleziona un fornitore per il cliente collegato');
-
-  const fila = await consultarUno('SELECT COUNT(*) totale FROM clienti WHERE codice LIKE ?', [`${prefijo}-%`]);
-  return `${prefijo}-${String(Number(fila.totale) + 1).padStart(4, '0')}`;
-}
-
-async function idMarcaPorProveedor(idFornecedor) {
-  if (!idFornecedor) return 1;
-  const fornecedor = await consultarUno('SELECT nome FROM fornitori WHERE id=?', [idFornecedor]);
-  if (!fornecedor) throw new Error('Fornitore non trovato');
-
-  await pool.execute('INSERT IGNORE INTO marche (nome) VALUES (?)', [fornecedor.nome]);
-  const marca = await consultarUno('SELECT id FROM marche WHERE nome=?', [fornecedor.nome]);
-  return marca.id;
-}
-
-export async function prepararRegistro(recurso, catalogo, datos) {
+export async function prepararRegistro(recurso, catalogo, datos, opciones = {}) {
   const registro = catalogo.validar(datos);
-  if (recurso === 'clienti') registro.codice = await codigoCliente(registro);
+  if (recurso === 'utenti' && opciones.esCreacion && !registro.password) {
+    throw new Error('Indica una password di almeno 8 caratteri');
+  }
   return registro;
 }
 
-export async function crearRegistro(recurso, catalogo, registro, usuarioId) {
-  if (recurso === 'macchine') {
-    const marca = await idMarcaPorProveedor(registro.fk_fornitore);
-    const [maquina] = await pool.execute(
-      'INSERT INTO macchine (fk_cliente,fk_marca,fk_fornitore,codice_unico,tipo_macchina,modello,utente_crea,utente_modifica,stato) VALUES (?,?,?,?,?,?,?,?,?)',
+async function idRol(codigo, conexion) {
+  const rol = await consultarUno('SELECT id FROM ruoli WHERE codice=?', [codigo], conexion);
+  if (!rol) throw new Error('Ruolo non disponibile');
+  return rol.id;
+}
+
+async function crearUsuario(conexion, registro, usuarioId) {
+  const hash = await bcrypt.hash(registro.password, 12);
+  try {
+    const [resultado] = await conexion.execute(
+      'INSERT INTO utenti (fk_ruolo,codice_usuario,nome,email,password_hash,stato,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,?)',
       [
-        registro.fk_cliente,
-        marca,
-        registro.fk_fornitore,
-        registro.codice_unico,
-        registro.tipo_macchina,
-        registro.modello,
+        await idRol(registro.ruolo, conexion),
+        registro.codice_usuario,
+        registro.nome,
+        registro.email,
+        hash,
+        registro.stato,
         usuarioId,
-        usuarioId,
-        registro.stato
+        usuarioId
       ]
     );
-    return maquina.insertId;
+    return { id: resultado.insertId };
+  } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') throw new Error('Codice utente o email già utilizzati');
+    throw error;
+  }
+}
+
+async function actualizarUsuario(conexion, id, registro, usuarioId) {
+  const hash = registro.password ? await bcrypt.hash(registro.password, 12) : null;
+  try {
+    await conexion.execute(
+      'UPDATE utenti SET fk_ruolo=?,codice_usuario=?,nome=?,email=?,password_hash=COALESCE(?,password_hash),stato=?,utente_modifica=? WHERE id=?',
+      [
+        await idRol(registro.ruolo, conexion),
+        registro.codice_usuario,
+        registro.nome,
+        registro.email,
+        hash,
+        registro.stato,
+        usuarioId,
+        Number(id)
+      ]
+    );
+  } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') throw new Error('Codice utente o email già utilizzati');
+    throw error;
+  }
+}
+
+export async function sincronizarCaracteristicas(conexion, pezzoId, caracteristicas, usuarioId) {
+  await conexion.execute('UPDATE pezzi_tipi_caratteristiche SET stato="inattivo",utente_modifica=? WHERE fk_pezzo=?', [
+    usuarioId,
+    pezzoId
+  ]);
+  for (const caracteristica of caracteristicas) {
+    await conexion.execute(
+      'INSERT INTO pezzi_tipi_caratteristiche (fk_pezzo,fk_tipo_caratteristica,quantita,stato,utente_crea,utente_modifica) VALUES (?,?,?,"attivo",?,?) ON DUPLICATE KEY UPDATE quantita=VALUES(quantita),stato="attivo",utente_modifica=VALUES(utente_modifica)',
+      [pezzoId, caracteristica.tipoCaratteristicaId, caracteristica.quantita, usuarioId, usuarioId]
+    );
+  }
+}
+
+export async function crearRegistro(recurso, catalogo, registro, usuarioId) {
+  if (recurso === 'clienti') {
+    const creado = await crearCliente(pool, registro, usuarioId);
+    return { id: creado.id, codice: creado.codice };
+  }
+  if (recurso === 'macchine') {
+    const creado = await crearMaquina(pool, registro, usuarioId);
+    return { id: creado.id };
+  }
+  if (recurso === 'utenti') {
+    return crearUsuario(pool, registro, usuarioId);
   }
 
   const columnas = [...catalogo.columnas, 'utente_crea', 'utente_modifica'];
@@ -138,35 +204,51 @@ export async function crearRegistro(recurso, catalogo, registro, usuarioId) {
     `INSERT INTO ${catalogo.tabla} (${columnas.join(',')}) VALUES (${columnas.map(() => '?').join(',')})`,
     [...catalogo.columnas.map((columna) => registro[columna]), usuarioId, usuarioId]
   );
-  return registroCreado.insertId;
+  if (recurso === 'pezzi') {
+    await sincronizarCaracteristicas(pool, registroCreado.insertId, registro.caratteristiche, usuarioId);
+  }
+  return { id: registroCreado.insertId };
 }
 
 export async function actualizarRegistro(recurso, catalogo, id, registro, usuarioId) {
-  if (recurso === 'macchine') {
-    const marca = await idMarcaPorProveedor(registro.fk_fornitore);
+  if (recurso === 'clienti') {
     await pool.execute(
-      'UPDATE macchine SET fk_cliente=?,fk_marca=?,fk_fornitore=?,codice_unico=?,tipo_macchina=?,modello=?,utente_modifica=?,stato=? WHERE id=?',
+      'UPDATE clienti SET fk_fornitore=?,tipo_cliente=?,codice=COALESCE(?,codice),nome=?,indirizzo=?,citta=?,stato=?,utente_modifica=? WHERE id=?',
       [
-        registro.fk_cliente,
-        marca,
         registro.fk_fornitore,
-        registro.codice_unico,
-        registro.tipo_macchina,
-        registro.modello,
-        usuarioId,
+        registro.tipo_cliente,
+        registro.codice,
+        registro.nome,
+        registro.indirizzo,
+        registro.citta,
         registro.stato,
-        id
+        usuarioId,
+        Number(id)
       ]
     );
+    return;
+  }
+  if (recurso === 'macchine') {
+    await actualizarMaquina(pool, id, registro, usuarioId);
+    return;
+  }
+  if (recurso === 'utenti') {
+    await actualizarUsuario(pool, id, registro, usuarioId);
     return;
   }
 
   await pool.execute(
     `UPDATE ${catalogo.tabla} SET ${catalogo.columnas.map((columna) => `${columna}=?`).join(',')},utente_modifica=? WHERE id=?`,
-    [...catalogo.columnas.map((columna) => registro[columna]), usuarioId, id]
+    [...catalogo.columnas.map((columna) => registro[columna]), usuarioId, Number(id)]
   );
+  if (recurso === 'pezzi') {
+    await sincronizarCaracteristicas(pool, Number(id), registro.caratteristiche, usuarioId);
+  }
 }
 
-export async function desactivarRegistro(catalogo, id, usuarioId) {
+export async function desactivarRegistro(recurso, catalogo, id, usuarioId) {
+  if (catalogo.protegido && Number(id) === Number(usuarioId)) {
+    throw new Error('Non puoi disattivare il tuo stesso utente');
+  }
   await pool.execute(`UPDATE ${catalogo.tabla} SET stato="inattivo",utente_modifica=? WHERE id=?`, [usuarioId, Number(id)]);
 }

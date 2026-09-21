@@ -5,16 +5,33 @@ export function Estado({ value, c }) {
     annullata: c.cancelled,
     risolto: c.resolved,
     parziale: c.partial,
-    da_rifare: c.redo
+    da_rifare: c.redo,
+    vencido: c.overdueState,
+    oggi: c.todayState,
+    imminente: c.imminentState,
+    prossimo: c.soonState,
+    programmato: c.scheduled,
+    eseguito: c.completed,
+    sospeso: c.suspended,
+    aperta: c.openTask,
+    in_corso: c.inProgress,
+    completata: c.completed
   };
   const tonos = {
     emessa: 'good',
     risolto: 'good',
     completata: 'good',
+    eseguito: 'good',
+    programmato: 'good',
     bozza: 'warn',
     parziale: 'warn',
     in_corso: 'warn',
-    programmato: 'warn'
+    imminente: 'warn',
+    oggi: 'warn',
+    prossimo: 'warn',
+    aperta: 'warn',
+    vencido: 'bad',
+    sospeso: 'bad'
   };
   const etiqueta = etiquetas[value] ?? value;
   const tono = tonos[value] ?? 'bad';

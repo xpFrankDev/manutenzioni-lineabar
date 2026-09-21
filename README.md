@@ -56,10 +56,37 @@ Vite serve `http://localhost:5173/lineabar/` e inoltra `/lineabar/api` al backen
 | --- | --- | --- |
 | `npm run dev` | frontend | Server di sviluppo Vite con proxy verso l'API. |
 | `npm run build` | frontend | Build di produzione in `frontend/dist`. |
+| `npm test` | frontend | Test di dominio e render delle schermate con Node. |
 | `npm run dev` | backend | API con ricarica automatica. |
 | `npm run migraciones` | backend | Applica le migrazioni pendenti e le registra in `migraciones_aplicadas`. |
 | `npm run sembrar` | backend | Sincronizza i dati maestri; aggiunge i dati di dimostrazione se `LINEABAR_CARGAR_DEMO=1`. |
 | `npm run verificar` | backend | Controllo di sintassi su tutti i file di `src/`. |
+| `npm test` | backend | Test di dominio e suite di integrazione (richiede la base `lineabar_test`). |
+
+## Test
+
+Il backend usa il runner nativo di Node. I test di unità non richiedono un
+database:
+
+```bash
+cd backend
+npm run test:unidad
+```
+
+La suite di integrazione ricrea una base dedicata (`lineabar_test`), applica
+migrazioni e semilla e verifica accesso, refresh, dati maestri, flusso di campo,
+calendario, boleta, scontrino, permessi per ruolo, report e difese di sicurezza:
+
+```bash
+cd backend
+set -a; . ../.env; set +a
+export DB_HOST=127.0.0.1 DB_PORT=3308 MARIADB_DATABASE=lineabar_test
+export LINEABAR_TEST_ADMIN_PASSWORD=cambia_esta_contrasena
+npm test
+```
+
+`tests/preparar-base.js` rifiuta di toccare qualsiasi base il cui nome non
+inizi con `lineabar_test`.
 
 ## Variabili d'ambiente
 
@@ -83,13 +110,57 @@ L'utente amministratore (per difetto `dev01`) viene creato dalla semilla con la 
 
 La boleta supporta più macchine tramite `boletas_macchine`, quindi copre sia il requisito del collegamento boleta–macchina sia l'inserimento di più macchine nello stesso intervento. I ricambi usati restano in `pezzi_manutenzioni`; ciascun ricambio può definire `intervallo_mesi`. Al completamento di una manutenzione, il servizio applicativo deve aggiornare `calendario_manutenzioni_macchine.prossima_manutenzione` a partire dalla data effettiva e dalla frequenza del ricambio.
 
+Il flusso di campo è: **cliente → macchina del cliente → ricambi e manodopera →
+riepilogo**. Il cliente e la macchina si possono creare senza uscire dal
+modulo; ore e persone vengono salvate in `manutenzioni`; la manutenzione
+successiva si programma in `calendario_manutenzioni_macchine` e alimenta gli
+avvisi del pannello e la pagina Calendario.
+
+Altre tabelle operative:
+
+- `scontrini`: immagine dello scontrino, testo estratto, nome cliente rilevato e
+  collegamento a cliente e boleta. La foto resta nella base per poterla
+  riconsultare.
+- `sesiones_refresco`: sessioni di refresh (solo hash del token) con rotazione e
+  revoca.
+- `parametros`: tarifa oraria della manodopera, giorni di avviso del calendario,
+  orizzonte e mesi di previsione dei report. Si modificano da Configurazione.
+
+## Calendario e avvisi
+
+Ogni ricambio con `intervallo_mesi` rinnova la programmazione della macchina
+quando viene usato in un intervento o in una boleta. La pagina
+`/lineabar/calendario` filtra per vencute, in scadenza, programmate e sospese;
+dal dettaglio un amministratore può programmare l'attività per un tecnico,
+riprogrammare data e frequenza o sospendere la voce. La navigazione mostra il
+numero di manutenzioni da gestire e il pannello espone le più urgenti.
+
+## Report
+
+`/lineabar/reportes` riassume il mese: boletas emesse, ricavi, boleta media,
+interventi, ore uomo, manodopera valorizzata, ricambi consumati, clienti
+serviti, ricavi per cliente, ricambi più usati, interventi per tipo di macchina,
+previsione dei mesi successivi ed esportazione CSV delle boletas del periodo.
+
+## Scontrino assistito
+
+Il pulsante «Scansiona lo scontrino» salva la foto e tenta di leggere il nome
+del cliente. Se il cliente è già in base viene proposto; altrimenti si crea
+dalla foto. L'analisi è **locale e gratuita**: Tesseract (tesseract.js) gira sul
+server con i dati di lingua italiana inclusi nel progetto, quindi non serve
+alcuna API a pagamento. La lettura può essere migliorata impostando
+`LINEABAR_OCR_PROVEEDOR=openai` con `LINEABAR_OCR_ENDPOINT`,
+`LINEABAR_OCR_API_KEY` e `LINEABAR_OCR_MODELO` (opzionale). Con
+`LINEABAR_OCR_PROVEEDOR=ninguno` la foto viene comunque salvata e il tecnico
+conferma il nome a mano.
+
 I codici sono generati nel servizio applicativo dentro una transazione: clienti privati `PRIV-0001`, clienti di un fornitore `<CODICE_FORNITORE>-0001`, boletas `BL-AAAA-MM-NNNN`. Gli indici univoci nello schema impediscono duplicati anche in caso di richieste concorrenti.
 
 ## Sicurezza
 
-L'API non espone password in output, limita i tentativi di login, imposta header di sicurezza, valida input sul server e applica il ruolo dal JWT. Il token dura 10 minuti e non esiste ancora un refresh: dopo la scadenza l'utente torna al login.
+L'API non espone password in output, limita i tentativi di login, imposta header di sicurezza, valida input sul server e applica il ruolo dal JWT. Il token di accesso dura 10 minuti; la sessione si rinnova con un refresh token opaco ruotato a ogni uso, salvato solo come hash e revocato in caso di riuso sospetto, quindi l'utente non torna al login durante il lavoro in campo. Il ruolo limita anche lettura, modifica e annullamento di interventi e boletas ai tecnici che li hanno registrati.
 
-In produzione usare HTTPS, un `JWT_SECRET` lungo e casuale, password database a privilegi minimi, la porta di MariaDB solo su loopback e storage esterno firmato per le immagini degli scontrini. L'OCR/IA va eseguito dietro un endpoint autenticato, non direttamente dal browser.
+In produzione usare HTTPS, un `JWT_SECRET` lungo e casuale, password database a privilegi minimi e la porta di MariaDB solo su loopback. Le immagini degli scontrini restano nella base per semplicità di backup: se il volume cresce, conviene spostarle su storage esterno firmato mantenendo la stessa tabella. L'analisi OCR/IA va eseguita dietro un endpoint autenticato, non direttamente dal browser.
 
 ## Deployment sul VPS
 

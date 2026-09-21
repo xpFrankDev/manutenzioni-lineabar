@@ -14,5 +14,6 @@ export const esquemaIntervento = z.object({
   esito: z.enum(['risolto', 'da_rifare', 'parziale']),
   ore: z.coerce.number().positive().max(24),
   persone: z.coerce.number().int().positive().max(20),
-  ricambi: z.array(esquemaRecambio).default([])
+  ricambi: z.array(esquemaRecambio).max(60).default([]),
+  scontrinoId: z.coerce.number().int().positive().nullable().optional()
 });

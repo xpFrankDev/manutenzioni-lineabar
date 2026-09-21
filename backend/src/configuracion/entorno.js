@@ -21,7 +21,20 @@ export const entorno = {
   sesion: {
     secreto: segretoJwt,
     emisor: 'lineabar',
-    minutosVigencia: 10
+    minutosVigencia: Number(process.env.LINEABAR_ACCESO_MINUTOS || 10),
+    refrescoDias: Number(process.env.LINEABAR_REFRESCO_DIAS || 30)
+  },
+  ocr: {
+    // Por defecto Tesseract local: gratuito y sin depender de servicios de pago.
+    proveedor: (process.env.LINEABAR_OCR_PROVEEDOR || 'tesseract').toLowerCase(),
+    idiomas: process.env.LINEABAR_OCR_IDIOMAS || 'ita',
+    endpoint:
+      process.env.LINEABAR_OCR_ENDPOINT ||
+      (process.env.OPENAI_API_KEY ? 'https://api.openai.com/v1/chat/completions' : null),
+    apiKey: process.env.LINEABAR_OCR_API_KEY || process.env.OPENAI_API_KEY || null,
+    modelo: process.env.LINEABAR_OCR_MODELO || 'gpt-4o-mini',
+    tiempoLimiteMs: Number(process.env.LINEABAR_OCR_TIEMPO_LIMITE_MS || 60000),
+    maximoBytes: Number(process.env.LINEABAR_OCR_MAX_BYTES || 8 * 1024 * 1024)
   },
   baseDatos: {
     host: process.env.DB_HOST || 'mariadb',

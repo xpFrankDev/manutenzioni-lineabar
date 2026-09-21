@@ -37,7 +37,7 @@ export async function contarPendientes(req) {
 
 export async function obtenerActividad(id) {
   const actividad = (await consultar(
-    'SELECT a.*,c.nome cliente,c.indirizzo,m.codice_unico,m.modello,COALESCE(f.nome,ma.nome) marca FROM attivita a LEFT JOIN clienti c ON c.id=a.fk_cliente LEFT JOIN macchine m ON m.id=a.fk_macchina LEFT JOIN fornitori f ON f.id=m.fk_fornitore LEFT JOIN marche ma ON ma.id=m.fk_marca WHERE a.id=?',
+    'SELECT a.*,c.nome cliente,c.indirizzo,m.id macchina_id,m.codice_unico,m.modello,COALESCE(f.nome,ma.nome) marca FROM attivita a LEFT JOIN clienti c ON c.id=a.fk_cliente LEFT JOIN macchine m ON m.id=a.fk_macchina LEFT JOIN fornitori f ON f.id=m.fk_fornitore LEFT JOIN marche ma ON ma.id=m.fk_marca WHERE a.id=?',
     [id]
   ))[0];
   if (!actividad) return null;

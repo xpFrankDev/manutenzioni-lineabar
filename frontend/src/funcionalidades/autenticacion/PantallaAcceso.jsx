@@ -22,7 +22,7 @@ export function PantallaAcceso({ idioma, cambiarIdioma, tema, cambiarTema }) {
         method: 'POST',
         body: JSON.stringify({ codigo_usuario: codigo.trim(), password: contrasena })
       });
-      guardarSesion(sesion.token);
+      guardarSesion(sesion);
       location.assign(RUTAS.dashboard);
     } catch {
       setError(c.loginError);

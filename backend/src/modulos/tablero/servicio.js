@@ -1,5 +1,6 @@
 import { consultar, consultarUno } from '../../base-datos/pool.js';
 import { esTecnico } from '../../intermedios/sesion.js';
+import { resumenCalendario } from '../calendario/servicio.js';
 
 export async function obtenerTablero(req) {
   const periodo = String(req.query.periodo || new Date().toISOString().slice(0, 7));
@@ -26,14 +27,18 @@ export async function obtenerTablero(req) {
   );
 
   const interventi = Number(metriche.interventi);
+  const calendario = await resumenCalendario({ tecnicoId: tecnico ? req.utente.sub : null });
   return {
     periodo,
     metriche: {
       interventi,
       ricavi: Number(metriche.ricavi),
       attivitaPendenti: Number(pendenti.totale),
-      esito: interventi ? Math.round((Number(metriche.risolti) * 100) / interventi) : 0
+      esito: interventi ? Math.round((Number(metriche.risolti) * 100) / interventi) : 0,
+      manutenzioniProgrammate: calendario.pendientes,
+      manutenzioniVencidas: calendario.vencidos
     },
-    recenti
+    recenti,
+    scadenze: calendario
   };
 }

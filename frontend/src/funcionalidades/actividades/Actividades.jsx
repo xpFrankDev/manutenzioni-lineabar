@@ -7,16 +7,17 @@ import { CierreActividad } from './CierreActividad.jsx';
 import { FormularioActividad } from './FormularioActividad.jsx';
 
 function estadoDeActividad(actividad) {
-  if (actividad.stato_attivita === 'completata') return 'risolto';
-  if (actividad.stato_attivita === 'in_corso') return 'parziale';
-  return actividad.priorita === 'alta' ? 'da_rifare' : 'parziale';
+  if (actividad.stato_attivita === 'completata') return 'completata';
+  if (actividad.stato_attivita === 'in_corso') return 'in_corso';
+  return actividad.priorita === 'alta' ? 'vencido' : 'aperta';
 }
 
-export function Actividades({ c, idioma }) {
+export function Actividades({ c, idioma, usuario }) {
   const [filas, setFilas] = useState(null);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [cerrando, setCerrando] = useState(null);
   const [error, setError] = useState('');
+  const esAdministrador = usuario?.ruolo !== 'tecnico';
 
   const cargar = () =>
     llamarApi('/attivita')
@@ -47,10 +48,12 @@ export function Actividades({ c, idioma }) {
           <h1>{c.tasks}</h1>
           <p>{c.tasksHelp}</p>
         </div>
-        <button className="primary add-record" onClick={() => setMostrarFormulario(true)}>
-          <Plus size={17} />
-          {c.add}
-        </button>
+        {esAdministrador && (
+          <button className="primary add-record" onClick={() => setMostrarFormulario(true)}>
+            <Plus size={17} />
+            {c.add}
+          </button>
+        )}
       </header>
       {error && <p className="error">{error}</p>}
       <section className="operation-list">
@@ -104,6 +107,7 @@ export function Actividades({ c, idioma }) {
         <CierreActividad
           id={cerrando}
           c={c}
+          idioma={idioma}
           alCerrar={() => setCerrando(null)}
           alGuardar={() => {
             setCerrando(null);

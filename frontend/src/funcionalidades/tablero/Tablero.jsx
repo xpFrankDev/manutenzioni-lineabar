@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Check, ChevronRight, ClipboardList, Euro, Wrench } from 'lucide-react';
+import { CalendarClock, Check, ChevronRight, CircleAlert, ClipboardList, Euro, Wrench } from 'lucide-react';
 import { llamarApi } from '../../compartido/api/cliente.js';
 import { Estado } from '../../compartido/componentes/Estado.jsx';
 import { formatearFecha, formatearMoneda } from '../../compartido/utilidades/formato.js';
 
-export function Tablero({ c, idioma, usuario, alAbrirDetalle }) {
+export function Tablero({ c, idioma, usuario, alAbrirDetalle, alIrCalendario }) {
   const [datos, setDatos] = useState(null);
   const [error, setError] = useState('');
 
@@ -27,8 +27,10 @@ export function Tablero({ c, idioma, usuario, alAbrirDetalle }) {
     [Wrench, c.done, datos.metriche.interventi],
     [Euro, c.income, formatearMoneda(datos.metriche.ricavi, idioma)],
     [ClipboardList, c.pending, datos.metriche.attivitaPendenti],
+    [CalendarClock, c.nextMaintenance, datos.metriche.manutenzioniProgrammate],
     [Check, c.success, `${datos.metriche.esito}%`]
   ];
+  const scadenze = datos.scadenze ?? { vencidos: 0, proximas: [] };
 
   return (
     <main className="content">
@@ -41,6 +43,20 @@ export function Tablero({ c, idioma, usuario, alAbrirDetalle }) {
           <p>{datos.periodo} · Linea Bar</p>
         </div>
       </header>
+
+      {scadenze.vencidos > 0 && (
+        <button className="alert-banner" onClick={alIrCalendario}>
+          <CircleAlert size={19} />
+          <span>
+            <b>
+              {scadenze.vencidos} {c.overdue.toLowerCase()}
+            </b>
+            <small>{c.calendarHelp}</small>
+          </span>
+          <ChevronRight size={18} />
+        </button>
+      )}
+
       <section className="metrics">
         {metricas.map(([Icono, etiqueta, valor]) => (
           <article key={etiqueta}>
@@ -50,6 +66,35 @@ export function Tablero({ c, idioma, usuario, alAbrirDetalle }) {
           </article>
         ))}
       </section>
+
+      <section className="panel">
+        <header>
+          <h2>{c.nextMaintenance}</h2>
+          <button onClick={alIrCalendario}>{c.seeCalendar}</button>
+        </header>
+        {scadenze.proximas.length ? (
+          scadenze.proximas.map((entrada) => (
+            <div className="row" key={entrada.id}>
+              <i>
+                <CalendarClock size={19} />
+              </i>
+              <span>
+                <b>
+                  {entrada.cliente} · {entrada.codice_unico}
+                </b>
+                <small>
+                  {entrada.pezzo ? `${entrada.pezzo} · ` : ''}
+                  {formatearFecha(entrada.prossima_manutenzione, idioma)}
+                </small>
+              </span>
+              <Estado value={entrada.vencimiento} c={c} />
+            </div>
+          ))
+        ) : (
+          <p className="empty-state">{c.noCalendarRecords}</p>
+        )}
+      </section>
+
       <section className="panel">
         <header>
           <h2>{c.recent}</h2>

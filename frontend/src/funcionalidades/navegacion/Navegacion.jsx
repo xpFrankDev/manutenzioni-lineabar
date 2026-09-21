@@ -1,4 +1,6 @@
 import {
+  BarChart3,
+  CalendarClock,
   ClipboardList,
   LayoutDashboard,
   LogOut,
@@ -8,33 +10,40 @@ import {
   Wrench,
   X
 } from 'lucide-react';
-import { borrarSesion } from '../../compartido/api/cliente.js';
+import { cerrarSesion } from '../../compartido/api/cliente.js';
 import { RUTA_ACCESO } from '../../compartido/constantes.js';
 
-function icono(id, Icono, tamano, tareasPendientes) {
+const ENLACES = [
+  ['dashboard', LayoutDashboard, 'home', 'siempre'],
+  ['boletas', ReceiptText, 'receipts', 'siempre'],
+  ['mantenimientos', Wrench, 'jobs', 'siempre'],
+  ['calendario', CalendarClock, 'calendar', 'siempre'],
+  ['tareas', ClipboardList, 'tasks', 'siempre'],
+  ['reportes', BarChart3, 'reports', 'administrador'],
+  ['configuracion', Settings, 'settings', 'administrador']
+];
+
+function icono(id, Icono, tamano, avisos) {
   return (
     <span className="nav-icon">
       <Icono size={tamano} />
-      {id === 'tareas' && <em className="nav-badge">{tareasPendientes}</em>}
+      {avisos[id] > 0 && <em className="nav-badge">{avisos[id]}</em>}
     </span>
   );
 }
 
-function salir(establecerAbierto) {
-  borrarSesion();
+async function salir(establecerAbierto) {
+  await cerrarSesion();
   establecerAbierto(false);
   location.assign(RUTA_ACCESO);
 }
 
-export function Navegacion({ pagina, ir, abierto, establecerAbierto, c, tareasPendientes = 0, usuario }) {
-  const enlaces = [
-    ['dashboard', LayoutDashboard, c.home],
-    ['boletas', ReceiptText, c.receipts],
-    ['mantenimientos', Wrench, c.jobs],
-    ['tareas', ClipboardList, c.tasks],
-    ['configuracion', Settings, c.settings]
-  ];
+export function Navegacion({ pagina, ir, abierto, establecerAbierto, c, tareasPendientes = 0, avisosCalendario = 0, usuario }) {
+  const esAdministrador = usuario?.ruolo !== 'tecnico';
+  const enlaces = ENLACES.filter(([, , , permiso]) => permiso === 'siempre' || esAdministrador);
   const etiquetaRol = usuario?.ruolo === 'tecnico' ? c.technician : c.administrator;
+  const avisos = { tareas: tareasPendientes, calendario: avisosCalendario };
+  const enlacesInferiores = enlaces.slice(0, 5);
 
   return (
     <>
@@ -60,8 +69,8 @@ export function Navegacion({ pagina, ir, abierto, establecerAbierto, c, tareasPe
                 establecerAbierto(false);
               }}
             >
-              {icono(id, Icono, 20, tareasPendientes)}
-              {etiqueta}
+              {icono(id, Icono, 20, avisos)}
+              {c[etiqueta]}
             </button>
           ))}
         </nav>
@@ -80,10 +89,10 @@ export function Navegacion({ pagina, ir, abierto, establecerAbierto, c, tareasPe
         </button>
       </aside>
       <nav className="bottom">
-        {enlaces.slice(0, 4).map(([id, Icono, etiqueta]) => (
+        {enlacesInferiores.map(([id, Icono, etiqueta]) => (
           <button key={id} className={pagina === id ? 'active' : ''} onClick={() => ir(id)}>
-            {icono(id, Icono, 19, tareasPendientes)}
-            <small>{etiqueta}</small>
+            {icono(id, Icono, 19, avisos)}
+            <small>{c[etiqueta]}</small>
           </button>
         ))}
       </nav>

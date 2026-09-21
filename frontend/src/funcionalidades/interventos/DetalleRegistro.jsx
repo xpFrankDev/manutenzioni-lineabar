@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import { CalendarClock, Clock3, X } from 'lucide-react';
 import { llamarApi } from '../../compartido/api/cliente.js';
 import { Estado } from '../../compartido/componentes/Estado.jsx';
 import { formatearFecha, formatearMoneda } from '../../compartido/utilidades/formato.js';
@@ -48,18 +48,49 @@ export function DetalleRegistro({ tipo, id, c, idioma, alCerrar }) {
                   {c.location}
                   <b>{datos.ubicazione === 'magazzino' ? c.warehouse : c.customerSite}</b>
                 </span>
+                <span>
+                  {c.labour}
+                  <b>
+                    {Number(datos.ore ?? 0)} h × {Number(datos.persone ?? 1)}
+                  </b>
+                </span>
                 <Estado value={datos.esito || datos.stato} c={c} />
               </div>
               {tipo === 'boletas' && <p className="detail-total">{formatearMoneda(datos.prezzo_totale, idioma)}</p>}
-              <h3>{c.partsUsed}</h3>
-              {datos.ricambi.map((recambio) => (
-                <p className="part-line" key={recambio.codice_unico}>
+              {tipo === 'boletas' && datos.totales && (
+                <p className="part-line">
                   <span>
-                    {recambio.nome} × {recambio.quantita}
+                    <Clock3 size={14} /> {c.labour}
                   </span>
-                  <b>{formatearMoneda(Number(recambio.prezzo_unitario) * Number(recambio.quantita), idioma)}</b>
+                  <b>{formatearMoneda(datos.totales.manoDeObra, idioma)}</b>
                 </p>
-              ))}
+              )}
+              <h3>{c.partsUsed}</h3>
+              {datos.ricambi.length ? (
+                datos.ricambi.map((recambio) => (
+                  <p className="part-line" key={recambio.codice_unico}>
+                    <span>
+                      {recambio.nome} × {recambio.quantita}
+                    </span>
+                    <b>{formatearMoneda(Number(recambio.prezzo_unitario) * Number(recambio.quantita), idioma)}</b>
+                  </p>
+                ))
+              ) : (
+                <p className="empty-state">{c.noPart}</p>
+              )}
+              {datos.prossime?.length > 0 && (
+                <>
+                  <h3>
+                    <CalendarClock size={15} /> {c.nextMaintenance}
+                  </h3>
+                  {datos.prossime.map((proxima) => (
+                    <p className="part-line" key={`${proxima.pezzo}-${proxima.prossima_manutenzione}`}>
+                      <span>{proxima.pezzo ?? c.machine}</span>
+                      <b>{formatearFecha(proxima.prossima_manutenzione, idioma)}</b>
+                    </p>
+                  ))}
+                </>
+              )}
               {datos.note && (
                 <>
                   <h3>{c.notes}</h3>

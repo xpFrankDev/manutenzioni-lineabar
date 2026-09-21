@@ -8,9 +8,14 @@
     "start": "node src/servidor.js",
     "migraciones": "node src/base-datos/migraciones/ejecutar.js",
     "sembrar": "node src/base-datos/semillas/sembrar.js",
-    "verificar": "node scripts/verificar-sintaxis.js"
+    "verificar": "node scripts/verificar-sintaxis.js",
+    "test": "npm run test:unidad && npm run test:integracion",
+    "test:unidad": "node --test tests/unidad/*.test.js",
+    "test:integracion": "node tests/preparar-base.js && node --test --test-concurrency=1 --test-force-exit tests/integracion/*.test.js"
   },
   "dependencies": {
+    "@tesseract.js-data/eng": "^1.0.0",
+    "@tesseract.js-data/ita": "^1.0.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
@@ -19,6 +24,7 @@
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
     "mysql2": "^3.24.4",
+    "tesseract.js": "^7.0.0",
     "zod": "^4.6.5"
   }
 }

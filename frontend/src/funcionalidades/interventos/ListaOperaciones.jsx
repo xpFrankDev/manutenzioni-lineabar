@@ -19,7 +19,16 @@ export function ListaOperaciones({ tipo, c, idioma, alCrear }) {
   }, [tipo]);
 
   const listadas = useMemo(
-    () => (!filas ? [] : filas.filter((fila) => Object.values(fila).join(' ').toLowerCase().includes(consulta.toLowerCase()))),
+    () =>
+      !filas
+        ? []
+        : filas.filter((fila) =>
+            Object.values(fila)
+              .filter((valor) => valor !== null && valor !== undefined)
+              .join(' ')
+              .toLowerCase()
+              .includes(consulta.toLowerCase())
+          ),
     [filas, consulta]
   );
 

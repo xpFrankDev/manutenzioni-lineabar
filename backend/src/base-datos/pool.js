@@ -8,7 +8,10 @@ export const pool = mysql.createPool({
   password: entorno.baseDatos.contrasena,
   database: entorno.baseDatos.nombre,
   waitForConnections: true,
-  connectionLimit: 5
+  connectionLimit: 5,
+  // Las fechas viajan como texto ISO a la API: evita desfases de zona horaria
+  // entre el contenedor de MariaDB y el navegador del técnico.
+  dateStrings: true
 });
 
 export async function consultar(sql, valores = [], conexion = pool) {
@@ -19,6 +22,12 @@ export async function consultar(sql, valores = [], conexion = pool) {
 export async function consultarUno(sql, valores = [], conexion = pool) {
   const filas = await consultar(sql, valores, conexion);
   return filas[0] ?? null;
+}
+
+/** Ejecuta una sentencia de escritura y devuelve el resultado con insertId. */
+export async function ejecutar(sql, valores = [], conexion = pool) {
+  const [resultado] = await conexion.execute(sql, valores);
+  return resultado;
 }
 
 export async function enTransaccion(tarea) {

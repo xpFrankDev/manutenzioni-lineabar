@@ -19,7 +19,7 @@ export async function proximoCodigoBoleta(conexion, fecha) {
   return formatearCodigoBoleta(fecha, Number(fila?.totale ?? 0) + 1);
 }
 
-export function calcularTotales(recambios, horas, personas) {
-  const manoDeObra = horas * personas * TARIFA_MANO_DE_OBRA_HORA;
+export function calcularTotales(recambios, horas, personas, tarifa = TARIFA_MANO_DE_OBRA_HORA) {
+  const manoDeObra = horas * personas * Number(tarifa);
   return { manoDeObra, total: recambios + manoDeObra };
 }

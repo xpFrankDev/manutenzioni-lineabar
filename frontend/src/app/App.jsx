@@ -2,15 +2,17 @@ import { useEffect, useState } from 'react';
 import { Menu, Plus, ReceiptText, Wrench } from 'lucide-react';
 import { llamarApi } from '../compartido/api/cliente.js';
 import { Toggle } from '../compartido/componentes/Toggle.jsx';
-import { CLAVES, RUTA_ACCESO, RUTAS, RUTAS_HOJA, paginaDesdeRuta } from '../compartido/constantes.js';
+import { CLAVES, RUTA_ACCESO, RUTAS, RUTAS_HOJA, hojaDesdeRuta, paginaDesdeRuta } from '../compartido/constantes.js';
 import { IDIOMA_POR_DEFECTO, obtenerCatalogo } from '../compartido/i18n/index.js';
 import { Actividades } from '../funcionalidades/actividades/Actividades.jsx';
 import { PantallaAcceso } from '../funcionalidades/autenticacion/PantallaAcceso.jsx';
+import { Calendario } from '../funcionalidades/calendario/Calendario.jsx';
 import { Configuracion } from '../funcionalidades/configuracion/Configuracion.jsx';
 import { DetalleRegistro } from '../funcionalidades/interventos/DetalleRegistro.jsx';
 import { HojaTrabajo } from '../funcionalidades/interventos/HojaTrabajo.jsx';
 import { ListaOperaciones } from '../funcionalidades/interventos/ListaOperaciones.jsx';
 import { Navegacion } from '../funcionalidades/navegacion/Navegacion.jsx';
+import { Reportes } from '../funcionalidades/reportes/Reportes.jsx';
 import { Tablero } from '../funcionalidades/tablero/Tablero.jsx';
 
 export function App() {
@@ -19,9 +21,10 @@ export function App() {
   const [pagina, setPagina] = useState(() => paginaDesdeRuta(location.pathname));
   const [menu, setMenu] = useState(false);
   const [acciones, setAcciones] = useState(false);
-  const [hoja, setHoja] = useState(null);
+  const [hoja, setHoja] = useState(() => hojaDesdeRuta(location.pathname));
   const [detalle, setDetalle] = useState(null);
   const [tareasPendientes, setTareasPendientes] = useState(0);
+  const [avisosCalendario, setAvisosCalendario] = useState(0);
   const [usuario, setUsuario] = useState(null);
   const [sesion, setSesion] = useState(location.pathname === RUTA_ACCESO ? 'skip' : 'check');
 
@@ -44,17 +47,30 @@ export function App() {
 
   useEffect(() => {
     if (sesion !== 'ok') return undefined;
-    const actualizar = () =>
+    const actualizarTareas = () =>
       llamarApi('/attivita/contatore')
         .then((datos) => setTareasPendientes(datos.pendenti))
         .catch(() => {});
-    actualizar();
-    addEventListener('lineabar:tasks', actualizar);
-    return () => removeEventListener('lineabar:tasks', actualizar);
+    const actualizarCalendario = () =>
+      llamarApi('/calendario/resumen')
+        .then((datos) => setAvisosCalendario(datos.avisos))
+        .catch(() => {});
+    actualizarTareas();
+    actualizarCalendario();
+    addEventListener('lineabar:tasks', actualizarTareas);
+    addEventListener('lineabar:calendar', actualizarCalendario);
+    return () => {
+      removeEventListener('lineabar:tasks', actualizarTareas);
+      removeEventListener('lineabar:calendar', actualizarCalendario);
+    };
   }, [sesion]);
 
   useEffect(() => {
-    const sincronizar = () => setPagina(paginaDesdeRuta(location.pathname));
+    const sincronizar = () => {
+      setPagina(paginaDesdeRuta(location.pathname));
+      setHoja(hojaDesdeRuta(location.pathname));
+      setDetalle(null);
+    };
     addEventListener('popstate', sincronizar);
     return () => removeEventListener('popstate', sincronizar);
   }, []);
@@ -72,28 +88,48 @@ export function App() {
     history.pushState({}, '', RUTAS_HOJA[tipo]);
   }
 
+  function cerrarHoja() {
+    setHoja(null);
+    history.pushState({}, '', RUTAS[pagina]);
+  }
+
   if (location.pathname === RUTA_ACCESO) {
     return <PantallaAcceso idioma={idioma} cambiarIdioma={setIdioma} tema={tema} cambiarTema={setTema} />;
   }
   if (sesion !== 'ok') return <main className="login">{c.loading}</main>;
 
+  const esAdministrador = usuario?.ruolo !== 'tecnico';
+  const tablero = (
+    <Tablero
+      c={c}
+      idioma={idioma}
+      usuario={usuario}
+      alAbrirDetalle={(id) => setDetalle(id)}
+      alIrCalendario={() => ir('calendario')}
+    />
+  );
+
   const contenido =
-    pagina === 'dashboard' ? (
-      <Tablero c={c} idioma={idioma} usuario={usuario} alAbrirDetalle={(id) => setDetalle(id)} />
-    ) : pagina === 'boletas' ? (
+    pagina === 'boletas' ? (
       <ListaOperaciones tipo="boletas" c={c} idioma={idioma} alCrear={() => abrirHoja('receipt')} />
     ) : pagina === 'mantenimientos' ? (
       <ListaOperaciones tipo="interventi" c={c} idioma={idioma} alCrear={() => abrirHoja('maintenance')} />
     ) : pagina === 'tareas' ? (
-      <Actividades c={c} idioma={idioma} />
-    ) : (
+      <Actividades c={c} idioma={idioma} usuario={usuario} />
+    ) : pagina === 'calendario' ? (
+      <Calendario c={c} idioma={idioma} usuario={usuario} />
+    ) : pagina === 'reportes' && esAdministrador ? (
+      <Reportes c={c} idioma={idioma} />
+    ) : pagina === 'configuracion' && esAdministrador ? (
       <Configuracion c={c} />
+    ) : (
+      tablero
     );
 
   return (
     <>
       <header className="top">
-        <button onClick={() => setMenu(true)}>
+        <button onClick={() => setMenu(true)} aria-label={c.settings}>
           <Menu />
         </button>
         <button className="brand-home" onClick={() => ir('dashboard')}>
@@ -108,6 +144,7 @@ export function App() {
         establecerAbierto={setMenu}
         c={c}
         tareasPendientes={tareasPendientes}
+        avisosCalendario={avisosCalendario}
         usuario={usuario}
       />
       {contenido}
@@ -129,12 +166,11 @@ export function App() {
           tipo={hoja}
           c={c}
           idioma={idioma}
-          alCerrar={() => {
-            setHoja(null);
-            history.pushState({}, '', RUTAS[pagina]);
-          }}
+          alCerrar={cerrarHoja}
           alGuardar={() => {
             setHoja(null);
+            dispatchEvent(new Event('lineabar:tasks'));
+            dispatchEvent(new Event('lineabar:calendar'));
             ir(hoja === 'receipt' ? 'boletas' : 'mantenimientos');
           }}
         />

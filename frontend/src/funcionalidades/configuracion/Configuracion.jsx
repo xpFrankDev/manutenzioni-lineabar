@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Pencil, Plus, Search } from 'lucide-react';
+import { Ban, ChevronLeft, ChevronRight, Pencil, Plus, Search } from 'lucide-react';
 import { llamarApi } from '../../compartido/api/cliente.js';
 import { Estado } from '../../compartido/componentes/Estado.jsx';
 import { FormularioRegistro } from './FormularioRegistro.jsx';
@@ -34,6 +34,16 @@ export function Configuracion({ c }) {
   useEffect(() => {
     cargar();
   }, [recurso]);
+
+  async function desactivar(fila) {
+    if (!confirm(`${c.deactivate}: ${fila.nome ?? fila.codice_unico}`)) return;
+    try {
+      await llamarApi(`/configurazione/${recurso}/${fila.id}`, { method: 'DELETE' });
+      await cargar();
+    } catch (e) {
+      setError(e.message);
+    }
+  }
 
   if (!recurso) {
     return (
@@ -96,10 +106,20 @@ export function Configuracion({ c }) {
                 <b>
                   {recurso === 'macchine'
                     ? `${fila.fornitore || '—'} ${fila.modello || ''} · ${fila.codice_unico}`
-                    : fila.nome || fila.codice_unico}
+                    : recurso === 'utenti'
+                      ? `${fila.nome} · ${fila.codice_usuario}`
+                      : recurso === 'parametri'
+                        ? fila.chiave
+                        : fila.nome || fila.codice_unico}
                 </b>
                 <small>
-                  {recurso === 'macchine' ? `${fila.cliente || ''} · ${fila.indirizzo || ''}` : fila.codice || fila.unita_misura || ''}
+                  {recurso === 'macchine'
+                    ? `${fila.cliente || ''} · ${fila.indirizzo || ''}`
+                    : recurso === 'utenti'
+                      ? `${fila.email} · ${fila.ruolo}`
+                      : recurso === 'parametri'
+                        ? `${fila.valore} · ${fila.descrizione ?? ''}`
+                        : fila.caratteristiche_label || fila.codice || fila.unita_misura || fila.fornitore || ''}
                 </small>
               </span>
             </button>
@@ -107,6 +127,11 @@ export function Configuracion({ c }) {
             <button title={c.edit} onClick={() => setEdicion(fila)}>
               <Pencil size={17} />
             </button>
+            {fila.stato === 'attivo' && (
+              <button title={c.deactivate} onClick={() => desactivar(fila)}>
+                <Ban size={17} />
+              </button>
+            )}
           </article>
         ))}
       </section>

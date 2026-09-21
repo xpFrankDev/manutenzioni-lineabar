@@ -1,27 +1,29 @@
 import { useEffect, useState } from 'react';
-import { Minus, Plus, X } from 'lucide-react';
+import { Minus, Plus, Search, X } from 'lucide-react';
 import { llamarApi } from '../../compartido/api/cliente.js';
+import { formatearMoneda } from '../../compartido/utilidades/formato.js';
 
-export function CierreActividad({ id, c, alCerrar, alGuardar }) {
+export function CierreActividad({ id, c, idioma, alCerrar, alGuardar }) {
   const [actividad, setActividad] = useState(null);
   const [piezas, setPiezas] = useState([]);
   const [carrito, setCarrito] = useState([]);
+  const [consulta, setConsulta] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [horas, setHoras] = useState(1);
+  const [personas, setPersonas] = useState(1);
   const [error, setError] = useState('');
 
   useEffect(() => {
     llamarApi(`/attivita/${id}`)
-      .then((detalle) => {
+      .then(async (detalle) => {
         setActividad(detalle);
-        return llamarApi('/maquinas').then((maquinas) => ({ detalle, maquinas }));
+        let maquinaId = detalle.macchina_id;
+        if (!maquinaId) {
+          const maquinas = await llamarApi('/maquinas');
+          maquinaId = maquinas.find((candidata) => candidata.codice_unico === detalle.codice_unico)?.id;
+        }
+        if (maquinaId) setPiezas(await llamarApi(`/piezas?maquina_id=${maquinaId}`));
       })
-      .then(({ detalle, maquinas }) => {
-        const maquina = maquinas.find((candidata) => candidata.codice_unico === detalle.codice_unico);
-        if (maquina) return llamarApi(`/piezas?maquina_id=${maquina.id}`);
-        return null;
-      })
-      .then((listaPiezas) => listaPiezas && setPiezas(listaPiezas))
       .catch((e) => setError(e.message));
   }, [id]);
 
@@ -43,7 +45,7 @@ export function CierreActividad({ id, c, alCerrar, alGuardar }) {
         body: JSON.stringify({
           descrizione: descripcion,
           ore: horas,
-          persone: 1,
+          persone: personas,
           ricambi: carrito.map((linea) => ({ pezzoId: linea.id, quantita: linea.qty }))
         })
       });
@@ -52,6 +54,10 @@ export function CierreActividad({ id, c, alCerrar, alGuardar }) {
       setError(e.message);
     }
   }
+
+  const filtradas = piezas.filter((pieza) =>
+    `${pieza.nome} ${pieza.codice_unico}`.toLowerCase().includes(consulta.toLowerCase())
+  );
 
   return (
     <div className="sheet-wrap">
@@ -82,12 +88,25 @@ export function CierreActividad({ id, c, alCerrar, alGuardar }) {
               placeholder={c.closingPlaceholder}
             />
           </label>
+          <div className="labour">
+            <label>
+              {c.hours}
+              <input type="number" min=".5" step=".5" value={horas} onChange={(e) => setHoras(Number(e.target.value))} />
+            </label>
+            <label>
+              {c.people}
+              <input type="number" min="1" value={personas} onChange={(e) => setPersonas(Number(e.target.value))} />
+            </label>
+          </div>
           <label>
-            {c.hours}
-            <input type="number" min=".5" step=".5" value={horas} onChange={(e) => setHoras(Number(e.target.value))} />
+            {c.parts}
+            <div className="search">
+              <Search size={18} />
+              <input value={consulta} onChange={(e) => setConsulta(e.target.value)} placeholder={c.findPart} />
+            </div>
           </label>
           <div className="results">
-            {piezas.map((pieza) => {
+            {filtradas.map((pieza) => {
               const elegida = carrito.find((linea) => linea.id === pieza.id);
               return (
                 <article key={pieza.id}>
@@ -95,6 +114,7 @@ export function CierreActividad({ id, c, alCerrar, alGuardar }) {
                     <b>{pieza.nome}</b>
                     <small>{pieza.codice_unico}</small>
                   </span>
+                  <strong>{formatearMoneda(pieza.prezzo, idioma)}</strong>
                   <div className="qty">
                     <button disabled={!elegida} type="button" onClick={() => cambiarCantidad(pieza, -1)}>
                       <Minus size={15} />
@@ -107,6 +127,7 @@ export function CierreActividad({ id, c, alCerrar, alGuardar }) {
                 </article>
               );
             })}
+            {!filtradas.length && <p className="empty-state">{c.noPartsForMachine}</p>}
           </div>
           {error && <p className="error">{error}</p>}
         </main>
