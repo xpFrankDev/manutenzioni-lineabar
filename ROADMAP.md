@@ -106,3 +106,8 @@ tipo de máquina, previsión de manutenciones y exportación CSV.
   de login, hojas de trabajo, calendario, reportes, configuración y estados.
 - `npm run build` (frontend) y `npm run verificar` (backend) cierran la
   verificación estática.
+- Verificación visual en WebKit con un iPhone emulado (390 px, DPR 3, táctil,
+  idioma italiano): acceso, panel, calendario, informes y los cuatro pasos de la
+  boleta, sin errores de consola ni desbordes horizontales, con la hoja inferior
+  por debajo de la altura visible de Safari. El tema oscuro es el valor por
+  defecto y los campos mantienen 16 px para evitar el zoom automático de iOS.
