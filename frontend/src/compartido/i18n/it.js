@@ -201,5 +201,19 @@ export const it = {
   observation: 'Osservazione',
   activityCreated: 'Intervento programmato.',
   saved: 'Salvato.',
-  manutenzioneCount: 'manutenzioni'
+  manutenzioneCount: 'manutenzioni',
+  machineShort: 'macchina',
+  machinesShort: 'macchine',
+  change: 'Cambia',
+  supplierLabel: 'Fornitore',
+  findMachineShort: 'Cerca modello o codice',
+  partsCompatible: 'Ricambi compatibili',
+  availableShort: 'disponibili',
+  piecesShort: 'pezzi',
+  pieceShort: 'pezzo',
+  every: 'Ogni',
+  selectMachineHint: 'Tocca la macchina su cui hai lavorato',
+  selectClientHint: 'Tocca il cliente dove hai lavorato',
+  noMachineForClient: 'Questo cliente non ha macchine attive.',
+  labourSummary: 'Manodopera'
 };

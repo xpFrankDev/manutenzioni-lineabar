@@ -114,12 +114,23 @@ export function HojaTrabajo({ tipo, c, idioma, alCerrar, alGuardar }) {
         .filter((fila) => `${fila.codice_unico} ${fila.modello} ${fila.marca}`.toLowerCase().includes(consultaMaquina.toLowerCase())),
     [maquinas, cliente, consultaMaquina]
   );
+  const maquinasPorCliente = useMemo(() => {
+    const conteo = new Map();
+    for (const fila of maquinas) {
+      const clave = String(fila.cliente_id);
+      conteo.set(clave, (conteo.get(clave) ?? 0) + 1);
+    }
+    return conteo;
+  }, [maquinas]);
   const piezasFiltradas = useMemo(
     () => piezas.filter((fila) => `${fila.nome} ${fila.codice_unico}`.toLowerCase().includes(consultaPieza.toLowerCase())),
     [piezas, consultaPieza]
   );
   const tarifa = parametros.tarifa_mano_de_obra_hora;
-  const total = carrito.reduce((suma, linea) => suma + Number(linea.prezzo) * linea.qty, 0) + importeManoDeObra(horas, personas, tarifa);
+  const importeRecambios = carrito.reduce((suma, linea) => suma + Number(linea.prezzo) * linea.qty, 0);
+  const importeTrabajo = importeManoDeObra(horas, personas, tarifa);
+  const total = importeRecambios + importeTrabajo;
+  const cantidadPiezas = carrito.reduce((suma, linea) => suma + linea.qty, 0);
   const proximas = proximasManutenciones(fecha, carrito);
 
   const titulo = esBoleta ? c.newReceipt : c.newJob;
@@ -252,7 +263,7 @@ export function HojaTrabajo({ tipo, c, idioma, alCerrar, alGuardar }) {
 
   return (
     <div className="sheet-wrap">
-      <section className="sheet">
+      <section className="sheet workflow">
         <header>
           <div>
             <p className="eyebrow">{titulo}</p>
@@ -262,10 +273,12 @@ export function HojaTrabajo({ tipo, c, idioma, alCerrar, alGuardar }) {
             <X />
           </button>
         </header>
-        <div className={`workflow-note ${esBoleta ? 'receipt' : 'warehouse'}`}>
-          <span>{esBoleta ? <ReceiptText size={18} /> : <Building2 size={18} />}</span>
-          {esBoleta ? c.receiptHint : c.maintenanceHint}
-        </div>
+        {paso === 1 && (
+          <div className={`workflow-note ${esBoleta ? 'receipt' : 'warehouse'}`}>
+            <span>{esBoleta ? <ReceiptText size={18} /> : <Building2 size={18} />}</span>
+            {esBoleta ? c.receiptHint : c.maintenanceHint}
+          </div>
+        )}
         <div className="steps">
           <b className={paso >= 1 ? 'on' : ''}>1</b>
           <i />
@@ -364,31 +377,53 @@ export function HojaTrabajo({ tipo, c, idioma, alCerrar, alGuardar }) {
                 </div>
               ) : (
                 <>
-                  <label>
-                    {c.selectClient}
+                  <p className="pick-hint">{c.selectClientHint}</p>
+                  <div className="pick-row">
                     <div className="search">
                       <Search size={18} />
-                      <input value={consultaCliente} onChange={(e) => setConsultaCliente(e.target.value)} placeholder={c.findClient} />
+                      <input
+                        value={consultaCliente}
+                        onChange={(e) => setConsultaCliente(e.target.value)}
+                        placeholder={c.findClient}
+                        aria-label={c.selectClient}
+                      />
                     </div>
-                  </label>
-                  <button type="button" className="ghost-action" onClick={() => setNuevoCliente({ nome: '', indirizzo: '', citta: '', tipo_cliente: 'privato', fk_fornitore: '' })}>
-                    <Plus size={16} /> {c.newClient}
-                  </button>
-                  <div className="results">
-                    {clientesFiltrados.map((fila) => (
-                      <button className={cliente?.id === fila.id ? 'chosen' : ''} key={fila.id} onClick={() => elegirCliente(fila)}>
-                        <i>
-                          <Building2 size={18} />
-                        </i>
-                        <span>
-                          <b>{fila.nome}</b>
-                          <small>
-                            {fila.citta} · {fila.codice}
-                          </small>
-                        </span>
-                        {cliente?.id === fila.id && <Check size={18} />}
-                      </button>
-                    ))}
+                    <button
+                      type="button"
+                      className="icon-action"
+                      title={c.newClient}
+                      aria-label={c.newClient}
+                      onClick={() => setNuevoCliente({ nome: '', indirizzo: '', citta: '', tipo_cliente: 'privato', fk_fornitore: '' })}
+                    >
+                      <Plus size={19} />
+                    </button>
+                  </div>
+                  <div className="pick-list">
+                    {clientesFiltrados.map((fila) => {
+                      const disponibles = maquinasPorCliente.get(String(fila.id)) ?? 0;
+                      return (
+                        <button
+                          type="button"
+                          className={`pick-card ${cliente?.id === fila.id ? 'chosen' : ''}`}
+                          key={fila.id}
+                          onClick={() => elegirCliente(fila)}
+                        >
+                          <i>
+                            <Building2 size={18} />
+                          </i>
+                          <span>
+                            <b>{fila.nome}</b>
+                            <small>
+                              {fila.citta} · {disponibles} {disponibles === 1 ? c.machineShort : c.machinesShort}
+                              {fila.fornitore ? ` · ${c.supplierLabel}: ${fila.fornitore}` : ''}
+                            </small>
+                          </span>
+                          <em className="pick-check" aria-hidden="true">
+                            {cliente?.id === fila.id && <Check size={15} />}
+                          </em>
+                        </button>
+                      );
+                    })}
                     {!clientesFiltrados.length && <p className="empty-state">{c.noClients}</p>}
                   </div>
                 </>
@@ -398,17 +433,15 @@ export function HojaTrabajo({ tipo, c, idioma, alCerrar, alGuardar }) {
 
           {paso === 2 && (
             <>
-              <div className="machine">
+              <div className="ctx-chip">
                 <i>
                   <Building2 size={19} />
                 </i>
                 <span>
                   <b>{cliente.nome}</b>
-                  <small>
-                    {cliente.indirizzo} · {cliente.citta}
-                  </small>
+                  <small>{cliente.citta}</small>
                 </span>
-                <button onClick={() => setPaso(1)}>{c.back}</button>
+                <button onClick={() => setPaso(1)}>{c.change}</button>
               </div>
 
               {nuevaMaquina ? (
@@ -461,41 +494,55 @@ export function HojaTrabajo({ tipo, c, idioma, alCerrar, alGuardar }) {
                 </div>
               ) : (
                 <>
-                  <label>
-                    {c.machine}
+                  <p className="pick-hint">{c.selectMachineHint}</p>
+                  <div className="pick-row">
                     <div className="search">
                       <Search size={18} />
-                      <input value={consultaMaquina} onChange={(e) => setConsultaMaquina(e.target.value)} placeholder={c.findMachine} />
+                      <input
+                        value={consultaMaquina}
+                        onChange={(e) => setConsultaMaquina(e.target.value)}
+                        placeholder={c.findMachineShort}
+                        aria-label={c.machine}
+                      />
                     </div>
-                  </label>
-                  <button
-                    type="button"
-                    className="ghost-action"
-                    onClick={() =>
-                      setNuevaMaquina({ fk_cliente: cliente.id, codice_unico: '', tipo_macchina: 'macchina_caffe', modello: '', fk_marca: '' })
-                    }
-                  >
-                    <Plus size={16} /> {c.newMachine}
-                  </button>
-                  <div className="results">
+                    <button
+                      type="button"
+                      className="icon-action"
+                      title={c.newMachine}
+                      aria-label={c.newMachine}
+                      onClick={() =>
+                        setNuevaMaquina({ fk_cliente: cliente.id, codice_unico: '', tipo_macchina: 'macchina_caffe', modello: '', fk_marca: '' })
+                      }
+                    >
+                      <Plus size={19} />
+                    </button>
+                  </div>
+                  <div className="pick-list">
                     {maquinasCliente.map((fila) => {
                       const Icono = ICONOS_MAQUINA[fila.tipo_macchina] || Wrench;
                       return (
-                        <button className={maquina?.id === fila.id ? 'chosen' : ''} key={fila.id} onClick={() => setMaquina(fila)}>
+                        <button
+                          type="button"
+                          className={`pick-card ${maquina?.id === fila.id ? 'chosen' : ''}`}
+                          key={fila.id}
+                          onClick={() => setMaquina(fila)}
+                        >
                           <i>
                             <Icono size={18} />
                           </i>
                           <span>
-                            <b>
-                              {fila.marca} {fila.modello} · {fila.codice_unico}
-                            </b>
-                            <small>{nombreTipoMaquina(fila.tipo_macchina, c)}</small>
+                            <b>{`${fila.marca} ${fila.modello ?? ''}`.trim()}</b>
+                            <small>
+                              {fila.codice_unico} · {nombreTipoMaquina(fila.tipo_macchina, c)}
+                            </small>
                           </span>
-                          {maquina?.id === fila.id && <Check size={18} />}
+                          <em className="pick-check" aria-hidden="true">
+                            {maquina?.id === fila.id && <Check size={15} />}
+                          </em>
                         </button>
                       );
                     })}
-                    {!maquinasCliente.length && <p className="empty-state">{c.noMachinesClient}</p>}
+                    {!maquinasCliente.length && <p className="empty-state">{c.noMachineForClient}</p>}
                   </div>
                 </>
               )}
@@ -504,40 +551,50 @@ export function HojaTrabajo({ tipo, c, idioma, alCerrar, alGuardar }) {
 
           {paso === 3 && (
             <>
-              <div className="machine">
+              <div className="ctx-chip">
                 <i>
                   <Wrench size={19} />
                 </i>
                 <span>
-                  <b>
-                    {maquina.marca} {maquina.modello} · {maquina.codice_unico}
-                  </b>
+                  <b>{`${maquina.marca} ${maquina.modello ?? ''}`.trim()}</b>
                   <small>
-                    {cliente.nome} · {cliente.citta}
+                    {maquina.codice_unico} · {cliente.nome}
                   </small>
                 </span>
-                <button onClick={() => setPaso(2)}>{c.back}</button>
+                <button onClick={() => setPaso(2)}>{c.change}</button>
               </div>
-              <label>
-                {c.parts}
+              <div className="pick-head">
+                <p className="pick-hint">
+                  {c.partsCompatible} · {piezas.length} {c.availableShort}
+                  {cantidadPiezas ? ` · ${cantidadPiezas} ${cantidadPiezas === 1 ? c.pieceShort : c.piecesShort}` : ''}
+                </p>
                 <div className="search">
                   <Search size={18} />
-                  <input value={consultaPieza} onChange={(e) => setConsultaPieza(e.target.value)} placeholder={c.findPart} />
+                  <input
+                    value={consultaPieza}
+                    onChange={(e) => setConsultaPieza(e.target.value)}
+                    placeholder={c.findPart}
+                    aria-label={c.parts}
+                  />
                 </div>
-              </label>
-              <div className="results">
+              </div>
+              <div className="part-list">
                 {piezasFiltradas.map((pieza) => {
                   const seleccionada = carrito.find((linea) => linea.id === pieza.id);
                   return (
-                    <article key={pieza.id}>
+                    <article className={seleccionada ? 'selected' : ''} key={pieza.id}>
                       <span>
                         <b>{pieza.nome}</b>
                         <small>
                           {pieza.codice_unico}
-                          {pieza.intervallo_mesi ? ` · ${c.interval}: ${pieza.intervallo_mesi}` : ''}
+                          {pieza.intervallo_mesi ? (
+                            <em className="interval-badge">
+                              {c.every} {pieza.intervallo_mesi} {c.months}
+                            </em>
+                          ) : null}
+                          <strong className="part-price">{formatearMoneda(pieza.prezzo, idioma)}</strong>
                         </small>
                       </span>
-                      <strong>{formatearMoneda(pieza.prezzo, idioma)}</strong>
                       <div className="qty">
                         <button type="button" disabled={!seleccionada} onClick={() => cambiarCantidad(pieza, -1)}>
                           <Minus size={15} />
@@ -656,11 +713,25 @@ export function HojaTrabajo({ tipo, c, idioma, alCerrar, alGuardar }) {
         </main>
 
         <footer>
-          <button onClick={() => (paso === 1 ? alCerrar() : setPaso(paso - 1))}>{paso === 1 ? c.cancel : c.back}</button>
-          <button className="primary" disabled={guardando} onClick={() => (paso === 4 ? guardar() : continuar())}>
-            {guardando ? '…' : paso === 4 ? c.save : c.next}
-            <ChevronRight size={17} />
-          </button>
+          {paso === 3 && maquina && (
+            <div className="sheet-total">
+              <span>
+                {cantidadPiezas} {cantidadPiezas === 1 ? c.pieceShort : c.piecesShort} · {c.labourSummary} {horas} h ×{' '}
+                {personas}
+              </span>
+              <b>
+                {c.total}
+                <strong>{formatearMoneda(total, idioma)}</strong>
+              </b>
+            </div>
+          )}
+          <div className="footer-actions">
+            <button onClick={() => (paso === 1 ? alCerrar() : setPaso(paso - 1))}>{paso === 1 ? c.cancel : c.back}</button>
+            <button className="primary" disabled={guardando} onClick={() => (paso === 4 ? guardar() : continuar())}>
+              {guardando ? '…' : paso === 4 ? c.save : c.next}
+              <ChevronRight size={17} />
+            </button>
+          </div>
         </footer>
       </section>
     </div>

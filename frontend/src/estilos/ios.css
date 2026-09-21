@@ -44,3 +44,312 @@ textarea {
     padding-bottom: max(13px, env(safe-area-inset-bottom));
   }
 }
+
+/* --- Flujo de campo: elección clara y compacta (cliente → máquina → piezas) --- */
+.sheet.workflow {
+  max-height: 94dvh;
+}
+
+.sheet.workflow > header {
+  padding: 14px 16px 6px;
+}
+
+.sheet.workflow > header h2 {
+  font-size: 20px;
+}
+
+.sheet.workflow .workflow-note {
+  margin: 0 16px 8px;
+}
+
+.sheet.workflow .steps {
+  padding: 0 16px 10px;
+}
+
+.sheet.workflow .steps b {
+  width: 21px;
+  height: 21px;
+}
+
+.sheet.workflow main {
+  padding: 12px 16px;
+  gap: 10px;
+}
+
+.pick-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pick-head {
+  display: grid;
+  gap: 8px;
+}
+
+.pick-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.pick-row .search {
+  flex: 1;
+  min-width: 0;
+}
+
+.icon-action {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  border: 1px dashed var(--blue);
+  border-radius: 11px;
+  background: transparent;
+  color: var(--blue);
+  display: grid;
+  place-items: center;
+}
+
+.pick-list {
+  display: grid;
+  gap: 8px;
+}
+
+.pick-card {
+  width: 100%;
+  min-height: 66px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--surface);
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  text-align: left;
+}
+
+.pick-card > i {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border-radius: 10px;
+  background: var(--pale);
+  color: var(--blue);
+  display: grid;
+  place-items: center;
+  font-style: normal;
+}
+
+.pick-card > span {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.pick-card b,
+.pick-card small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pick-card b {
+  font: 700 14px Manrope;
+}
+
+.pick-card small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.pick-check {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-style: normal;
+}
+
+.pick-card.chosen {
+  border-color: var(--blue);
+  background: var(--pale);
+}
+
+.pick-card.chosen .pick-check {
+  border-color: var(--blue);
+  background: var(--blue);
+}
+
+.ctx-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: var(--pale);
+}
+
+.ctx-chip > i {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--blue);
+  display: grid;
+  place-items: center;
+  font-style: normal;
+}
+
+.ctx-chip > span {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.ctx-chip b,
+.ctx-chip small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ctx-chip b {
+  font: 700 13px Manrope;
+}
+
+.ctx-chip small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.ctx-chip > button {
+  border: 0;
+  background: none;
+  color: var(--blue);
+  font: 800 11px Manrope;
+  padding: 6px 2px;
+}
+
+.part-list {
+  display: grid;
+  gap: 8px;
+}
+
+.part-list article {
+  min-height: 66px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0.62;
+  transition: opacity 0.15s, border-color 0.15s;
+}
+
+.part-list article.selected {
+  opacity: 1;
+  border-color: var(--blue);
+}
+
+.part-list article > span {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.part-list article b,
+.part-list article small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.part-list article b {
+  font: 700 13px Manrope;
+}
+
+.part-list article small {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.part-list article .qty {
+  flex: 0 0 auto;
+}
+
+.part-price {
+  margin-left: 7px;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.interval-badge {
+  display: inline-block;
+  margin-left: 5px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--pale);
+  color: var(--blue);
+  font-size: 9px;
+  font-weight: 800;
+  font-style: normal;
+}
+
+.sheet.workflow footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 9px;
+}
+
+.footer-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr;
+  gap: 9px;
+}
+
+.sheet-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 11px;
+  background: var(--pale);
+}
+
+.sheet-total span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.sheet-total b {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.sheet-total strong {
+  font: 800 19px Manrope;
+  color: var(--blue);
+}

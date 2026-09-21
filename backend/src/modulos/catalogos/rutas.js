@@ -26,7 +26,11 @@ rutasCatalogos.get('/piezas', exigirSesion, async (req, res) => {
 });
 
 rutasCatalogos.get('/clienti', exigirSesion, async (_req, res) => {
-  res.json(await consultar('SELECT id,codice,nome,indirizzo,citta,tipo_cliente FROM clienti WHERE stato="attivo" ORDER BY nome'));
+  res.json(
+    await consultar(
+      'SELECT c.id,c.codice,c.nome,c.indirizzo,c.citta,c.tipo_cliente,f.nome fornitore FROM clienti c LEFT JOIN fornitori f ON f.id=c.fk_fornitore WHERE c.stato="attivo" ORDER BY c.nome'
+    )
+  );
 });
 
 rutasCatalogos.get('/marche', exigirSesion, async (_req, res) => {

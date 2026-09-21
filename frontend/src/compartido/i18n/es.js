@@ -203,7 +203,21 @@ const es = {
   observation: 'Observación',
   activityCreated: 'Intervención programada.',
   saved: 'Guardado.',
-  manutenzioneCount: 'mantenimientos'
+  manutenzioneCount: 'mantenimientos',
+  machineShort: 'máquina',
+  machinesShort: 'máquinas',
+  change: 'Cambiar',
+  supplierLabel: 'Proveedor',
+  findMachineShort: 'Busca modelo o código',
+  partsCompatible: 'Piezas compatibles',
+  availableShort: 'disponibles',
+  piecesShort: 'piezas',
+  pieceShort: 'pieza',
+  every: 'Cada',
+  selectMachineHint: 'Toca la máquina en la que has trabajado',
+  selectClientHint: 'Toca el cliente donde has trabajado',
+  noMachineForClient: 'Este cliente no tiene máquinas activas.',
+  labourSummary: 'Mano de obra'
 };
 
 export const esCompleto = { ...it, ...es };
