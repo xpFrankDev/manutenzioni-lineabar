@@ -133,7 +133,7 @@ export async function listarAccesosMaquina(maquinaId) {
 }
 
 export async function sincronizarAccesosMaquina(conexion, maquinaId, usuarios, actorId) {
-  await conexion.execute('UPDATE macchine_utenti SET stato="inactivo",utente_modifica=? WHERE fk_macchina=?', [
+  await conexion.execute('UPDATE macchine_utenti SET stato="inattivo",utente_modifica=? WHERE fk_macchina=?', [
     actorId,
     maquinaId
   ]);
@@ -234,6 +234,6 @@ export async function eliminarFotoMaquina(maquinaId, fotoId, usuario) {
   );
   if (!foto) return false;
   if (usuario.ruolo === 'tecnico' && foto.utente_crea !== usuario.sub) return null;
-  await consultar('UPDATE macchine_foto SET stato="inactivo",utente_modifica=? WHERE id=?', [usuario.sub, fotoId]);
+  await consultar('UPDATE macchine_foto SET stato="inattivo",utente_modifica=? WHERE id=?', [usuario.sub, fotoId]);
   return true;
 }
