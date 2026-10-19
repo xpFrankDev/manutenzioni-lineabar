@@ -52,7 +52,7 @@ WHERE r.codice = 'amministratore' AND m.stato = 'attivo';
 -- El técnico parte con las opciones de campo; el administrador puede cambiarlas.
 INSERT IGNORE INTO ruoli_menu (fk_ruolo, fk_menu, puo_vedere, puo_modificare)
 SELECT r.id, m.id,
-       CASE WHEN m.codice IN ('boletas','mantenimientos','tareas','macchine') THEN 1 ELSE 0 END,
+       CASE WHEN m.codice IN ('dashboard','boletas','mantenimientos','calendario','tareas','macchine') THEN 1 ELSE 0 END,
        CASE WHEN m.codice IN ('boletas','mantenimientos') THEN 1 ELSE 0 END
 FROM ruoli r JOIN menu m
 WHERE r.codice = 'tecnico'
