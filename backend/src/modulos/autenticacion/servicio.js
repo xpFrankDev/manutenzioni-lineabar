@@ -13,6 +13,9 @@ import { nuevoId } from '../../utilidades/identificadores.js';
  */
 const HASH_FICTICIO = '$2b$12$lRGCm3DYtx5IYvCg9Wbbd.kUaXqSHXKK3LKuC0rfgugzRCNhai8O6';
 
+/** Segundos en que un reuso se considera carrera del cliente y no robo. */
+const VENTANA_REUSO_SEGUNDOS = 10;
+
 function hashRefresco(token) {
   return crypto.createHash('sha256').update(String(token)).digest('hex');
 }
@@ -82,16 +85,25 @@ export async function renovarSesion(refresco, meta = {}) {
   if (!refresco) return null;
   const hash = hashRefresco(refresco);
   const sesion = await consultarUno(
-    'SELECT id,fk_utente,expira_at,revocado_at,(expira_at > NOW()) vigente FROM sesiones_refresco WHERE token_hash=?',
+    `SELECT id,fk_utente,expira_at,revocado_at,sostituido_por,
+            (expira_at > NOW()) vigente,
+            TIMESTAMPDIFF(SECOND, revocado_at, NOW()) segundos_revocado
+       FROM sesiones_refresco WHERE token_hash=?`,
     [hash]
   );
   if (!sesion) return null;
 
   if (sesion.revocado_at) {
-    await consultar('UPDATE sesiones_refresco SET revocado_at=IFNULL(revocado_at,NOW()),utente_modifica=? WHERE fk_utente=? AND revocado_at IS NULL', [
-      sesion.fk_utente,
-      sesion.fk_utente
-    ]);
+    // Dentro de la ventana de gracia, el reuso puede ser una carrera del propio
+    // cliente (dos peticiones simultáneas): no se revoca toda la cadena.
+    const dentroDeVentana =
+      Boolean(sesion.sostituido_por) && Number(sesion.segundos_revocado ?? 999) <= VENTANA_REUSO_SEGUNDOS;
+    if (!dentroDeVentana) {
+      await consultar('UPDATE sesiones_refresco SET revocado_at=IFNULL(revocado_at,NOW()),utente_modifica=? WHERE fk_utente=? AND revocado_at IS NULL', [
+        sesion.fk_utente,
+        sesion.fk_utente
+      ]);
+    }
     return null;
   }
   if (!Number(sesion.vigente)) return null;
@@ -102,12 +114,15 @@ export async function renovarSesion(refresco, meta = {}) {
   );
   if (!usuario) return null;
 
+  // Reclamo atómico: solo una petición puede rotar este token.
+  const [reclamo] = await pool.execute(
+    'UPDATE sesiones_refresco SET revocado_at=NOW(),utente_modifica=? WHERE id=? AND revocado_at IS NULL AND expira_at>NOW()',
+    [usuario.id, sesion.id]
+  );
+  if (reclamo.affectedRows !== 1) return null;
+
   const nuevo = await crearRefresco(usuario.id, meta);
-  await consultar('UPDATE sesiones_refresco SET revocado_at=NOW(),sostituido_por=?,utente_modifica=? WHERE id=?', [
-    hashRefresco(nuevo),
-    usuario.id,
-    sesion.id
-  ]);
+  await consultar('UPDATE sesiones_refresco SET sostituido_por=? WHERE id=?', [hashRefresco(nuevo), sesion.id]);
   const csrf = generarCsrf();
   return respuestaSesion(usuario, firmarAcceso(usuario, csrf), nuevo, csrf);
 }

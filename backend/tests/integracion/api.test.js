@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import test from 'node:test';
 import { pool } from '../../src/base-datos/pool.js';
 import { hoyIso, sumarMeses } from '../../src/modulos/calendario/servicio.js';
@@ -103,11 +104,24 @@ test('flujo completo de Linea Bar', async (t) => {
     assert.ok(primera.datos.token);
     assert.notEqual(primera.datos.refresco, admin.refresco);
 
+    // Un reuso inmediato se considera carrera del cliente: falla sin revocar la
+    // cadena, así que el token rotado legítimo sigue siendo válido.
     const reuso = await pedir(base, '/auth/refresh', { metodo: 'POST', cuerpo: { refresco: admin.refresco } });
     assert.equal(reuso.estado, 401);
 
-    // El reuso revoca toda la cadena: el token rotado tampoco sirve ya.
-    const despues = await pedir(base, '/auth/refresh', { metodo: 'POST', cuerpo: { refresco: primera.datos.refresco } });
+    const segunda = await pedir(base, '/auth/refresh', { metodo: 'POST', cuerpo: { refresco: primera.datos.refresco } });
+    assert.equal(segunda.estado, 200);
+    const tercera = await pedir(base, '/auth/refresh', { metodo: 'POST', cuerpo: { refresco: segunda.datos.refresco } });
+    assert.equal(tercera.estado, 200);
+
+    // Fuera de la ventana de gracia, el reuso se trata como robo y revoca todo.
+    const hashSegunda = crypto.createHash('sha256').update(segunda.datos.refresco).digest('hex');
+    await pool.execute('UPDATE sesiones_refresco SET revocado_at=DATE_SUB(NOW(), INTERVAL 60 SECOND) WHERE token_hash=?', [
+      hashSegunda
+    ]);
+    const robo = await pedir(base, '/auth/refresh', { metodo: 'POST', cuerpo: { refresco: segunda.datos.refresco } });
+    assert.equal(robo.estado, 401);
+    const despues = await pedir(base, '/auth/refresh', { metodo: 'POST', cuerpo: { refresco: tercera.datos.refresco } });
     assert.equal(despues.estado, 401);
 
     const refrescoInvalido = await pedir(base, '/auth/refresh', { metodo: 'POST', cuerpo: { refresco: 'inventado' } });
