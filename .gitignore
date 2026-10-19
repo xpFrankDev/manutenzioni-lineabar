@@ -5,6 +5,7 @@ dist/
 .build-lineabar.log
 *.log
 coverage/
+backups/
 npm-debug.log*
 .env.local
 .env.*.local

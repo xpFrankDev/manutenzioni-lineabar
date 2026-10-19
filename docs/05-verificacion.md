@@ -91,6 +91,31 @@ No hay datos de clientes reales identificables: la instalación contiene
 principalmente la semilla de demostración y algunos registros de prueba. La
 inspección se puede repetir con `cd backend && npm run datos:estado`.
 
+## 3ter. Despliegue en producción (2026-10-19)
+
+Despliegue mediante `infraestructura/despliegue/actualizar.sh` sobre
+`/home/deploy/lineabar`, con copia previa de la base en
+`backups/lineabar-pre-uuid-*.sql.gz`.
+
+| Comprobación | Resultado |
+| --- | --- |
+| `https://vps-5586828-x.dattaweb.com/lineabar/` | **200** con TLS. |
+| Migraciones | `0010_uuid_identificadores.js` y `0011_fk_manutenzione_chiusura_uuid.sql` aplicadas. |
+| Identificadores | **0** columnas `id` que no sean `char(36)`; **0** columnas `fk_*`/`utente_*` numéricas. |
+| Claves foráneas | **36** FKs tras añadir `fk_attivita_manutenzione_chiusura`. |
+| Datos preservados | `clienti` 3, `macchine` 3, `manutenzioni` 7, `boletas` 4, `utenti` 1, `scontrini` 0. |
+| Login | **200**; `utente.codigo_usuario=dev01`, `csrf` presente y sin tokens en el cuerpo. |
+| Cookies | `lineabar_sesion` y `lineabar_refresco` `HttpOnly; Secure; SameSite=Strict`; sin cookie CSRF legible. |
+| CSRF | `PUT` sin cabecera → **403**; con `X-CSRF-Token` → **200**. |
+| Cabeceras del SPA | CSP, HSTS, `X-Frame-Options: DENY`, `nosniff`, Referrer-Policy y Permissions-Policy presentes. |
+| Contenedores | `inicializacion` `Exited (0)`; `backend` y `frontend` sanos; `mariadb` sano. |
+| Imagen backend | 377 MB, usuario `node`, rootfs de solo lectura, `no-new-privileges`, **sin `npm`**. |
+| Imagen frontend | 74,1 MB, solo Nginx y estáticos. |
+
+**Pendiente `[NV]`:** revisión visual en navegador/iPhone real y prueba de la
+página con lector de pantalla. El despliegue no se declara visualmente aprobado
+por esta comprobación técnica.
+
 ## 4. Suites existentes
 
 ### Backend
