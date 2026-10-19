@@ -4,7 +4,9 @@ import helmet from 'helmet';
 import { entorno } from './configuracion/entorno.js';
 import { leerCookies } from './intermedios/cookies.js';
 import { manejadorErrores } from './intermedios/errores.js';
+import { exigirPermiso } from './intermedios/permisos.js';
 import { limiteGeneral } from './intermedios/limite.js';
+import { exigirSesion } from './intermedios/sesion.js';
 import { rutasActividades } from './modulos/actividades/rutas.js';
 import { rutasAutenticacion } from './modulos/autenticacion/rutas.js';
 import { rutasBoletas } from './modulos/boletas/rutas.js';
@@ -37,6 +39,17 @@ export function crearApp() {
 
   app.use('/api', limiteGeneral);
   app.use('/api', rutasAutenticacion);
+
+  // Acceso modular por menú. Los catálogos compartidos por el flujo de campo
+  // se protegen en su propio módulo para no romper la selección de máquinas.
+  app.use('/api/dashboard', exigirSesion, exigirPermiso('dashboard'));
+  app.use('/api/interventi', exigirSesion, exigirPermiso('mantenimientos'));
+  app.use('/api/boletas', exigirSesion, exigirPermiso('boletas'));
+  app.use('/api/calendario', exigirSesion, exigirPermiso('calendario'));
+  app.use('/api/attivita', exigirSesion, exigirPermiso('tareas'));
+  app.use('/api/reportes', exigirSesion, exigirPermiso('reportes'));
+  app.use('/api/configurazione', exigirSesion, exigirPermiso('configuracion', 'editar'));
+
   app.use('/api', rutasTablero);
   app.use('/api', rutasCatalogos);
   app.use('/api', rutasMaquinas);

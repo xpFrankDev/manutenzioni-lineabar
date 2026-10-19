@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { cerrarSesion } from '../../compartido/api/cliente.js';
 import { RUTA_ACCESO } from '../../compartido/constantes.js';
+import { puedeVer } from '../../compartido/permisos.js';
 
 const ENLACES = [
   ['dashboard', LayoutDashboard, 'home', 'siempre'],
@@ -42,7 +43,7 @@ async function salir(establecerAbierto) {
 
 export function Navegacion({ pagina, ir, abierto, establecerAbierto, c, tareasPendientes = 0, avisosCalendario = 0, usuario }) {
   const esAdministrador = usuario?.ruolo !== 'tecnico';
-  const enlaces = ENLACES.filter(([, , , permiso]) => permiso === 'siempre' || esAdministrador);
+  const enlaces = ENLACES.filter(([id]) => puedeVer(usuario, id));
   const etiquetaRol = usuario?.ruolo === 'tecnico' ? c.technician : c.administrator;
   const avisos = { tareas: tareasPendientes, calendario: avisosCalendario };
   const enlacesInferiores = enlaces.slice(0, 5);

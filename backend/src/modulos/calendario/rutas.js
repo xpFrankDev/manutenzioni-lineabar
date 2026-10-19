@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { enTransaccion } from '../../base-datos/pool.js';
-import { autorizar, esTecnico, exigirSesion, ROLES_ADMINISTRADOR } from '../../intermedios/sesion.js';
+import { exigirPermiso } from '../../intermedios/permisos.js';
+import { esTecnico, exigirSesion } from '../../intermedios/sesion.js';
 import { crearActividad } from '../actividades/servicio.js';
 import {
   actualizarEntradaCalendario,
@@ -28,7 +29,7 @@ rutasCalendario.get('/calendario/resumen', exigirSesion, async (req, res) => {
   res.json(await resumenCalendario({ tecnicoId: esTecnico(req) ? req.utente.sub : null }));
 });
 
-rutasCalendario.post('/calendario/:id/programar', exigirSesion, autorizar(...ROLES_ADMINISTRADOR), async (req, res) => {
+rutasCalendario.post('/calendario/:id/programar', exigirSesion, exigirPermiso('calendario', 'editar'), async (req, res) => {
   const entrada = esquemaProgramacion.safeParse(req.body);
   if (!entrada.success) return res.status(422).json({ errore: 'Dati programmazione non validi', dettagli: entrada.error.flatten() });
 
@@ -64,7 +65,7 @@ rutasCalendario.post('/calendario/:id/programar', exigirSesion, autorizar(...ROL
   }
 });
 
-rutasCalendario.put('/calendario/:id', exigirSesion, autorizar(...ROLES_ADMINISTRADOR), async (req, res) => {
+rutasCalendario.put('/calendario/:id', exigirSesion, exigirPermiso('calendario', 'editar'), async (req, res) => {
   const entrada = esquemaReprogramacion.safeParse(req.body);
   if (!entrada.success) return res.status(422).json({ errore: 'Dati non validi', dettagli: entrada.error.flatten() });
 

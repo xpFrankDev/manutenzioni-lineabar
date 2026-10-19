@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Save, X } from 'lucide-react';
 import { llamarApi } from '../../compartido/api/cliente.js';
+import { useAvisos } from '../../compartido/componentes/Avisos.jsx';
+import { useBloquearScroll } from '../../compartido/utilidades/scroll.js';
 
 function maquinasDelCliente(maquinas, clienteId) {
   return clienteId ? maquinas.filter((maquina) => String(maquina.cliente_id) === String(clienteId)) : maquinas;
 }
 
 export function FormularioActividad({ c, alCerrar, alGuardar }) {
+  useBloquearScroll();
+  const { notificar } = useAvisos();
   const [clientes, setClientes] = useState([]);
   const [maquinas, setMaquinas] = useState([]);
   const [tecnicos, setTecnicos] = useState([]);
@@ -50,9 +54,11 @@ export function FormularioActividad({ c, alCerrar, alGuardar }) {
           macchinaId: formulario.macchinaId
         })
       });
+      notificar(c.activityCreated || c.saved);
       alGuardar();
     } catch (e) {
       setError(e.message);
+      notificar(e.message, 'error');
     }
   }
 

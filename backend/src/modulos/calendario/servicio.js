@@ -128,8 +128,8 @@ export async function resumenCalendario({ tecnicoId = null } = {}) {
   const { sql, valores } = construirFiltros({ tecnicoId });
   const hoy = hoyIso();
   const parametros = await obtenerParametros();
-  const diasAviso = Number(parametros.aviso_manutencion_dias ?? DIAS_AVISO);
-  const horizonte = Number(parametros.horizonte_calendario_dias ?? DIAS_PROXIMOS);
+  const diasAviso = Number(parametros.giorni_avviso_manutenzione ?? DIAS_AVISO);
+  const horizonte = Number(parametros.orizzonte_calendario_giorni ?? DIAS_PROXIMOS);
   const fila = await consultarUno(
     `SELECT COUNT(*) pendientes, SUM(c.prossima_manutenzione<?) vencidos, SUM(c.prossima_manutenzione=?) hoy, SUM(c.prossima_manutenzione>? AND c.prossima_manutenzione<=?) proximos, SUM(c.fk_attivita IS NOT NULL) programados ${DESDE_CALENDARIO} WHERE ${sql} AND c.stato_calendario="programmato"`,
     [hoy, hoy, hoy, fechaMasDias(hoy, diasAviso), ...valores]

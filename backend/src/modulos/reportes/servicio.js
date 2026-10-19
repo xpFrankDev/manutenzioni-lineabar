@@ -39,7 +39,7 @@ export async function riepilogoPeriodo(periodo) {
     interventi: interventiTotal,
     esito: interventiTotal ? Math.round((Number(interventos.risolti) * 100) / interventiTotal) : 0,
     oreUomo,
-    manodopera: Number((oreUomo * Number(parametros.tarifa_mano_de_obra_hora ?? TARIFA_MANO_DE_OBRA_HORA)).toFixed(2)),
+    manodopera: Number((oreUomo * Number(parametros.tariffa_manodopera_ora ?? TARIFA_MANO_DE_OBRA_HORA)).toFixed(2)),
     clienti: Number(clientes.totale),
     pezzi: Number(ricambi.pezzi),
     valorePezzi: Number(ricambi.valore)
@@ -69,7 +69,7 @@ export async function consumosPorRicambio(periodo, limite = 10) {
 
 export async function previsionMantenimiento(meses) {
   const parametros = await obtenerParametros();
-  const horizonte = Number(meses ?? parametros.prevision_manutencion_meses ?? 6);
+  const horizonte = Number(meses ?? parametros.previsione_manutenzione_mesi ?? 6);
   const hasta = sumarMeses(hoyIso(), horizonte);
   const filas = await consultar(
     'SELECT DATE_FORMAT(c.prossima_manutenzione,"%Y-%m") periodo,COUNT(*) totale,SUM(c.prossima_manutenzione<?) vencidos FROM calendario_manutenzioni_macchine c JOIN macchine m ON m.id=c.fk_macchina JOIN clienti cl ON cl.id=m.fk_cliente WHERE c.stato="attivo" AND m.stato="attivo" AND c.stato_calendario="programmato" AND c.prossima_manutenzione<=? GROUP BY periodo ORDER BY periodo',

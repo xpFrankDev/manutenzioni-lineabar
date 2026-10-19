@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { enTransaccion } from '../../base-datos/pool.js';
 import { limiteFotos } from '../../intermedios/limite.js';
-import { autorizar, exigirSesion, ROLES_ADMINISTRADOR } from '../../intermedios/sesion.js';
+import { exigirPermiso } from '../../intermedios/permisos.js';
+import { exigirSesion } from '../../intermedios/sesion.js';
 import {
   eliminarFotoMaquina,
   guardarFotoMaquina,
@@ -23,7 +24,7 @@ function idValido(valor) {
 }
 
 /** Solo se responde a la ficha de una máquina con sesión y autorización. */
-rutasMaquinas.get('/maquinas/:id', exigirSesion, async (req, res) => {
+rutasMaquinas.get('/maquinas/:id', exigirSesion, exigirPermiso('macchine'), async (req, res) => {
   const id = idValido(req.params.id);
   if (!id) return res.status(404).json({ errore: 'Macchina non trovata' });
   if (!(await puedeAccederMaquina(req.utente, id))) {
@@ -35,7 +36,7 @@ rutasMaquinas.get('/maquinas/:id', exigirSesion, async (req, res) => {
   return res.json(detalle);
 });
 
-rutasMaquinas.get('/maquinas/:id/foto/:fotoId', exigirSesion, async (req, res) => {
+rutasMaquinas.get('/maquinas/:id/foto/:fotoId', exigirSesion, exigirPermiso('macchine'), async (req, res) => {
   const id = idValido(req.params.id);
   const fotoId = idValido(req.params.fotoId);
   if (!id || !fotoId) return res.status(404).json({ errore: 'Foto non trovata' });
@@ -50,7 +51,7 @@ rutasMaquinas.get('/maquinas/:id/foto/:fotoId', exigirSesion, async (req, res) =
   return res.send(imagen.immagine);
 });
 
-rutasMaquinas.post('/maquinas/:id/foto', limiteFotos, exigirSesion, async (req, res) => {
+rutasMaquinas.post('/maquinas/:id/foto', limiteFotos, exigirSesion, exigirPermiso('macchine'), async (req, res) => {
   const id = idValido(req.params.id);
   if (!id) return res.status(404).json({ errore: 'Macchina non trovata' });
   if (!(await puedeAccederMaquina(req.utente, id))) {
@@ -64,7 +65,7 @@ rutasMaquinas.post('/maquinas/:id/foto', limiteFotos, exigirSesion, async (req, 
   }
 });
 
-rutasMaquinas.delete('/maquinas/:id/foto/:fotoId', exigirSesion, async (req, res) => {
+rutasMaquinas.delete('/maquinas/:id/foto/:fotoId', exigirSesion, exigirPermiso('macchine'), async (req, res) => {
   const id = idValido(req.params.id);
   const fotoId = idValido(req.params.fotoId);
   if (!id || !fotoId) return res.status(404).json({ errore: 'Foto non trovata' });
@@ -77,7 +78,7 @@ rutasMaquinas.delete('/maquinas/:id/foto/:fotoId', exigirSesion, async (req, res
   return res.status(204).end();
 });
 
-rutasMaquinas.get('/maquinas/:id/accesos', exigirSesion, autorizar(...ROLES_ADMINISTRADOR), async (req, res) => {
+rutasMaquinas.get('/maquinas/:id/accesos', exigirSesion, exigirPermiso('configuracion', 'editar'), async (req, res) => {
   const id = idValido(req.params.id);
   if (!id) return res.status(404).json({ errore: 'Macchina non trovata' });
   const detalle = await obtenerDetalleMaquina(id);
@@ -85,7 +86,7 @@ rutasMaquinas.get('/maquinas/:id/accesos', exigirSesion, autorizar(...ROLES_ADMI
   return res.json({ tecnici: await listarAccesosMaquina(id) });
 });
 
-rutasMaquinas.put('/maquinas/:id/accesos', exigirSesion, autorizar(...ROLES_ADMINISTRADOR), async (req, res) => {
+rutasMaquinas.put('/maquinas/:id/accesos', exigirSesion, exigirPermiso('configuracion', 'editar'), async (req, res) => {
   const id = idValido(req.params.id);
   if (!id) return res.status(404).json({ errore: 'Macchina non trovata' });
   const entrada = z.object({ usuarios: z.array(z.string().uuid()).max(100) }).safeParse(req.body);

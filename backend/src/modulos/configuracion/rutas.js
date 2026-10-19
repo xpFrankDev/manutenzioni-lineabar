@@ -1,8 +1,10 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { consultar } from '../../base-datos/pool.js';
+import { consultar, consultarUno, enTransaccion } from '../../base-datos/pool.js';
 import { responderError } from '../../intermedios/errores.js';
-import { autorizar, exigirSesion, ROLES_ADMINISTRADOR } from '../../intermedios/sesion.js';
+import { exigirPermiso } from '../../intermedios/permisos.js';
+import { exigirSesion } from '../../intermedios/sesion.js';
+import { actualizarPermisosRol, listarRolesConPermisos } from '../permisos/servicio.js';
 import {
   actualizarRegistro,
   crearRegistro,
@@ -13,7 +15,52 @@ import {
 
 export const rutasConfiguracion = Router();
 
-rutasConfiguracion.use('/configurazione/:risorsa', exigirSesion, autorizar(...ROLES_ADMINISTRADOR));
+rutasConfiguracion.use('/configurazione/:risorsa', exigirSesion, exigirPermiso('configuracion', 'editar'));
+
+rutasConfiguracion.get('/configurazione/roles', async (_req, res) => {
+  return res.json({ roles: await listarRolesConPermisos() });
+});
+
+rutasConfiguracion.put('/configurazione/roles/:id', async (req, res) => {
+  const id = z.string().uuid().safeParse(req.params.id);
+  if (!id.success) return res.status(404).json({ errore: 'Ruolo non trovato' });
+
+  const entrada = z
+    .object({
+      permisos: z
+        .array(
+          z.object({
+            codice: z.string().trim().min(2).max(40),
+            ver: z.boolean().default(false),
+            modificar: z.boolean().default(false)
+          })
+        )
+        .max(100)
+    })
+    .safeParse(req.body);
+  if (!entrada.success) return res.status(422).json({ errore: 'Permessi non validi' });
+
+  const rol = await consultarUno('SELECT id,codice FROM ruoli WHERE id=?', [id.data]);
+  if (!rol) return res.status(404).json({ errore: 'Ruolo non trovato' });
+
+  const dashboard = entrada.data.permisos.find((permiso) => permiso.codice === 'dashboard');
+  if (!dashboard?.ver) {
+    return res.status(400).json({ errore: 'Ogni ruolo deve conservare l’accesso alla Panoramica' });
+  }
+  if (rol.codice === 'amministratore') {
+    const configuracion = entrada.data.permisos.find((permiso) => permiso.codice === 'configuracion');
+    if (!configuracion?.ver || !configuracion?.modificar) {
+      return res.status(400).json({ errore: 'L’amministratore deve conservare l’accesso a Impostazioni' });
+    }
+  }
+
+  try {
+    await enTransaccion((conexion) => actualizarPermisosRol(conexion, rol.id, entrada.data.permisos, req.utente.sub));
+    return res.json({ roles: await listarRolesConPermisos() });
+  } catch (error) {
+    return res.status(400).json({ errore: error.message || 'Impossibile aggiornare i permessi' });
+  }
+});
 
 rutasConfiguracion.get('/configurazione/:risorsa', async (req, res) => {
   const catalogo = obtenerCatalogo(req.params.risorsa);

@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Ban, ChevronLeft, ChevronRight, Pencil, Plus, Search } from 'lucide-react';
 import { llamarApi } from '../../compartido/api/cliente.js';
+import { useAvisos } from '../../compartido/componentes/Avisos.jsx';
 import { Estado } from '../../compartido/componentes/Estado.jsx';
 import { FormularioRegistro } from './FormularioRegistro.jsx';
+import { PermisosRoles } from './PermisosRoles.jsx';
 import { RECURSOS_CONFIGURABLES, metadatosDeRecurso } from './catalogo.js';
 
 export function Configuracion({ c }) {
+  const { confirmar, notificar } = useAvisos();
   const [recurso, setRecurso] = useState(null);
   const [filas, setFilas] = useState([]);
   const [proveedores, setProveedores] = useState([]);
@@ -15,7 +18,7 @@ export function Configuracion({ c }) {
   const [error, setError] = useState('');
 
   const cargar = async () => {
-    if (!recurso) return;
+    if (!recurso || recurso === 'roles') return;
     try {
       const [listado, listaProveedores, listaClientes] = await Promise.all([
         llamarApi(`/configurazione/${recurso}`),
@@ -36,12 +39,21 @@ export function Configuracion({ c }) {
   }, [recurso]);
 
   async function desactivar(fila) {
-    if (!confirm(`${c.deactivate}: ${fila.nome ?? fila.codice_unico}`)) return;
+    const confirmado = await confirmar({
+      titulo: c.deactivate,
+      mensaje: `${c.deactivate}: ${fila.nome ?? fila.codice_unico}. ${c.confirmDeactivate}`,
+      textoConfirmar: c.deactivate,
+      textoCancelar: c.cancel,
+      peligro: true
+    });
+    if (!confirmado) return;
     try {
       await llamarApi(`/configurazione/${recurso}/${fila.id}`, { method: 'DELETE' });
+      notificar(c.saved);
       await cargar();
     } catch (e) {
       setError(e.message);
+      notificar(e.message, 'error');
     }
   }
 
@@ -70,6 +82,10 @@ export function Configuracion({ c }) {
         </section>
       </main>
     );
+  }
+
+  if (recurso === 'roles') {
+    return <PermisosRoles c={c} alVolver={() => setRecurso(null)} />;
   }
 
   const { Icono, etiqueta } = metadatosDeRecurso(recurso);

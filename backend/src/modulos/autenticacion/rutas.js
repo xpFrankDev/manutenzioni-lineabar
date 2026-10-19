@@ -4,6 +4,7 @@ import { establecerCookiesSesion, limpiarCookiesSesion } from '../../intermedios
 import { limiteAcceso, limiteRefresco } from '../../intermedios/limite.js';
 import { exigirSesion } from '../../intermedios/sesion.js';
 import { esquemaAcceso } from './esquemas.js';
+import { permisosDeRol } from '../permisos/servicio.js';
 import { cerrarSesion, iniciarSesion, renovarSesion } from './servicio.js';
 
 export const rutasAutenticacion = Router();
@@ -19,6 +20,7 @@ function responderSesion(res, sesion) {
     scadeInMinuti: sesion.scadeInMinuti,
     scadeInGiorni: sesion.scadeInGiorni,
     csrf: sesion.csrf,
+    menus: sesion.menus,
     // Los clientes de API en desarrollo y los tests siguen usando Bearer;
     // en producción los tokens solo viajan en cookies HttpOnly.
     ...(entorno.produccion ? {} : { token: sesion.token, refresco: sesion.refresco })
@@ -54,6 +56,7 @@ rutasAutenticacion.post('/auth/logout', async (req, res) => {
   return res.status(204).end();
 });
 
-rutasAutenticacion.get('/auth/sessione', exigirSesion, (req, res) =>
-  res.json({ utente: req.utente, csrf: req.utente.csrf ?? null })
-);
+rutasAutenticacion.get('/auth/sessione', exigirSesion, async (req, res) => {
+  const menus = await permisosDeRol(req.utente.ruolo);
+  return res.json({ utente: req.utente, csrf: req.utente.csrf ?? null, menus });
+});

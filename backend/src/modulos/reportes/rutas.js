@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { autorizar, exigirSesion, ROLES_ADMINISTRADOR } from '../../intermedios/sesion.js';
+import { exigirPermiso } from '../../intermedios/permisos.js';
+import { exigirSesion } from '../../intermedios/sesion.js';
 import {
   boletasACsv,
   boletasDelPeriodo,
@@ -12,7 +13,7 @@ import {
 
 export const rutasReportes = Router();
 
-rutasReportes.use('/reportes', exigirSesion, autorizar(...ROLES_ADMINISTRADOR));
+rutasReportes.use('/reportes', exigirSesion, exigirPermiso('reportes'));
 
 rutasReportes.get('/reportes/riepilogo', async (req, res) => {
   try {

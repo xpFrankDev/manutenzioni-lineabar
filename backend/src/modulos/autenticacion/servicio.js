@@ -5,6 +5,7 @@ import { entorno } from '../../configuracion/entorno.js';
 import { consultar, consultarUno, pool } from '../../base-datos/pool.js';
 import { generarCsrf } from '../../intermedios/cookies.js';
 import { nuevoId } from '../../utilidades/identificadores.js';
+import { permisosDeRol } from '../permisos/servicio.js';
 
 /**
  * Hash ficticio con el mismo coste que los reales. Se compara siempre, incluso
@@ -28,7 +29,7 @@ function firmarAcceso(usuario, csrf) {
   );
 }
 
-function respuestaSesion(usuario, token, refresco, csrf) {
+function respuestaSesion(usuario, token, refresco, csrf, menus) {
   return {
     token,
     refresco,
@@ -39,6 +40,7 @@ function respuestaSesion(usuario, token, refresco, csrf) {
       codigo_usuario: usuario.codice_usuario,
       ruolo: usuario.ruolo
     },
+    menus,
     scadeInMinuti: entorno.sesion.minutosVigencia,
     scadeInGiorni: entorno.sesion.refrescoDias
   };
@@ -74,7 +76,8 @@ export async function iniciarSesion(codigoUsuario, contrasena, meta = {}) {
   const csrf = generarCsrf();
   const token = firmarAcceso(usuario, csrf);
   const refresco = await crearRefresco(usuario.id, meta);
-  return respuestaSesion(usuario, token, refresco, csrf);
+  const menus = await permisosDeRol(usuario.ruolo);
+  return respuestaSesion(usuario, token, refresco, csrf, menus);
 }
 
 /**
@@ -124,7 +127,8 @@ export async function renovarSesion(refresco, meta = {}) {
   const nuevo = await crearRefresco(usuario.id, meta);
   await consultar('UPDATE sesiones_refresco SET sostituido_por=? WHERE id=?', [hashRefresco(nuevo), sesion.id]);
   const csrf = generarCsrf();
-  return respuestaSesion(usuario, firmarAcceso(usuario, csrf), nuevo, csrf);
+  const menus = await permisosDeRol(usuario.ruolo);
+  return respuestaSesion(usuario, firmarAcceso(usuario, csrf), nuevo, csrf, menus);
 }
 
 export async function cerrarSesion(refresco) {

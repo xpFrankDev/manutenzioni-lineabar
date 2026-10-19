@@ -12,6 +12,7 @@ import {
   paginaDesdeRuta
 } from '../compartido/constantes.js';
 import { IDIOMA_POR_DEFECTO, obtenerCatalogo } from '../compartido/i18n/index.js';
+import { puedeVer } from '../compartido/permisos.js';
 import { Actividades } from '../funcionalidades/actividades/Actividades.jsx';
 import { PantallaAcceso } from '../funcionalidades/autenticacion/PantallaAcceso.jsx';
 import { Calendario } from '../funcionalidades/calendario/Calendario.jsx';
@@ -53,7 +54,7 @@ export function App() {
     llamarApi('/auth/sessione')
       .then((datos) => {
         guardarSesion(datos);
-        setUsuario(datos.utente);
+        setUsuario({ ...datos.utente, menus: datos.menus ?? [] });
         setSesion('ok');
       })
       .catch(() => {});
@@ -121,7 +122,18 @@ export function App() {
   }
   if (sesion !== 'ok') return <main className="login">{c.loading}</main>;
 
-  const esAdministrador = usuario?.ruolo !== 'tecnico';
+  const menuDePagina = {
+    dashboard: 'dashboard',
+    boletas: 'boletas',
+    mantenimientos: 'mantenimientos',
+    macchine: 'macchine',
+    maquina: 'macchine',
+    tareas: 'tareas',
+    calendario: 'calendario',
+    reportes: 'reportes',
+    configuracion: 'configuracion'
+  }[pagina];
+  const paginaPermitida = !menuDePagina || puedeVer(usuario, menuDePagina);
   const tablero = (
     <Tablero
       c={c}
@@ -132,8 +144,9 @@ export function App() {
     />
   );
 
-  const contenido =
-    pagina === 'boletas' ? (
+  const contenido = !paginaPermitida ? (
+    <PantallaError tipo="403" c={c} alVolver={() => ir('dashboard')} />
+  ) : pagina === 'boletas' ? (
       <ListaOperaciones tipo="boletas" c={c} idioma={idioma} alCrear={() => abrirHoja('receipt')} />
     ) : pagina === 'mantenimientos' ? (
       <ListaOperaciones tipo="interventi" c={c} idioma={idioma} alCrear={() => abrirHoja('maintenance')} />
@@ -149,12 +162,13 @@ export function App() {
         usuario={usuario}
         alVolver={() => ir('macchine')}
         alAbrirBoleta={(id) => setDetalleBoleta(id)}
+        alAbrirIntervento={(id) => setDetalle(id)}
       />
     ) : pagina === 'calendario' ? (
       <Calendario c={c} idioma={idioma} usuario={usuario} />
-    ) : pagina === 'reportes' && esAdministrador ? (
+    ) : pagina === 'reportes' ? (
       <Reportes c={c} idioma={idioma} />
-    ) : pagina === 'configuracion' && esAdministrador ? (
+    ) : pagina === 'configuracion' ? (
       <Configuracion c={c} />
     ) : pagina === '404' || (pagina === 'maquina' && !maquinaId) ? (
       <PantallaError tipo="404" c={c} alVolver={() => ir('dashboard')} />
@@ -184,19 +198,27 @@ export function App() {
         usuario={usuario}
       />
       {contenido}
-      <div className={`quick-actions ${acciones ? 'open' : ''}`}>
-        <button onClick={() => abrirHoja('maintenance')}>
-          <Wrench size={18} />
-          {c.newJob}
-        </button>
-        <button onClick={() => abrirHoja('receipt')}>
-          <ReceiptText size={18} />
-          {c.newReceipt}
-        </button>
-      </div>
-      <button className="fab" aria-label={c.add} onClick={() => setAcciones(!acciones)}>
-        <Plus size={25} />
-      </button>
+      {(puedeVer(usuario, 'mantenimientos') || puedeVer(usuario, 'boletas')) && (
+        <>
+          <div className={`quick-actions ${acciones ? 'open' : ''}`}>
+            {puedeVer(usuario, 'mantenimientos') && (
+              <button onClick={() => abrirHoja('maintenance')}>
+                <Wrench size={18} />
+                {c.newJob}
+              </button>
+            )}
+            {puedeVer(usuario, 'boletas') && (
+              <button onClick={() => abrirHoja('receipt')}>
+                <ReceiptText size={18} />
+                {c.newReceipt}
+              </button>
+            )}
+          </div>
+          <button className="fab" aria-label={c.add} onClick={() => setAcciones(!acciones)}>
+            <Plus size={25} />
+          </button>
+        </>
+      )}
       {hoja && (
         <HojaTrabajo
           tipo={hoja}

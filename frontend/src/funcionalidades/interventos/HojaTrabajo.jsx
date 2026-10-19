@@ -20,10 +20,14 @@ import { llamarApi } from '../../compartido/api/cliente.js';
 import { proximasManutenciones } from '../../compartido/dominio/calendario.js';
 import { TIPOS_MAQUINA, ICONOS_MAQUINA, nombreTipoMaquina } from '../../compartido/dominio/maquinas.js';
 import { importeManoDeObra } from '../../compartido/dominio/mano-de-obra.js';
-import { fechaDeHoy, formatearFecha, formatearMoneda } from '../../compartido/utilidades/formato.js';
+import { fechaDeHoy, formatearFecha, formatearMoneda, horaDeAhora } from '../../compartido/utilidades/formato.js';
 import { comprimirImagen } from '../../compartido/utilidades/imagenes.js';
+import { useAvisos } from '../../compartido/componentes/Avisos.jsx';
+import { useBloquearScroll } from '../../compartido/utilidades/scroll.js';
 
 export function HojaTrabajo({ tipo, c, idioma, alCerrar, alGuardar }) {
+  useBloquearScroll();
+  const { notificar } = useAvisos();
   const esBoleta = tipo === 'receipt';
   const [paso, setPaso] = useState(1);
   const [clientes, setClientes] = useState([]);
@@ -43,6 +47,7 @@ export function HojaTrabajo({ tipo, c, idioma, alCerrar, alGuardar }) {
   const [notas, setNotas] = useState('');
   const [resultado, setResultado] = useState('risolto');
   const [fecha, setFecha] = useState(fechaDeHoy());
+  const [hora, setHora] = useState(horaDeAhora());
   const [nuevoCliente, setNuevoCliente] = useState(null);
   const [nuevaMaquina, setNuevaMaquina] = useState(null);
   const [scontrino, setScontrino] = useState(null);
@@ -103,7 +108,7 @@ export function HojaTrabajo({ tipo, c, idioma, alCerrar, alGuardar }) {
     () => piezas.filter((fila) => `${fila.nome} ${fila.codice_unico}`.toLowerCase().includes(consultaPieza.toLowerCase())),
     [piezas, consultaPieza]
   );
-  const tarifa = parametros.tarifa_mano_de_obra_hora;
+  const tarifa = parametros.tariffa_manodopera_ora;
   const importeRecambios = carrito.reduce((suma, linea) => suma + Number(linea.prezzo) * linea.qty, 0);
   const importeTrabajo = importeManoDeObra(horas, personas, tarifa);
   const total = importeRecambios + importeTrabajo;
@@ -221,6 +226,7 @@ export function HojaTrabajo({ tipo, c, idioma, alCerrar, alGuardar }) {
         clienteId: cliente.id,
         macchinaId: maquina.id,
         data: fecha,
+        ora: hora,
         ubicazione: esBoleta ? 'cliente' : 'magazzino',
         note: notas,
         esito: resultado,
@@ -230,9 +236,11 @@ export function HojaTrabajo({ tipo, c, idioma, alCerrar, alGuardar }) {
       };
       if (scontrino?.id) cuerpo.scontrinoId = scontrino.id;
       await llamarApi(esBoleta ? '/boletas' : '/interventi', { method: 'POST', body: JSON.stringify(cuerpo) });
+      notificar(c.saved);
       alGuardar();
     } catch (e) {
       setError(e.message);
+      notificar(e.message, 'error');
     } finally {
       setGuardando(false);
     }
@@ -661,6 +669,10 @@ export function HojaTrabajo({ tipo, c, idioma, alCerrar, alGuardar }) {
               <label>
                 {c.date}
                 <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+              </label>
+              <label>
+                {c.time}
+                <input type="time" value={hora} onChange={(e) => setHora(e.target.value)} />
               </label>
               <label>
                 {c.result}

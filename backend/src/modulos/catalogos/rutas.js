@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { consultar, enTransaccion, pool } from '../../base-datos/pool.js';
-import { autorizar, exigirSesion, ROLES_ADMINISTRADOR } from '../../intermedios/sesion.js';
+import { exigirPermiso } from '../../intermedios/permisos.js';
+import { exigirSesion } from '../../intermedios/sesion.js';
 import { crearCliente } from '../clientes/servicio.js';
 import { crearMaquina } from '../maquinas/servicio.js';
 
@@ -42,7 +43,7 @@ rutasCatalogos.get('/fornitori', exigirSesion, async (_req, res) => {
   res.json(await consultar('SELECT id,codice,nome FROM fornitori WHERE stato="attivo" ORDER BY nome'));
 });
 
-rutasCatalogos.get('/tecnici', exigirSesion, autorizar(...ROLES_ADMINISTRADOR), async (_req, res) => {
+rutasCatalogos.get('/tecnici', exigirSesion, exigirPermiso('configuracion', 'editar'), async (_req, res) => {
   res.json(
     await consultar(
       'SELECT u.id,u.nome,u.codice_usuario FROM utenti u JOIN ruoli r ON r.id=u.fk_ruolo WHERE u.stato="attivo" AND r.codice IN ("tecnico","amministratore") ORDER BY u.nome'

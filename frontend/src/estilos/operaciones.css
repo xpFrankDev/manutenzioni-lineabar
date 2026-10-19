@@ -63,20 +63,20 @@ html[data-theme=dark] .alert-banner{background:#40201f;border-color:#6b3431;colo
 .machine-detail-head h1{margin:2px 0;font:800 clamp(24px,7vw,34px)/1 Manrope;letter-spacing:-.04em}
 .machine-detail-head p{margin:0;color:var(--muted);font-size:12px}
 .status-message{padding:10px 12px;border-radius:11px;background:var(--pale);color:var(--blue);font:700 12px Manrope}
-.machine-carousel{display:grid;gap:10px}
-.machine-photo{position:relative;border:1px solid var(--line);border-radius:16px;background:var(--surface);overflow:hidden;aspect-ratio:4/3;display:grid;place-items:center}
+.machine-carousel{display:grid;gap:10px;width:100%;max-width:620px;margin-inline:auto;justify-items:center}
+.machine-photo{position:relative;width:100%;border:1px solid var(--line);border-radius:16px;background:var(--surface);overflow:hidden;aspect-ratio:4/3;max-height:360px;display:grid;place-items:center}
 .machine-photo img{width:100%;height:100%;object-fit:cover}
 .machine-photo-empty{display:grid;gap:8px;justify-items:center;color:var(--muted);font:700 12px Manrope;padding:24px;text-align:center}
 .carousel-arrow{position:absolute;top:50%;transform:translateY(-50%);width:40px;height:40px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.9);color:var(--ink);display:grid;place-items:center}
 html[data-theme=dark] .carousel-arrow{background:rgba(8,25,46,.85);color:#fff}
 .carousel-arrow.left{left:10px}.carousel-arrow.right{right:10px}
-.machine-thumbs{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.machine-thumbs{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;max-width:100%;justify-content:flex-start}
 .machine-thumbs button{width:58px;height:58px;flex:0 0 auto;border:2px solid transparent;border-radius:11px;overflow:hidden;background:var(--surface);padding:0}
 .machine-thumbs button.active{border-color:var(--blue)}
 .machine-thumbs img{width:100%;height:100%;object-fit:cover}
 .machine-thumbs .thumb-action{display:grid;place-items:center;color:var(--blue);border:1px dashed var(--blue);background:transparent}
-.add-photo{width:max-content}
-.photo-hint{color:var(--muted);font-size:11px}
+.add-photo{width:max-content;margin-inline:auto}
+.photo-hint{display:block;color:var(--muted);font-size:11px;text-align:center;line-height:1.45}
 .machine-grid{display:grid;gap:12px}
 .machine-card-block{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:14px;display:grid;gap:7px}
 .machine-card-block header{display:flex;align-items:center;gap:8px;color:var(--blue)}
@@ -113,4 +113,5 @@ html[data-theme=dark] .carousel-arrow{background:rgba(8,25,46,.85);color:#fff}
 html[data-theme=dark] .error-card i.denied{background:#40201f;color:#ffb4ab}
 .error-card h1{margin:0;font:800 clamp(24px,7vw,32px)/1 Manrope;letter-spacing:-.04em}
 .error-card p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
-@media(min-width:721px){.machine-grid{grid-template-columns:1fr 1fr}.machine-list-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:721px){.machine-grid{grid-template-columns:1fr 1fr}.machine-list-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.machine-carousel{max-width:520px}.machine-photo{max-height:320px}}
+.history-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}

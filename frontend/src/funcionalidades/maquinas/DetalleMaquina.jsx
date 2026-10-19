@@ -15,14 +15,32 @@ import {
   Wrench
 } from 'lucide-react';
 import { llamarApi } from '../../compartido/api/cliente.js';
+import { useAvisos } from '../../compartido/componentes/Avisos.jsx';
 import { Estado } from '../../compartido/componentes/Estado.jsx';
 import { nombreTipoMaquina } from '../../compartido/dominio/maquinas.js';
 import { rutaMaquina } from '../../compartido/constantes.js';
-import { formatearFecha } from '../../compartido/utilidades/formato.js';
+import { formatearFecha, formatearHora } from '../../compartido/utilidades/formato.js';
 import { comprimirImagen } from '../../compartido/utilidades/imagenes.js';
 import { PantallaError } from '../errores/PantallaError.jsx';
 
-export function DetalleMaquina({ id, c, idioma, usuario, alVolver, alAbrirBoleta }) {
+const MIN_FOTO_BYTES = 20 * 1024;
+const MAX_FOTO_BYTES = 6 * 1024 * 1024;
+const MIN_FOTO_ANCHO = 640;
+const MIN_FOTO_ALTO = 480;
+const MAX_FOTO_LADO = 4096;
+
+async function dimensionesImagen(archivo) {
+  if (typeof window === 'undefined' || !('createImageBitmap' in window)) return null;
+  try {
+    const bitmap = await createImageBitmap(archivo);
+    return { ancho: bitmap.width, alto: bitmap.height };
+  } catch {
+    return null;
+  }
+}
+
+export function DetalleMaquina({ id, c, idioma, usuario, alVolver, alAbrirBoleta, alAbrirIntervento }) {
+  const { confirmar, notificar } = useAvisos();
   const [datos, setDatos] = useState(null);
   const [error, setError] = useState(null);
   const [indice, setIndice] = useState(0);
@@ -31,7 +49,7 @@ export function DetalleMaquina({ id, c, idioma, usuario, alVolver, alAbrirBoleta
   const [accesos, setAccesos] = useState(null);
   const [guardandoAccesos, setGuardandoAccesos] = useState(false);
   const entradaFoto = useRef(null);
-  const esAdministrador = usuario?.ruolo !== 'tecnico';
+  const esAdministrador = usuario?.ruolo === 'amministratore';
 
   const cargar = useCallback(async () => {
     try {
@@ -77,6 +95,12 @@ export function DetalleMaquina({ id, c, idioma, usuario, alVolver, alAbrirBoleta
     const archivo = evento.target.files?.[0];
     evento.target.value = '';
     if (!archivo) return;
+    if (archivo.size < MIN_FOTO_BYTES) return setMensaje(c.photoTooSmall);
+    if (archivo.size > MAX_FOTO_BYTES) return setMensaje(c.photoTooLarge);
+    const dimensiones = await dimensionesImagen(archivo);
+    if (dimensiones && (dimensiones.ancho < MIN_FOTO_ANCHO || dimensiones.alto < MIN_FOTO_ALTO || dimensiones.ancho > MAX_FOTO_LADO || dimensiones.alto > MAX_FOTO_LADO)) {
+      return setMensaje(c.photoTooSmall);
+    }
     setSubiendo(true);
     setMensaje('');
     try {
@@ -86,21 +110,32 @@ export function DetalleMaquina({ id, c, idioma, usuario, alVolver, alAbrirBoleta
         body: JSON.stringify({ immagine, nomeFile: archivo.name, didascalia: '' })
       });
       setMensaje(c.saved);
+      notificar(c.saved);
       await cargar();
     } catch (e) {
       setMensaje(e.message);
+      notificar(e.message, 'error');
     } finally {
       setSubiendo(false);
     }
   }
 
   async function borrarFoto(fotoId) {
-    if (!confirm(c.confirmDeletePhoto)) return;
+    const confirmado = await confirmar({
+      titulo: c.deletePhoto,
+      mensaje: c.confirmDeletePhoto,
+      textoConfirmar: c.deletePhoto,
+      textoCancelar: c.cancel,
+      peligro: true
+    });
+    if (!confirmado) return;
     try {
       await llamarApi(`/maquinas/${id}/foto/${fotoId}`, { method: 'DELETE' });
+      notificar(c.saved);
       await cargar();
     } catch (e) {
       setMensaje(e.message);
+      notificar(e.message, 'error');
     }
   }
 
@@ -123,8 +158,10 @@ export function DetalleMaquina({ id, c, idioma, usuario, alVolver, alAbrirBoleta
       });
       setAccesos(lista.tecnici);
       setMensaje(c.accessSaved);
+      notificar(c.accessSaved);
     } catch (e) {
       setMensaje(e.message);
+      notificar(e.message, 'error');
     } finally {
       setGuardandoAccesos(false);
     }
@@ -183,23 +220,12 @@ export function DetalleMaquina({ id, c, idioma, usuario, alVolver, alAbrirBoleta
                 <img src={`/lineabar/api/maquinas/${id}/foto/${fila.id}`} alt="" loading="lazy" />
               </button>
             ))}
-            <button
-              className="thumb-action"
-              onClick={() => entradaFoto.current?.click()}
-              disabled={subiendo}
-              aria-label={c.addPhoto}
-              title={c.addPhoto}
-            >
-              <ImagePlus size={18} />
-            </button>
           </div>
         )}
-        {!fotos.length && (
-          <button className="primary add-photo" onClick={() => entradaFoto.current?.click()} disabled={subiendo}>
-            <ImagePlus size={17} />
-            {subiendo ? c.photoUploading : c.addPhoto}
-          </button>
-        )}
+        <button className="primary add-photo" onClick={() => entradaFoto.current?.click()} disabled={subiendo}>
+          <ImagePlus size={17} />
+          {subiendo ? c.photoUploading : c.addPhoto}
+        </button>
         {(esAdministrador || actual?.utente_crea === usuario?.sub) && actual && (
           <button className="text-action danger" onClick={() => borrarFoto(actual.id)}>
             <Trash2 size={14} /> {c.deletePhoto}
@@ -256,19 +282,24 @@ export function DetalleMaquina({ id, c, idioma, usuario, alVolver, alAbrirBoleta
             {datos.manutenzioni.map((fila) => (
               <article className="history-item" key={fila.id}>
                 <header>
-                  <b>{formatearFecha(fila.data, idioma)}</b>
+                  <b>{formatearFecha(fila.data, idioma)}{fila.ora ? ` · ${formatearHora(fila.ora)}` : ''}</b>
                   <Estado value={fila.esito} c={c} />
                 </header>
                 <small>
                   {fila.tecnico} · {fila.ubicazione === 'magazzino' ? c.warehouse : c.customerSite} · {Number(fila.ore)} h × {Number(fila.persone)}
                 </small>
-                {fila.boleta_id ? (
-                  <button className="boleta-badge" onClick={() => alAbrirBoleta?.(fila.boleta_id)}>
-                    {c.withBoleta} · {fila.codice_boleta}
+                <div className="history-actions">
+                  <button className="text-action" onClick={() => alAbrirIntervento?.(fila.id)}>
+                    {c.viewMaintenance}
                   </button>
-                ) : (
-                  <span className="boleta-badge muted">{c.withoutBoleta}</span>
-                )}
+                  {fila.boleta_id ? (
+                    <button className="boleta-badge" onClick={() => alAbrirBoleta?.(fila.boleta_id)}>
+                      {c.withBoleta} · {fila.codice_boleta}
+                    </button>
+                  ) : (
+                    <span className="boleta-badge muted">{c.withoutBoleta}</span>
+                  )}
+                </div>
                 {fila.note && <p>{fila.note}</p>}
                 {fila.ricambi?.length > 0 && (
                   <ul>
@@ -287,19 +318,21 @@ export function DetalleMaquina({ id, c, idioma, usuario, alVolver, alAbrirBoleta
         )}
       </section>
 
-      <section className="machine-section nfc-section">
-        <header className="machine-section-head">
-          <CalendarClock size={18} />
-          <h2>{c.nfcLink}</h2>
-        </header>
-        <div className="nfc-row">
-          <input readOnly value={urlNfc} aria-label={c.nfcLink} onFocus={(e) => e.target.select()} />
-          <button className="primary" onClick={copiarEnlace}>
-            <Copy size={16} /> {c.copyLink}
-          </button>
-        </div>
-        <small>{c.accessHelp}</small>
-      </section>
+      {esAdministrador && (
+        <section className="machine-section nfc-section">
+          <header className="machine-section-head">
+            <CalendarClock size={18} />
+            <h2>{c.nfcLink}</h2>
+          </header>
+          <div className="nfc-row">
+            <input readOnly value={urlNfc} aria-label={c.nfcLink} onFocus={(e) => e.target.select()} />
+            <button className="primary" onClick={copiarEnlace}>
+              <Copy size={16} /> {c.copyLink}
+            </button>
+          </div>
+          <small>{c.accessHelp}</small>
+        </section>
+      )}
 
       {esAdministrador && accesos && (
         <section className="machine-section">
@@ -308,27 +341,34 @@ export function DetalleMaquina({ id, c, idioma, usuario, alVolver, alAbrirBoleta
             <h2>{c.accessManagement}</h2>
           </header>
           <p className="muted">{c.accessHelp}</p>
-          <div className="access-list">
-            {accesos.map((fila) => (
-              <label key={fila.id} className="check-line">
-                <input
-                  type="checkbox"
-                  checked={Boolean(fila.accesso)}
-                  onChange={(e) =>
-                    setAccesos((actual) =>
-                      actual.map((item) => (item.id === fila.id ? { ...item, accesso: e.target.checked ? 1 : 0 } : item))
-                    )
-                  }
-                />
-                <span>
-                  {fila.nome} <small>{fila.codice_usuario}</small>
-                </span>
-              </label>
-            ))}
-          </div>
-          <button className="primary" onClick={guardarAccesos} disabled={guardandoAccesos}>
-            {c.saveAccess}
-          </button>
+          <p className="muted">{c.accessAuto}</p>
+          {accesos.length ? (
+            <>
+              <div className="access-list">
+                {accesos.map((fila) => (
+                  <label key={fila.id} className="check-line">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(fila.accesso)}
+                      onChange={(e) =>
+                        setAccesos((actual) =>
+                          actual.map((item) => (item.id === fila.id ? { ...item, accesso: e.target.checked ? 1 : 0 } : item))
+                        )
+                      }
+                    />
+                    <span>
+                      {fila.nome} <small>{fila.codice_usuario}</small>
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <button className="primary" onClick={guardarAccesos} disabled={guardandoAccesos}>
+                {c.saveAccess}
+              </button>
+            </>
+          ) : (
+            <p className="empty-state">{c.noTechnicians}</p>
+          )}
         </section>
       )}
     </main>

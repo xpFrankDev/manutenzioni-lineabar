@@ -82,14 +82,14 @@ test('flujo completo de Linea Bar', async (t) => {
     const sinCsrf = await fetch(`${base}/parametros`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', Cookie: cookie },
-      body: JSON.stringify({ parametros: [{ chiave: 'aviso_manutencion_dias', valore: '7' }] })
+      body: JSON.stringify({ parametros: [{ chiave: 'giorni_avviso_manutenzione', valore: '7' }] })
     });
     assert.equal(sinCsrf.status, 403);
 
     const conCsrf = await fetch(`${base}/parametros`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', Cookie: cookie, 'X-CSRF-Token': csrf },
-      body: JSON.stringify({ parametros: [{ chiave: 'aviso_manutencion_dias', valore: '7' }] })
+      body: JSON.stringify({ parametros: [{ chiave: 'giorni_avviso_manutenzione', valore: '7' }] })
     });
     assert.equal(conCsrf.status, 200);
 
@@ -226,12 +226,12 @@ test('flujo completo de Linea Bar', async (t) => {
 
     const parametros = await pedir(base, '/parametros', { token: admin.token });
     assert.equal(parametros.estado, 200);
-    assert.equal(Number(parametros.datos.tarifa_mano_de_obra_hora), 65);
+    assert.equal(Number(parametros.datos.tariffa_manodopera_ora), 65);
 
     const guardarParametros = await pedir(base, '/parametros', {
       metodo: 'PUT',
       token: admin.token,
-      cuerpo: { parametros: [{ chiave: 'tarifa_mano_de_obra_hora', valore: '65' }] }
+      cuerpo: { parametros: [{ chiave: 'tariffa_manodopera_ora', valore: '65' }] }
     });
     assert.equal(guardarParametros.estado, 200);
   });
@@ -244,7 +244,7 @@ test('flujo completo de Linea Bar', async (t) => {
     assert.equal((await pedir(base, '/configurazione/clienti', { token: tecnico.token })).estado, 403);
     assert.equal((await pedir(base, '/reportes/riepilogo', { token: tecnico.token })).estado, 403);
     assert.equal(
-      (await pedir(base, '/parametros', { metodo: 'PUT', token: tecnico.token, cuerpo: { parametros: [{ chiave: 'aviso_manutencion_dias', valore: '1' }] } })).estado,
+      (await pedir(base, '/parametros', { metodo: 'PUT', token: tecnico.token, cuerpo: { parametros: [{ chiave: 'giorni_avviso_manutenzione', valore: '1' }] } })).estado,
       403
     );
 
@@ -284,6 +284,45 @@ test('flujo completo de Linea Bar', async (t) => {
     const creada = maquinas.datos.find((fila) => fila.id === maquinaId);
     assert.equal(creada.cliente_id, clienteCampoId);
     assert.equal(creada.cliente, `Bar Campo ${SELLO}`);
+  });
+
+  await t.test('permisos modulares por rol', async () => {
+    const sesionAdmin = await pedir(base, '/auth/sessione', { token: admin.token });
+    assert.equal(sesionAdmin.estado, 200);
+    assert.ok(sesionAdmin.datos.menus.some((menu) => menu.codice === 'configuracion' && menu.ver));
+
+    const sesionTecnico = await pedir(base, '/auth/sessione', { token: tecnico.token });
+    assert.equal(sesionTecnico.estado, 200);
+    assert.ok(sesionTecnico.datos.menus.some((menu) => menu.codice === 'boletas' && menu.ver));
+    assert.ok(!sesionTecnico.datos.menus.some((menu) => menu.codice === 'configuracion' && menu.ver));
+
+    const roles = await pedir(base, '/configurazione/roles', { token: admin.token });
+    assert.equal(roles.estado, 200);
+    const rolTecnico = roles.datos.roles.find((rol) => rol.codice === 'tecnico');
+    assert.ok(rolTecnico);
+    const originales = rolTecnico.menus.map((menu) => ({ codice: menu.codice, ver: menu.ver, modificar: menu.modificar }));
+
+    const sinBoletas = originales.map((menu) => ({
+      ...menu,
+      ver: menu.codice === 'boletas' ? false : menu.ver,
+      modificar: menu.codice === 'boletas' ? false : menu.modificar
+    }));
+    const actualizado = await pedir(base, `/configurazione/roles/${rolTecnico.id}`, {
+      metodo: 'PUT',
+      token: admin.token,
+      cuerpo: { permisos: sinBoletas }
+    });
+    assert.equal(actualizado.estado, 200);
+    assert.equal((await pedir(base, '/boletas', { token: tecnico.token })).estado, 403);
+    assert.equal((await pedir(base, '/interventi', { token: tecnico.token })).estado, 200);
+
+    const restaurado = await pedir(base, `/configurazione/roles/${rolTecnico.id}`, {
+      metodo: 'PUT',
+      token: admin.token,
+      cuerpo: { permisos: originales }
+    });
+    assert.equal(restaurado.estado, 200);
+    assert.equal((await pedir(base, '/boletas', { token: tecnico.token })).estado, 200);
   });
 
   await t.test('ficha de máquina: acceso por usuario, fotos y autorización', async () => {

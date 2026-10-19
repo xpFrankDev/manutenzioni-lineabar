@@ -1,10 +1,10 @@
 import { consultar, pool } from '../../base-datos/pool.js';
 
 export const PARAMETROS_POR_DEFECTO = {
-  tarifa_mano_de_obra_hora: 65,
-  aviso_manutencion_dias: 7,
-  horizonte_calendario_dias: 30,
-  prevision_manutencion_meses: 6
+  tariffa_manodopera_ora: 65,
+  giorni_avviso_manutenzione: 7,
+  orizzonte_calendario_giorni: 30,
+  previsione_manutenzione_mesi: 6
 };
 
 export async function obtenerParametros(conexion = pool) {

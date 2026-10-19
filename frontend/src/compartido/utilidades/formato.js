@@ -12,9 +12,19 @@ export function formatearFecha(valor, idioma) {
   if (Number.isNaN(fecha.valueOf())) return '—';
   return new Intl.DateTimeFormat(idioma === 'it' ? 'it-IT' : 'es-ES', {
     day: '2-digit',
-    month: 'short',
+    month: 'long',
     year: 'numeric'
   }).format(fecha);
+}
+
+export function formatearHora(valor) {
+  if (!valor) return '';
+  return String(valor).slice(0, 5);
+}
+
+export function horaDeAhora() {
+  const ahora = new Date();
+  return `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
 }
 
 export function fechaDeHoy() {

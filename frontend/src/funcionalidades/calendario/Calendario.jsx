@@ -1,18 +1,21 @@
 import { useCallback, useEffect, useState } from 'react';
 import { CalendarClock, CalendarPlus, CalendarX2, CircleAlert, Pencil, RefreshCw, X } from 'lucide-react';
 import { llamarApi } from '../../compartido/api/cliente.js';
+import { useAvisos } from '../../compartido/componentes/Avisos.jsx';
 import { Estado } from '../../compartido/componentes/Estado.jsx';
 import { fechaDeHoy, formatearFecha } from '../../compartido/utilidades/formato.js';
+import { useBloquearScroll } from '../../compartido/utilidades/scroll.js';
 
 const FILTROS = [
+  ['todas', 'all'],
   ['pendientes', 'pendingCalendar'],
   ['vencido', 'overdue'],
   ['proximos', 'dueSoon'],
-  ['sospeso', 'suspended'],
-  ['todas', 'all']
+  ['sospeso', 'suspended']
 ];
 
 export function Calendario({ c, idioma, usuario }) {
+  const { notificar } = useAvisos();
   const [filtro, setFiltro] = useState('pendientes');
   const [filas, setFilas] = useState(null);
   const [resumen, setResumen] = useState(null);
@@ -44,9 +47,11 @@ export function Calendario({ c, idioma, usuario }) {
     try {
       await llamarApi(`/calendario/${fila.id}`, { method: 'PUT', body: JSON.stringify({ statoCalendario }) });
       dispatchEvent(new Event('lineabar:calendar'));
+      notificar(c.saved);
       cargar();
     } catch (e) {
       setError(e.message);
+      notificar(e.message, 'error');
     }
   }
 
@@ -181,6 +186,8 @@ export function Calendario({ c, idioma, usuario }) {
 }
 
 function ProgramarIntervento({ fila, c, idioma, alCerrar, alGuardar }) {
+  useBloquearScroll();
+  const { notificar } = useAvisos();
   const [tecnicos, setTecnicos] = useState([]);
   const [formulario, setFormulario] = useState({
     tecnici: [],
@@ -203,9 +210,11 @@ function ProgramarIntervento({ fila, c, idioma, alCerrar, alGuardar }) {
     setGuardando(true);
     try {
       await llamarApi(`/calendario/${fila.id}/programar`, { method: 'POST', body: JSON.stringify(formulario) });
+      notificar(c.activityCreated || c.saved);
       alGuardar();
     } catch (e) {
       setError(e.message);
+      notificar(e.message, 'error');
     } finally {
       setGuardando(false);
     }
@@ -309,6 +318,8 @@ function ProgramarIntervento({ fila, c, idioma, alCerrar, alGuardar }) {
 }
 
 function Reprogramar({ fila, c, alCerrar, alGuardar }) {
+  useBloquearScroll();
+  const { notificar } = useAvisos();
   const [formulario, setFormulario] = useState({
     prossimaManutenzione: String(fila.prossima_manutenzione).slice(0, 10),
     frequenzaMesi: fila.frequenza_mesi,
@@ -326,9 +337,11 @@ function Reprogramar({ fila, c, alCerrar, alGuardar }) {
         method: 'PUT',
         body: JSON.stringify({ ...formulario, frequenzaMesi: Number(formulario.frequenzaMesi) })
       });
+      notificar(c.saved);
       alGuardar();
     } catch (e) {
       setError(e.message);
+      notificar(e.message, 'error');
     } finally {
       setGuardando(false);
     }

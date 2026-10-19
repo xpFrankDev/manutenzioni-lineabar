@@ -31,7 +31,7 @@ rutasBoletas.get('/boletas/:id', exigirSesion, async (req, res) => {
     return res.status(403).json({ errore: 'Boleta non assegnata' });
   }
   const boleta = (await consultar(
-    'SELECT b.id,b.codice_boleta,b.data,b.prezzo_totale,b.stato,b.fk_scontrino,c.id cliente_id,c.nome cliente,c.indirizzo,u.nome tecnico,m.id manutenzione_id,m.ubicazione,m.note,m.esito,m.ore,m.persone,mq.id macchina_id,mq.codice_unico,mq.modello,COALESCE(f.nome,ma.nome) marca FROM boletas b JOIN clienti c ON c.id=b.fk_cliente JOIN utenti u ON u.id=b.fk_tecnico JOIN boletas_manutenzioni bm ON bm.fk_boleta=b.id AND bm.stato="attivo" JOIN manutenzioni m ON m.id=bm.fk_manutenzione JOIN boletas_macchine bmq ON bmq.fk_boleta=b.id AND bmq.stato="attivo" JOIN macchine mq ON mq.id=bmq.fk_macchina LEFT JOIN fornitori f ON f.id=mq.fk_fornitore LEFT JOIN marche ma ON ma.id=mq.fk_marca WHERE b.id=?',
+    'SELECT b.id,b.codice_boleta,b.data,b.prezzo_totale,b.stato,b.fk_scontrino,c.id cliente_id,c.nome cliente,c.indirizzo,u.nome tecnico,m.id manutenzione_id,m.ubicazione,m.note,m.esito,m.ore,m.ora,m.persone,mq.id macchina_id,mq.codice_unico,mq.modello,COALESCE(f.nome,ma.nome) marca FROM boletas b JOIN clienti c ON c.id=b.fk_cliente JOIN utenti u ON u.id=b.fk_tecnico JOIN boletas_manutenzioni bm ON bm.fk_boleta=b.id AND bm.stato="attivo" JOIN manutenzioni m ON m.id=bm.fk_manutenzione JOIN boletas_macchine bmq ON bmq.fk_boleta=b.id AND bmq.stato="attivo" JOIN macchine mq ON mq.id=bmq.fk_macchina LEFT JOIN fornitori f ON f.id=mq.fk_fornitore LEFT JOIN marche ma ON ma.id=mq.fk_marca WHERE b.id=?',
     [req.params.id]
   ))[0];
   if (!boleta) return res.status(404).json({ errore: 'Boleta non trovata' });
@@ -48,7 +48,7 @@ rutasBoletas.get('/boletas/:id', exigirSesion, async (req, res) => {
     ricambi.reduce((suma, recambio) => suma + Number(recambio.prezzo_unitario) * Number(recambio.quantita), 0),
     Number(boleta.ore ?? 0),
     Number(boleta.persone ?? 1),
-    (await obtenerParametros()).tarifa_mano_de_obra_hora
+    (await obtenerParametros()).tariffa_manodopera_ora
   );
   return res.json({ ...boleta, ricambi, prossime, totales });
 });
@@ -68,7 +68,7 @@ rutasBoletas.post('/boletas', exigirSesion, async (req, res) => {
         intervento.recambios.totale,
         entrada.data.ore,
         entrada.data.persone,
-        parametros.tarifa_mano_de_obra_hora
+        parametros.tariffa_manodopera_ora
       );
       const boletaId = nuevoId();
       await conexion.execute(

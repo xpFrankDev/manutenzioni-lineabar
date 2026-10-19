@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { CalendarClock, Clock3, X } from 'lucide-react';
 import { llamarApi } from '../../compartido/api/cliente.js';
 import { Estado } from '../../compartido/componentes/Estado.jsx';
-import { formatearFecha, formatearMoneda } from '../../compartido/utilidades/formato.js';
+import { formatearFecha, formatearHora, formatearMoneda } from '../../compartido/utilidades/formato.js';
+import { useBloquearScroll } from '../../compartido/utilidades/scroll.js';
 
 export function DetalleRegistro({ tipo, id, c, idioma, alCerrar }) {
+  useBloquearScroll();
   const [datos, setDatos] = useState(null);
   const [error, setError] = useState('');
 
@@ -42,7 +44,10 @@ export function DetalleRegistro({ tipo, id, c, idioma, alCerrar }) {
               <div className="detail-meta">
                 <span>
                   {c.created}
-                  <b>{formatearFecha(datos.data, idioma)}</b>
+                  <b>
+                    {formatearFecha(datos.data, idioma)}
+                    {datos.ora ? ` · ${formatearHora(datos.ora)}` : ''}
+                  </b>
                 </span>
                 <span>
                   {c.location}

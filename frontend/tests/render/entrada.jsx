@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server';
+import { AvisosProvider } from '../../src/compartido/componentes/Avisos.jsx';
 import { obtenerCatalogo } from '../../src/compartido/i18n/index.js';
 import { Estado } from '../../src/compartido/componentes/Estado.jsx';
 import { Actividades } from '../../src/funcionalidades/actividades/Actividades.jsx';
@@ -15,26 +16,27 @@ const idioma = 'es';
 const c = obtenerCatalogo(idioma);
 const usuario = { nome: 'Tecnico Prueba', ruolo: 'tecnico' };
 const nada = () => {};
+const conAvisos = (elemento) => renderToStaticMarkup(<AvisosProvider>{elemento}</AvisosProvider>);
 
 export function renderizarPantallas() {
   return {
-    login: renderToStaticMarkup(
+    login: conAvisos(
       <PantallaAcceso idioma={idioma} cambiarIdioma={nada} tema="light" cambiarTema={nada} />
     ),
-    boleta: renderToStaticMarkup(<HojaTrabajo tipo="receipt" c={c} idioma={idioma} alCerrar={nada} alGuardar={nada} />),
-    mantenimiento: renderToStaticMarkup(
+    boleta: conAvisos(<HojaTrabajo tipo="receipt" c={c} idioma={idioma} alCerrar={nada} alGuardar={nada} />),
+    mantenimiento: conAvisos(
       <HojaTrabajo tipo="maintenance" c={c} idioma={idioma} alCerrar={nada} alGuardar={nada} />
     ),
-    calendario: renderToStaticMarkup(<Calendario c={c} idioma={idioma} usuario={usuario} />),
-    reportes: renderToStaticMarkup(<Reportes c={c} idioma={idioma} />),
-    configuracion: renderToStaticMarkup(<Configuracion c={c} />),
-    actividades: renderToStaticMarkup(<Actividades c={c} idioma={idioma} usuario={usuario} />),
-    maquinas: renderToStaticMarkup(<ListaMaquinas c={c} alAbrir={nada} />),
-    maquina: renderToStaticMarkup(
+    calendario: conAvisos(<Calendario c={c} idioma={idioma} usuario={usuario} />),
+    reportes: conAvisos(<Reportes c={c} idioma={idioma} />),
+    configuracion: conAvisos(<Configuracion c={c} />),
+    actividades: conAvisos(<Actividades c={c} idioma={idioma} usuario={usuario} />),
+    maquinas: conAvisos(<ListaMaquinas c={c} alAbrir={nada} />),
+    maquina: conAvisos(
       <DetalleMaquina id="11111111-1111-4111-8111-000000000001" c={c} idioma={idioma} usuario={usuario} alVolver={nada} />
     ),
-    error403: renderToStaticMarkup(<PantallaError tipo="403" c={c} alVolver={nada} />),
-    estados: renderToStaticMarkup(
+    error403: conAvisos(<PantallaError tipo="403" c={c} alVolver={nada} />),
+    estados: conAvisos(
       <div>
         {['vencido', 'oggi', 'imminente', 'prossimo', 'programmato', 'sospeso', 'eseguito', 'aperta', 'in_corso', 'completata'].map(
           (valor) => (

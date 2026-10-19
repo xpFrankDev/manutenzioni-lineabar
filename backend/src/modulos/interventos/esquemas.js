@@ -9,6 +9,7 @@ export const esquemaIntervento = z.object({
   clienteId: z.string().uuid().nullable().optional(),
   macchinaId: z.string().uuid(),
   data: z.string().date(),
+  ora: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/).nullable().optional(),
   ubicazione: z.enum(['cliente', 'magazzino']),
   note: z.string().trim().max(2000).optional().nullable(),
   esito: z.enum(['risolto', 'da_rifare', 'parziale']),

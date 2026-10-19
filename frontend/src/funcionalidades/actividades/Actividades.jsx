@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { llamarApi } from '../../compartido/api/cliente.js';
+import { useAvisos } from '../../compartido/componentes/Avisos.jsx';
 import { Estado } from '../../compartido/componentes/Estado.jsx';
 import { formatearFecha } from '../../compartido/utilidades/formato.js';
 import { CierreActividad } from './CierreActividad.jsx';
+import { DetalleActividad } from './DetalleActividad.jsx';
 import { FormularioActividad } from './FormularioActividad.jsx';
 
 function estadoDeActividad(actividad) {
@@ -13,9 +15,11 @@ function estadoDeActividad(actividad) {
 }
 
 export function Actividades({ c, idioma, usuario }) {
+  const { notificar } = useAvisos();
   const [filas, setFilas] = useState(null);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [cerrando, setCerrando] = useState(null);
+  const [detalle, setDetalle] = useState(null);
   const [error, setError] = useState('');
   const esAdministrador = usuario?.ruolo !== 'tecnico';
 
@@ -35,9 +39,11 @@ export function Actividades({ c, idioma, usuario }) {
   async function tomar(id) {
     try {
       await llamarApi(`/attivita/${id}/prendi`, { method: 'POST' });
+      notificar(c.saved);
       notificarCambio();
     } catch (e) {
       setError(e.message);
+      notificar(e.message, 'error');
     }
   }
 
@@ -62,7 +68,7 @@ export function Actividades({ c, idioma, usuario }) {
         ) : filas.length ? (
           filas.map((actividad) => (
             <article key={actividad.id}>
-              <div className="operation-main">
+              <button type="button" className="operation-main" onClick={() => setDetalle(actividad)}>
                 <span className="operation-name">
                   <b>
                     {actividad.marca} {actividad.modello} · {actividad.codice_unico}
@@ -72,7 +78,7 @@ export function Actividades({ c, idioma, usuario }) {
                   </small>
                   <small>{actividad.osservazione}</small>
                 </span>
-              </div>
+              </button>
               <div className="operation-foot">
                 <Estado value={estadoDeActividad(actividad)} c={c} />
                 <span>{actividad.tecnici}</span>
@@ -100,6 +106,22 @@ export function Actividades({ c, idioma, usuario }) {
           alGuardar={() => {
             setMostrarFormulario(false);
             notificarCambio();
+          }}
+        />
+      )}
+      {detalle && (
+        <DetalleActividad
+          actividad={detalle}
+          c={c}
+          idioma={idioma}
+          alCerrar={() => setDetalle(null)}
+          alTomar={async (id) => {
+            await tomar(id);
+            setDetalle(null);
+          }}
+          alCerrarTarea={(id) => {
+            setDetalle(null);
+            setCerrando(id);
           }}
         />
       )}

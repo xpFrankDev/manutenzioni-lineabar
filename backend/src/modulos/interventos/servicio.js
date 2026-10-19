@@ -59,12 +59,13 @@ export async function crearIntervento(conexion, entrada, tecnicoId) {
 
   const manutencionId = nuevoId();
   await conexion.execute(
-    'INSERT INTO manutenzioni (id,fk_cliente,fk_tecnico,data,ubicazione,note,esito,ore,persone,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+    'INSERT INTO manutenzioni (id,fk_cliente,fk_tecnico,data,ora,ubicazione,note,esito,ore,persone,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
     [
       manutencionId,
       clienteId,
       tecnicoId,
       entrada.data,
+      entrada.ora || null,
       entrada.ubicazione,
       entrada.note || null,
       entrada.esito,

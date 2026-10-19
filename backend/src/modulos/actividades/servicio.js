@@ -117,6 +117,7 @@ export async function cerrarActividad(conexion, actividad, datos, usuarioId) {
       clienteId: actividad.fk_cliente,
       macchinaId: actividad.fk_macchina,
       data: new Date().toISOString().slice(0, 10),
+      ora: new Date().toTimeString().slice(0, 8),
       ubicazione: 'cliente',
       note: datos.descrizione,
       esito: 'risolto',

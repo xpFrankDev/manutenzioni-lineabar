@@ -61,9 +61,10 @@ rutasInterventos.put('/interventi/:id', exigirSesion, async (req, res) => {
 
   const dati = entrada.data;
   await consultar(
-    'UPDATE manutenzioni SET data=COALESCE(?,data),ubicazione=COALESCE(?,ubicazione),note=COALESCE(?,note),esito=COALESCE(?,esito),ore=COALESCE(?,ore),persone=COALESCE(?,persone),utente_modifica=? WHERE id=? AND stato="attivo"',
+    'UPDATE manutenzioni SET data=COALESCE(?,data),ora=COALESCE(?,ora),ubicazione=COALESCE(?,ubicazione),note=COALESCE(?,note),esito=COALESCE(?,esito),ore=COALESCE(?,ore),persone=COALESCE(?,persone),utente_modifica=? WHERE id=? AND stato="attivo"',
     [
       dati.data ?? null,
+      dati.ora ?? null,
       dati.ubicazione ?? null,
       dati.note ?? null,
       dati.esito ?? null,

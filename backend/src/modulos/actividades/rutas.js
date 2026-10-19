@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { consultarUno, enTransaccion } from '../../base-datos/pool.js';
-import { autorizar, exigirSesion, ROLES_ADMINISTRADOR } from '../../intermedios/sesion.js';
+import { exigirPermiso } from '../../intermedios/permisos.js';
+import { exigirSesion } from '../../intermedios/sesion.js';
 import { esquemaActividad, esquemaCierreActividad } from './esquemas.js';
 import {
   actualizarActividad,
@@ -30,7 +31,7 @@ rutasActividades.get('/attivita/:id', exigirSesion, async (req, res) => {
   return res.json(actividad);
 });
 
-rutasActividades.post('/attivita', exigirSesion, autorizar(...ROLES_ADMINISTRADOR), async (req, res) => {
+rutasActividades.post('/attivita', exigirSesion, exigirPermiso('tareas', 'editar'), async (req, res) => {
   const entrada = esquemaActividad.safeParse(req.body);
   if (!entrada.success) {
     return res.status(422).json({ errore: 'Dati attività non validi', dettagli: entrada.error.flatten() });
@@ -43,7 +44,7 @@ rutasActividades.post('/attivita', exigirSesion, autorizar(...ROLES_ADMINISTRADO
   }
 });
 
-rutasActividades.put('/attivita/:id', exigirSesion, autorizar(...ROLES_ADMINISTRADOR), async (req, res) => {
+rutasActividades.put('/attivita/:id', exigirSesion, exigirPermiso('tareas', 'editar'), async (req, res) => {
   const entrada = esquemaActividad.safeParse(req.body);
   if (!entrada.success) return res.status(422).json({ errore: 'Dati attività non validi' });
   try {
@@ -84,7 +85,7 @@ rutasActividades.post('/attivita/:id/chiudi', exigirSesion, async (req, res) => 
   }
 });
 
-rutasActividades.delete('/attivita/:id', exigirSesion, autorizar(...ROLES_ADMINISTRADOR), async (req, res) => {
+rutasActividades.delete('/attivita/:id', exigirSesion, exigirPermiso('tareas', 'editar'), async (req, res) => {
   await consultarUno('UPDATE attivita SET stato="inattivo",utente_modifica=? WHERE id=?', [req.utente.sub, req.params.id]);
   res.status(204).end();
 });

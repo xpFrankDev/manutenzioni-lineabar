@@ -163,7 +163,7 @@ export async function obtenerDetalleMaquina(maquinaId) {
 
   const foto = await listarFotosMaquina(maquinaId);
   const manutenzioni = await consultar(
-    `SELECT m.id,m.data,m.ubicazione,m.note,m.esito,m.ore,m.persone,m.creato_at,
+    `SELECT m.id,m.data,m.ora,m.ubicazione,m.note,m.esito,m.ore,m.persone,m.creato_at,
             u.nome tecnico,b.id boleta_id,b.codice_boleta,b.stato boleta_stato,b.prezzo_totale
        FROM manutenzioni m
        JOIN macchine_manutenzioni mm ON mm.fk_manutenzione=m.id AND mm.stato="attivo"

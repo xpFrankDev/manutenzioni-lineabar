@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Plus, Save, Trash2, X } from 'lucide-react';
 import { llamarApi } from '../../compartido/api/cliente.js';
+import { useAvisos } from '../../compartido/componentes/Avisos.jsx';
 import { Campo } from '../../compartido/componentes/Campo.jsx';
 import { TIPOS_MAQUINA, nombreTipoMaquina } from '../../compartido/dominio/maquinas.js';
 import { etiquetaDeRecurso } from './catalogo.js';
+import { useBloquearScroll } from '../../compartido/utilidades/scroll.js';
 
 function caracteristicasIniciales(valor) {
   if (!valor) return [];
@@ -17,6 +19,8 @@ function caracteristicasIniciales(valor) {
 }
 
 export function FormularioRegistro({ recurso, registro, proveedores, clientes, c, alCerrar, alGuardar }) {
+  useBloquearScroll();
+  const { notificar } = useAvisos();
   const [formulario, setFormulario] = useState(
     registro || { stato: 'attivo', tipo_cliente: 'privato', tipo_macchina: 'macchina_caffe', ruolo: 'tecnico' }
   );
@@ -60,9 +64,11 @@ export function FormularioRegistro({ recurso, registro, proveedores, clientes, c
         method: registro ? 'PUT' : 'POST',
         body: JSON.stringify(cuerpo)
       });
+      notificar(c.saved);
       alGuardar();
     } catch (e) {
       setError(e.message);
+      notificar(e.message, 'error');
     }
   }
 
@@ -263,7 +269,7 @@ export function FormularioRegistro({ recurso, registro, proveedores, clientes, c
 
           {recurso === 'parametri' && (
             <>
-              {campo('chiave', c.name, 'tarifa_mano_de_obra_hora')}
+              {campo('chiave', c.name, 'tariffa_manodopera_ora')}
               {campo('valore', c.value, '65')}
               {campo('descrizione', c.notes, 'Tarifa por hora')}
             </>

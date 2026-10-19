@@ -2,8 +2,12 @@ import { useEffect, useState } from 'react';
 import { Minus, Plus, Search, X } from 'lucide-react';
 import { llamarApi } from '../../compartido/api/cliente.js';
 import { formatearMoneda } from '../../compartido/utilidades/formato.js';
+import { useAvisos } from '../../compartido/componentes/Avisos.jsx';
+import { useBloquearScroll } from '../../compartido/utilidades/scroll.js';
 
 export function CierreActividad({ id, c, idioma, alCerrar, alGuardar }) {
+  useBloquearScroll();
+  const { notificar } = useAvisos();
   const [actividad, setActividad] = useState(null);
   const [piezas, setPiezas] = useState([]);
   const [carrito, setCarrito] = useState([]);
@@ -49,9 +53,11 @@ export function CierreActividad({ id, c, idioma, alCerrar, alGuardar }) {
           ricambi: carrito.map((linea) => ({ pezzoId: linea.id, quantita: linea.qty }))
         })
       });
+      notificar(c.saved);
       alGuardar();
     } catch (e) {
       setError(e.message);
+      notificar(e.message, 'error');
     }
   }
 
