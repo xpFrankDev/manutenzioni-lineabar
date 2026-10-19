@@ -14,6 +14,8 @@
 | `cd frontend && npm run build` | **OK** — build de producción Vite (código 0). |
 | `cd backend && npm audit --omit=dev` | **OK — 0 vulnerabilidades** tras `npm audit fix`. |
 | `cd frontend && npm audit --omit=dev` | **OK — 0 vulnerabilidades** tras `npm audit fix`. |
+| Migración UUID sobre copia de la base de producción | **OK** — `0010_uuid_identificadores.js` aplicada sobre `lineabar_uuid_test` (copia de `lineabar`): conteos preservados (`clienti` 3, `macchine` 3, `manutenzioni` 7, `boletas` 4, `utenti` 1, `calendario` 3), `id` en `char(36)`, 35 claves foráneas y los 3 índices dependientes recreados. |
+| Suite de integración contra la copia migrada | **OK — 14/14** pruebas, incluidas cookie `HttpOnly`, CSRF, CRUD, campo, calendario, boleta, scontrino, roles, reportes y defensas. | |
 
 ### Vulnerabilidades corregidas
 
@@ -28,8 +30,14 @@ Antes de la corrección, `npm audit` reportaba:
 
 ## 2. Cambios verificados en esta sesión
 
-- `backend/src/configuracion/entorno.js`: validación *fail-closed* del entorno y
-  `TRUST_PROXY_HOPS`.
+- `backend/src/configuracion/entorno.js`: validación *fail-closed* del entorno,
+  `TRUST_PROXY_HOPS` y cookies.
+- `backend/src/intermedios/cookies.js` y `sesion.js`: sesión en cookie `HttpOnly`,
+  CSRF en mutaciones y `Bearer` solo para desarrollo/tests.
+- `frontend/src/compartido/api/cliente.js`: sin `localStorage`, `credentials` y
+  cabecera CSRF.
+- `backend/src/base-datos/migraciones/0010_uuid_identificadores.js`: UUID en todas
+  las claves primarias y foráneas.
 - `backend/src/app.js`: `trust proxy` desde entorno y `x-powered-by` desactivado.
 - `backend/src/intermedios/limite.js`: `limiteOcr` (30/15 min).
 - `backend/src/modulos/autenticacion/servicio.js`: comparación con hash ficticio.
@@ -45,19 +53,43 @@ Antes de la corrección, `npm audit` reportaba:
 
 ## 3. Lo no verificado en esta sesión `[NV]`
 
-1. **Suite de integración** (`cd backend && npm test`): requiere MariaDB en
-   `127.0.0.1:3308`; no había servicio local escuchando en los puertos 3308,
-   3001, 5173 ni 8091. Se añadió el job `integracion` de CI para ejecutarla contra
-   MariaDB real.
-2. **Arranque con Docker Compose**: no se ejecutó.
-3. **Verificación visual** en navegador/iPhone: no se repitió. Los cambios de
-   accesibilidad y CSP no se validaron sobre la aplicación renderizada.
+1. **Suite de integración local**: no había MariaDB local en `127.0.0.1:3308`.
+   Se ejecutó contra una **copia de la base de producción en el VPS** y pasó
+   **14/14**; el job `integracion` de CI la repetirá en cada PR.
+2. **Arranque con Docker Compose local**: no se ejecutó; el despliegue real se
+   validó en el VPS.
+3. **Verificación visual** en navegador/iPhone: pendiente tras el despliegue. Los
+   cambios de accesibilidad y CSP no se validaron sobre la aplicación renderizada.
 4. **`trust proxy` en el VPS**: el valor `2` corresponde a dos saltos (Nginx del
-   host + Nginx del contenedor). La comprobación con tráfico real queda para el
-   despliegue.
+   host + Nginx del contenedor); se verificará con tráfico real tras el despliegue.
 5. **CSP con Google Fonts**: la política permite `fonts.googleapis.com` y
-   `fonts.gstatic.com`; falta comprobar en navegador real que no bloquea ningún
-   recurso legítimo.
+   `fonts.gstatic.com`; la comprobación en navegador real queda pendiente.
+
+## 3bis. Datos persistidos en la base de producción (2026-10-19)
+
+Inspección de solo lectura sobre `lineabar` antes de la migración:
+
+| Tabla | Filas | Observación |
+| --- | ---: | --- |
+| `clienti` | 3 | Datos de demostración. |
+| `macchine` | 3 | Datos de demostración. |
+| `manutenzioni` | 7 | 6 de demostración + 1 registro de prueba. |
+| `boletas` | 4 | 3 de demostración + 1 registro de prueba. |
+| `utenti` | 1 | Administrador `dev01`. |
+| `ruoli` | 2 | Administrador y técnico. |
+| `fornitori` | 6 | Maestros reales. |
+| `marche` | 5 | Maestros reales. |
+| `pezzi` | 14 | Maestros reales. |
+| `tipi_caratteristiche` | 6 | Maestros reales. |
+| `calendario_manutenzioni_macchine` | 3 | Demostración. |
+| `attivita` | 2 | Demostración. |
+| `scontrini` | **0** | Sin imágenes persistidas. |
+| `sesiones_refresco` | 5 | Sesiones de prueba. |
+| `parametros` | 4 | Configuración operativa. |
+
+No hay datos de clientes reales identificables: la instalación contiene
+principalmente la semilla de demostración y algunos registros de prueba. La
+inspección se puede repetir con `cd backend && npm run datos:estado`.
 
 ## 4. Suites existentes
 

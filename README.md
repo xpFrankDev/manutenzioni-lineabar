@@ -103,6 +103,11 @@ Tutte le variabili sono documentate in `.env.example` (radice, usato da Compose)
 
 La base si chiama `lineabar`. L'applicazione usa un utente con soli permessi CRUD; migrazioni e semilla usano un secondo utente con permessi DDL limitati alla stessa base. Entrambi sono creati una sola volta da `infraestructura/mariadb/inicializar-usuarios.sh`.
 
+Tutte le chiavi primarie e forzate sono **UUID** (`CHAR(36)`): nessuna entità si
+relaziona tramite un numero correlativo. La migrazione `0010_uuid_identificadores.js`
+converte una base esistente conservando i dati. Per conoscere quante righe ha ogni
+tabella senza modificare nulla: `cd backend && npm run datos:estado`.
+
 Le migrazioni sono file SQL numerati in `backend/src/base-datos/migraciones/`. Il runner le applica in ordine, si interrompe al primo errore e registra ogni file applicato, quindi rieseguirlo è sicuro. Una nuova migrazione si aggiunge come file con il numero successivo: non modificare file già applicati.
 
 ## Dati di dimostrazione
@@ -167,11 +172,12 @@ I codici sono generati nel servizio applicativo dentro una transazione: clienti 
 
 L'API non espone password in output, limita i tentativi di login, imposta header di sicurezza, valida input sul server e applica il ruolo dal JWT. Il token di accesso dura 10 minuti; la sessione si rinnova con un refresh token opaco ruotato a ogni uso, salvato solo come hash e revocato in caso di riuso sospetto, quindi l'utente non torna al login durante il lavoro in campo. Il ruolo limita anche lettura, modifica e annullamento di interventi e boletas ai tecnici che li hanno registrati.
 
-Stato e limiti reali sono in `docs/04-seguridad.md`: i token sono ancora conservati
-in `localStorage` (debito critico `D-01`, da migrare a cookie `HttpOnly` + CSRF) e
-il valore di `TRUST_PROXY_HOPS` deve riflettere i due Nginx davanti all'API, altrimenti
-il limite di accesso non è per cliente. Il SPA applica una CSP stretta e il CSV
-neutralizza le formule. Le decisioni aperte sono in `docs/07-decisiones-abiertas.md`.
+Stato e limiti reali sono in `docs/04-seguridad.md`: dopo la revisione del
+2026-10-19 la sessione viaggia in cookie `HttpOnly` con CSRF in memoria e il
+client non conserva più token in `localStorage`. `TRUST_PROXY_HOPS` deve riflettere
+i due Nginx davanti all'API, altrimenti il limite di accesso non è per cliente. Il
+SPA applica una CSP stretta e il CSV neutralizza le formule. Le decisioni aperte
+sono in `docs/07-decisiones-abiertas.md`.
 
 In produzione usare HTTPS, un `JWT_SECRET` lungo e casuale, password database a privilegi minimi e la porta di MariaDB solo su loopback. Le immagini degli scontrini restano nella base per semplicità di backup: se il volume cresce, conviene spostarle su storage esterno firmato mantenendo la stessa tabella. L'analisi OCR/IA va eseguita dietro un endpoint autenticato, non direttamente dal browser.
 
