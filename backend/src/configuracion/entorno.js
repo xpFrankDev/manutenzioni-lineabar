@@ -102,7 +102,6 @@ export const entorno = {
   cookies: {
     nombreSesion: 'lineabar_sesion',
     nombreRefresco: 'lineabar_refresco',
-    nombreCsrf: 'lineabar_csrf',
     ruta: texto('COOKIE_PATH', process.env.COOKIE_PATH, {
       defecto: produccion ? '/lineabar/api' : '/',
       min: 1,

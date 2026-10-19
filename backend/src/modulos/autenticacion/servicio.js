@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { entorno } from '../../configuracion/entorno.js';
 import { consultar, consultarUno, pool } from '../../base-datos/pool.js';
+import { generarCsrf } from '../../intermedios/cookies.js';
 import { nuevoId } from '../../utilidades/identificadores.js';
 
 /**
@@ -16,18 +17,19 @@ function hashRefresco(token) {
   return crypto.createHash('sha256').update(String(token)).digest('hex');
 }
 
-function firmarAcceso(usuario) {
+function firmarAcceso(usuario, csrf) {
   return jwt.sign(
-    { sub: usuario.id, nome: usuario.nome, ruolo: usuario.ruolo },
+    { sub: usuario.id, nome: usuario.nome, ruolo: usuario.ruolo, csrf },
     entorno.sesion.secreto,
     { expiresIn: `${entorno.sesion.minutosVigencia}m`, issuer: entorno.sesion.emisor, algorithm: 'HS256' }
   );
 }
 
-function respuestaSesion(usuario, token, refresco) {
+function respuestaSesion(usuario, token, refresco, csrf) {
   return {
     token,
     refresco,
+    csrf,
     utente: {
       id: usuario.id,
       nome: usuario.nome,
@@ -66,9 +68,10 @@ export async function iniciarSesion(codigoUsuario, contrasena, meta = {}) {
   if (!usuario || !coincide) return null;
 
   await pool.execute('DELETE FROM sesiones_refresco WHERE expira_at < DATE_SUB(NOW(), INTERVAL 30 DAY)');
-  const token = firmarAcceso(usuario);
+  const csrf = generarCsrf();
+  const token = firmarAcceso(usuario, csrf);
   const refresco = await crearRefresco(usuario.id, meta);
-  return respuestaSesion(usuario, token, refresco);
+  return respuestaSesion(usuario, token, refresco, csrf);
 }
 
 /**
@@ -105,7 +108,8 @@ export async function renovarSesion(refresco, meta = {}) {
     usuario.id,
     sesion.id
   ]);
-  return respuestaSesion(usuario, firmarAcceso(usuario), nuevo);
+  const csrf = generarCsrf();
+  return respuestaSesion(usuario, firmarAcceso(usuario, csrf), nuevo, csrf);
 }
 
 export async function cerrarSesion(refresco) {

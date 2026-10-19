@@ -22,7 +22,7 @@ export function leerCookies(req, _res, siguiente) {
   return siguiente();
 }
 
-function opciones({ httpOnly, maxAge }) {
+function opciones({ httpOnly = true, maxAge }) {
   return {
     httpOnly,
     sameSite: 'strict',
@@ -44,18 +44,16 @@ export function compararSeguro(a, b) {
   return crypto.timingSafeEqual(izquierda, derecha);
 }
 
-export function establecerCookiesSesion(res, { token, refresco, csrf }) {
-  const seguro = opciones({ httpOnly: true, maxAge: entorno.sesion.minutosVigencia * 60 * 1000 });
-  const larga = opciones({ httpOnly: true, maxAge: entorno.sesion.refrescoDias * 24 * 60 * 60 * 1000 });
+export function establecerCookiesSesion(res, { token, refresco }) {
+  const seguro = opciones({ maxAge: entorno.sesion.minutosVigencia * 60 * 1000 });
+  const larga = opciones({ maxAge: entorno.sesion.refrescoDias * 24 * 60 * 60 * 1000 });
   res.cookie(entorno.cookies.nombreSesion, token, seguro);
   res.cookie(entorno.cookies.nombreRefresco, refresco, larga);
-  res.cookie(entorno.cookies.nombreCsrf, csrf, { ...larga, httpOnly: false });
 }
 
 export function limpiarCookiesSesion(res) {
-  res.clearCookie(entorno.cookies.nombreSesion, opciones({ httpOnly: true, maxAge: 0 }));
-  res.clearCookie(entorno.cookies.nombreRefresco, opciones({ httpOnly: true, maxAge: 0 }));
-  res.clearCookie(entorno.cookies.nombreCsrf, opciones({ httpOnly: false, maxAge: 0 }));
+  res.clearCookie(entorno.cookies.nombreSesion, opciones({ maxAge: 0 }));
+  res.clearCookie(entorno.cookies.nombreRefresco, opciones({ maxAge: 0 }));
 }
 
 export function esMetodoSeguro(metodo) {

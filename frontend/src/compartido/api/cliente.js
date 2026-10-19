@@ -2,7 +2,6 @@ import { RUTA_ACCESO } from '../constantes.js';
 
 // `import.meta.env` existe bajo Vite; en pruebas de Node queda indefinido.
 const URL_API = import.meta.env?.VITE_API_URL ?? '/lineabar/api';
-const COOKIE_CSRF = 'lineabar_csrf';
 
 export class ErrorApi extends Error {
   constructor(estado, mensaje) {
@@ -16,14 +15,8 @@ export class ErrorApi extends Error {
 // viaja en cookies HttpOnly que JavaScript no puede leer.
 let csrfEnMemoria = null;
 
-function leerCookie(nombre) {
-  if (typeof document === 'undefined') return null;
-  const coincidencia = document.cookie.match(new RegExp(`(?:^|; )${nombre}=([^;]*)`));
-  return coincidencia ? decodeURIComponent(coincidencia[1]) : null;
-}
-
 function csrfActual() {
-  return csrfEnMemoria ?? leerCookie(COOKIE_CSRF);
+  return csrfEnMemoria;
 }
 
 export function guardarSesion(sesion) {

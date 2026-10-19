@@ -26,9 +26,10 @@ export function exigirSesion(req, res, siguiente) {
     return res.status(401).json({ errore: 'Sessione non valida o scaduta' });
   }
 
-  // La cookie viaja automáticamente: toda mutación exige el token CSRF.
+  // La cookie viaja automáticamente: toda mutación exige el CSRF que el JWT
+  // transporta y que el cliente guarda solo en memoria.
   if (credencial.origen === 'cookie' && !esMetodoSeguro(req.method)) {
-    const esperado = req.cookies?.[entorno.cookies.nombreCsrf];
+    const esperado = req.utente.csrf;
     const recibido = req.headers['x-csrf-token'];
     if (!esperado || !recibido || !compararSeguro(esperado, recibido)) {
       return res.status(403).json({ errore: 'Token CSRF mancante o non valido' });

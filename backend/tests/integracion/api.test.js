@@ -66,14 +66,16 @@ test('flujo completo de Linea Bar', async (t) => {
     assert.equal(acceso.status, 200);
     const galletas = acceso.headers.getSetCookie();
     const cookie = galletas.map((valor) => valor.split(';')[0]).join('; ');
-    const csrf = galletas
-      .find((valor) => valor.startsWith('lineabar_csrf='))
-      ?.split(';')[0]
-      .slice('lineabar_csrf='.length);
-    assert.ok(csrf, 'la cookie CSRF debe emitirse');
+    const cuerpo = await acceso.json();
+    const csrf = cuerpo.csrf;
+    assert.ok(csrf, 'el CSRF debe viajar en la respuesta de login');
     assert.ok(
       galletas.some((valor) => valor.startsWith('lineabar_sesion=') && /HttpOnly/i.test(valor)),
       'la cookie de sesión debe ser HttpOnly'
+    );
+    assert.ok(
+      !galletas.some((valor) => valor.startsWith('lineabar_csrf=')),
+      'el CSRF no debe persistirse en una cookie legible'
     );
 
     const sinCsrf = await fetch(`${base}/parametros`, {
