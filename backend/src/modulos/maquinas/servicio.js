@@ -218,7 +218,7 @@ export async function guardarFotoMaquina(maquinaId, datos, usuarioId) {
   const { tipoMime, base64, bytes, nomeFile } = analizarImagenEntrada(datos, { maximoBytes: 6 * 1024 * 1024 });
   const existente = await consultarUno(
     'SELECT id FROM macchine_foto WHERE fk_macchina=? AND nome_file=? AND stato="attivo"',
-    [maquinaId, nombreFile]
+    [maquinaId, nomeFile]
   );
   if (existente) throw new Error('Esiste già una foto con questo nome per questa macchina');
   const id = nuevoId();
