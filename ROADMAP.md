@@ -1,5 +1,10 @@
 # Roadmap · Linea Bar
 
+> **Documento histórico (revisión 2026-10-19).** Registra el estado de septiembre
+> de 2026 y se conserva como evidencia. El estado vigente, la seguridad, las
+> decisiones abiertas y el plan posterior están en `docs/00-indice.md`. Si hay
+> contradicción, mandan `docs/` y el código.
+
 Estado de referencia: septiembre de 2026. Este documento registra qué está
 terminado, qué quedó a medias y qué sigue después de la revisión funcional del
 flujo de boletas, del calendario y de los maestros.
@@ -99,7 +104,7 @@ tipo de máquina, previsión de manutenciones y exportación CSV.
 
 ## 8. Verificación
 
-- `backend`: `npm test` ejecuta 9 pruebas de dominio y la suite de integración
+- `backend`: `npm test` ejecuta 11 pruebas de dominio y la suite de integración
   contra una base `lineabar_test` (login, refresh, maestros, flujo de campo,
   calendario, boleta, scontrino, alcance por rol, reportes y defensas).
 - `frontend`: `npm test` ejecuta pruebas de dominio y un renderizado en servidor

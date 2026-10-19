@@ -54,7 +54,7 @@ rutasCalendario.post('/calendario/:id/programar', exigirSesion, autorizar(...ROL
       );
       await conexion.execute(
         'UPDATE calendario_manutenzioni_macchine SET fk_attivita=?,stato_calendario="programmato",utente_modifica=? WHERE id=?',
-        [actividadId, req.utente.sub, Number(req.params.id)]
+        [actividadId, req.utente.sub, req.params.id]
       );
       return actividadId;
     });
@@ -72,5 +72,5 @@ rutasCalendario.put('/calendario/:id', exigirSesion, autorizar(...ROLES_ADMINIST
   if (!registro) return res.status(404).json({ errore: 'Voce di calendario non trovata' });
 
   await actualizarEntradaCalendario(req.params.id, entrada.data, req.utente.sub);
-  return res.json({ id: Number(req.params.id) });
+  return res.json({ id: req.params.id });
 });

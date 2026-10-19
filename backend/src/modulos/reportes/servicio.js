@@ -87,7 +87,13 @@ export async function boletasDelPeriodo(periodo) {
 
 export function boletasACsv(filas) {
   const cabecera = ['Codice boleta', 'Data', 'Stato', 'Cliente', 'Codice cliente', 'Macchina', 'Tecnico', 'Ore', 'Persone', 'Ubicazione', 'Esito', 'Totale'];
-  const escapar = (valor) => `"${String(valor ?? '').replace(/"/g, '""')}"`;
+  // Neutraliza la inyección de fórmulas al abrir el CSV en una hoja de cálculo.
+  const prefijoPeligroso = /^[=+\-@\t\r]/;
+  const escapar = (valor) => {
+    let texto = String(valor ?? '');
+    if (prefijoPeligroso.test(texto)) texto = `'${texto}`;
+    return `"${texto.replace(/"/g, '""')}"`;
+  };
   const lineas = filas.map((fila) =>
     [
       fila.codice_boleta,

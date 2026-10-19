@@ -1,12 +1,13 @@
 import { z } from 'zod';
 import { consultarUno } from '../../base-datos/pool.js';
+import { nuevoId } from '../../utilidades/identificadores.js';
 
 export const TIPOS_MAQUINA = ['macchina_caffe', 'produttore_ghiaccio', 'lavastoviglie', 'filtro', 'addolcitore'];
 
 export const esquemaMaquina = z.object({
-  fk_cliente: z.coerce.number().int().positive(),
-  fk_fornitore: z.coerce.number().int().positive().nullable().optional(),
-  fk_marca: z.coerce.number().int().positive().nullable().optional(),
+  fk_cliente: z.string().uuid(),
+  fk_fornitore: z.string().uuid().nullable().optional(),
+  fk_marca: z.string().uuid().nullable().optional(),
   codice_unico: z.string().trim().min(4).max(50),
   tipo_macchina: z.enum(TIPOS_MAQUINA),
   modello: z.string().trim().max(100).nullable().optional(),
@@ -39,7 +40,7 @@ export async function resolverMarca(maquina, conexion) {
   if (maquina.fk_fornitore) {
     const fornitore = await consultarUno('SELECT nome FROM fornitori WHERE id=? AND stato="attivo"', [maquina.fk_fornitore], conexion);
     if (!fornitore) throw new Error('Fornitore non trovato');
-    await conexion.execute('INSERT IGNORE INTO marche (nome) VALUES (?)', [fornitore.nome]);
+    await conexion.execute('INSERT IGNORE INTO marche (id,nome) VALUES (?,?)', [nuevoId(), fornitore.nome]);
     const marca = await consultarUno('SELECT id FROM marche WHERE nome=?', [fornitore.nome], conexion);
     return marca.id;
   }
@@ -52,9 +53,11 @@ export async function resolverMarca(maquina, conexion) {
 export async function crearMaquina(conexion, datos, usuarioId) {
   const maquina = normalizarMaquina(datos);
   const marcaId = await resolverMarca(maquina, conexion);
-  const [resultado] = await conexion.execute(
-    'INSERT INTO macchine (fk_cliente,fk_marca,fk_fornitore,codice_unico,tipo_macchina,modello,stato,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,?,?)',
+  const id = nuevoId();
+  await conexion.execute(
+    'INSERT INTO macchine (id,fk_cliente,fk_marca,fk_fornitore,codice_unico,tipo_macchina,modello,stato,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,?,?,?)',
     [
+      id,
       maquina.fk_cliente,
       marcaId,
       maquina.fk_fornitore,
@@ -66,7 +69,7 @@ export async function crearMaquina(conexion, datos, usuarioId) {
       usuarioId
     ]
   );
-  return { id: resultado.insertId, marcaId };
+  return { id, marcaId };
 }
 
 export async function actualizarMaquina(conexion, id, datos, usuarioId) {
@@ -83,8 +86,8 @@ export async function actualizarMaquina(conexion, id, datos, usuarioId) {
       maquina.modello,
       maquina.stato,
       usuarioId,
-      Number(id)
+      id
     ]
   );
-  return { id: Number(id), marcaId };
+  return { id, marcaId };
 }

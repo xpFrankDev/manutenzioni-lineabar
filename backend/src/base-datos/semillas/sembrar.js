@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 import { abrirConexionConEspera } from '../conexion-directa.js';
 
 const directorioSemillas = path.dirname(fileURLToPath(import.meta.url));
+const ID_ADMINISTRADOR = '66666666-6666-4666-8666-000000000001';
 
 const administrador = {
   codice_usuario: process.env.LINEABAR_ADMIN_USER || 'dev01',
@@ -19,6 +20,14 @@ async function ejecutarArchivo(conexion, archivo) {
 }
 
 async function asegurarAdministrador(conexion) {
+  if (
+    process.env.NODE_ENV === 'production' &&
+    administrador.password &&
+    /^(reemplaza|cambia|valor_)/i.test(administrador.password)
+  ) {
+    throw new Error('LINEABAR_ADMIN_PASSWORD conserva un valor de ejemplo; define un secreto real.');
+  }
+
   const [filas] = await conexion.query(
     'SELECT id,password_hash FROM utenti WHERE codice_usuario=? OR email=? LIMIT 1',
     [administrador.codice_usuario, administrador.email]
@@ -40,10 +49,13 @@ async function asegurarAdministrador(conexion) {
     );
   }
 
+  const [roles] = await conexion.query("SELECT id FROM ruoli WHERE codice='amministratore'");
+  if (!roles[0]) throw new Error('No existe el rol amministratore; ejecuta la semilla base.');
+
   const hash = await bcrypt.hash(administrador.password, 12);
   await conexion.query(
-    'INSERT IGNORE INTO utenti (id,fk_ruolo,codice_usuario,nome,email,password_hash) VALUES (1,1,?,?,?,?)',
-    [administrador.codice_usuario, administrador.nome, administrador.email, hash]
+    'INSERT IGNORE INTO utenti (id,fk_ruolo,codice_usuario,nome,email,password_hash) VALUES (?,?,?,?,?,?)',
+    [ID_ADMINISTRADOR, roles[0].id, administrador.codice_usuario, administrador.nome, administrador.email, hash]
   );
   console.log(`Usuario administrador ${administrador.codice_usuario} creado.`);
 }

@@ -212,7 +212,7 @@ function ProgramarIntervento({ fila, c, idioma, alCerrar, alGuardar }) {
   }
 
   return (
-    <div className="sheet-wrap">
+    <div className="sheet-wrap" role="dialog" aria-modal="true">
       <form className="sheet task-sheet" onSubmit={guardar}>
         <header>
           <div>
@@ -221,7 +221,7 @@ function ProgramarIntervento({ fila, c, idioma, alCerrar, alGuardar }) {
               {fila.cliente} · {fila.codice_unico}
             </h2>
           </div>
-          <button type="button" onClick={alCerrar}>
+          <button type="button" onClick={alCerrar} aria-label={c.cancel}>
             <X />
           </button>
         </header>
@@ -295,7 +295,7 @@ function ProgramarIntervento({ fila, c, idioma, alCerrar, alGuardar }) {
           )}
         </main>
         <footer>
-          <button type="button" onClick={alCerrar}>
+          <button type="button" onClick={alCerrar} aria-label={c.cancel}>
             {c.cancel}
           </button>
           <button className="primary" disabled={guardando || !formulario.tecnici.length}>
@@ -335,7 +335,7 @@ function Reprogramar({ fila, c, alCerrar, alGuardar }) {
   }
 
   return (
-    <div className="sheet-wrap">
+    <div className="sheet-wrap" role="dialog" aria-modal="true">
       <form className="sheet task-sheet" onSubmit={guardar}>
         <header>
           <div>
@@ -344,7 +344,7 @@ function Reprogramar({ fila, c, alCerrar, alGuardar }) {
               {fila.cliente} · {fila.codice_unico}
             </h2>
           </div>
-          <button type="button" onClick={alCerrar}>
+          <button type="button" onClick={alCerrar} aria-label={c.cancel}>
             <X />
           </button>
         </header>
@@ -392,7 +392,7 @@ function Reprogramar({ fila, c, alCerrar, alGuardar }) {
           )}
         </main>
         <footer>
-          <button type="button" onClick={alCerrar}>
+          <button type="button" onClick={alCerrar} aria-label={c.cancel}>
             {c.cancel}
           </button>
           <button className="primary" disabled={guardando}>

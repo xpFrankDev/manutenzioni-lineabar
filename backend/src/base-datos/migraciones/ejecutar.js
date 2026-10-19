@@ -1,6 +1,6 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { abrirConexionConEspera } from '../conexion-directa.js';
 
 const directorioMigraciones = path.dirname(fileURLToPath(import.meta.url));
@@ -16,7 +16,18 @@ async function existeTabla(conexion, nombre) {
 
 async function listarArchivos() {
   const archivos = await readdir(directorioMigraciones);
-  return archivos.filter((archivo) => archivo.endsWith('.sql')).sort();
+  return archivos.filter((archivo) => archivo.endsWith('.sql') || /^\d+_.+\.js$/.test(archivo)).sort();
+}
+
+async function aplicarArchivo(conexion, archivo) {
+  const ruta = path.join(directorioMigraciones, archivo);
+  if (archivo.endsWith('.js')) {
+    const modulo = await import(pathToFileURL(ruta).href);
+    await modulo.default(conexion);
+    return;
+  }
+  const sentencias = await readFile(ruta, 'utf8');
+  await conexion.query(sentencias);
 }
 
 async function nombresAplicados(conexion) {
@@ -57,8 +68,7 @@ async function ejecutar() {
       if (aplicadas.has(archivo)) continue;
       pendientes += 1;
       console.log(`Aplicando ${archivo}`);
-      const sentencias = await readFile(path.join(directorioMigraciones, archivo), 'utf8');
-      await conexion.query(sentencias);
+      await aplicarArchivo(conexion, archivo);
       await registrar(conexion, archivo);
     }
     console.log(pendientes ? `Migraciones aplicadas: ${pendientes}.` : 'No hay migraciones pendientes.');

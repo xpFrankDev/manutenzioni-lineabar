@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { consultar, enTransaccion, pool } from '../../base-datos/pool.js';
 import { autorizar, exigirSesion, ROLES_ADMINISTRADOR } from '../../intermedios/sesion.js';
 import { crearCliente } from '../clientes/servicio.js';
@@ -15,12 +16,12 @@ rutasCatalogos.get('/maquinas', exigirSesion, async (_req, res) => {
 });
 
 rutasCatalogos.get('/piezas', exigirSesion, async (req, res) => {
-  const maquinaId = Number(req.query.maquina_id);
-  if (!Number.isInteger(maquinaId) || maquinaId <= 0) return res.status(422).json({ errore: 'Macchina non valida' });
+  const maquinaId = z.string().uuid().safeParse(req.query.maquina_id);
+  if (!maquinaId.success) return res.status(422).json({ errore: 'Macchina non valida' });
   res.json(
     await consultar(
       'SELECT p.id,p.nome,p.codice_unico,CAST(p.prezzo AS DECIMAL(10,2)) prezzo,p.intervallo_mesi,p.tipo_macchina FROM pezzi p JOIN macchine m ON m.id=? WHERE p.stato="attivo" AND (p.tipo_macchina=m.tipo_macchina OR p.tipo_macchina IN ("filtro","addolcitore")) ORDER BY p.nome',
-      [maquinaId]
+      [maquinaId.data]
     )
   );
 });

@@ -73,7 +73,7 @@ rutasInterventos.put('/interventi/:id', exigirSesion, async (req, res) => {
       req.params.id
     ]
   );
-  res.json({ id: Number(req.params.id) });
+  res.json({ id: req.params.id });
 });
 
 rutasInterventos.delete('/interventi/:id', exigirSesion, async (req, res) => {

@@ -3,6 +3,14 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { entorno } from '../../configuracion/entorno.js';
 import { consultar, consultarUno, pool } from '../../base-datos/pool.js';
+import { nuevoId } from '../../utilidades/identificadores.js';
+
+/**
+ * Hash ficticio con el mismo coste que los reales. Se compara siempre, incluso
+ * cuando el código de usuario no existe, para no revelar por tiempo qué
+ * cuentas son válidas.
+ */
+const HASH_FICTICIO = '$2b$12$lRGCm3DYtx5IYvCg9Wbbd.kUaXqSHXKK3LKuC0rfgugzRCNhai8O6';
 
 function hashRefresco(token) {
   return crypto.createHash('sha256').update(String(token)).digest('hex');
@@ -34,8 +42,9 @@ function respuestaSesion(usuario, token, refresco) {
 async function crearRefresco(usuarioId, meta = {}) {
   const token = crypto.randomBytes(48).toString('base64url');
   await pool.execute(
-    'INSERT INTO sesiones_refresco (fk_utente,token_hash,expira_at,agente,indirizzo_ip,utente_crea,utente_modifica) VALUES (?,?,DATE_ADD(NOW(), INTERVAL ? DAY),?,?,?,?)',
+    'INSERT INTO sesiones_refresco (id,fk_utente,token_hash,expira_at,agente,indirizzo_ip,utente_crea,utente_modifica) VALUES (?,?,?,DATE_ADD(NOW(), INTERVAL ? DAY),?,?,?,?)',
     [
+      nuevoId(),
       usuarioId,
       hashRefresco(token),
       entorno.sesion.refrescoDias,
@@ -53,7 +62,8 @@ export async function iniciarSesion(codigoUsuario, contrasena, meta = {}) {
     'SELECT u.id,u.nome,u.codice_usuario,u.password_hash,r.codice ruolo FROM utenti u JOIN ruoli r ON r.id=u.fk_ruolo WHERE u.codice_usuario=? AND u.stato="attivo"',
     [codigoUsuario]
   );
-  if (!usuario || !(await bcrypt.compare(contrasena, usuario.password_hash))) return null;
+  const coincide = await bcrypt.compare(contrasena, usuario?.password_hash ?? HASH_FICTICIO);
+  if (!usuario || !coincide) return null;
 
   await pool.execute('DELETE FROM sesiones_refresco WHERE expira_at < DATE_SUB(NOW(), INTERVAL 30 DAY)');
   const token = firmarAcceso(usuario);

@@ -8,6 +8,7 @@
     "start": "node src/servidor.js",
     "migraciones": "node src/base-datos/migraciones/ejecutar.js",
     "sembrar": "node src/base-datos/semillas/sembrar.js",
+    "datos:estado": "node scripts/estado-datos.js",
     "verificar": "node scripts/verificar-sintaxis.js",
     "test": "npm run test:unidad && npm run test:integracion",
     "test:unidad": "node --test tests/unidad/*.test.js",

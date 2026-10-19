@@ -1,12 +1,13 @@
 import { z } from 'zod';
 import { consultarUno } from '../../base-datos/pool.js';
+import { nuevoId } from '../../utilidades/identificadores.js';
 
 export const esquemaCliente = z.object({
   nome: z.string().trim().min(2).max(160),
   indirizzo: z.string().trim().min(3).max(255),
   citta: z.string().trim().min(2).max(120),
   tipo_cliente: z.enum(['privato', 'fornitore']).default('privato'),
-  fk_fornitore: z.coerce.number().int().positive().nullable().optional(),
+  fk_fornitore: z.string().uuid().nullable().optional(),
   codice: z.string().trim().min(5).max(45).nullable().optional(),
   stato: z.enum(['attivo', 'inattivo']).default('attivo')
 });
@@ -51,10 +52,12 @@ export async function crearCliente(conexion, datos, usuarioId, intentos = 5) {
 
   for (let intento = 0; intento < intentos; intento += 1) {
     const codigo = await siguienteCodigoCliente(cliente, conexion);
+    const id = nuevoId();
     try {
-      const [resultado] = await conexion.execute(
-        'INSERT INTO clienti (fk_fornitore,tipo_cliente,codice,nome,indirizzo,citta,stato,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,?,?)',
+      await conexion.execute(
+        'INSERT INTO clienti (id,fk_fornitore,tipo_cliente,codice,nome,indirizzo,citta,stato,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,?,?,?)',
         [
+          id,
           cliente.fk_fornitore,
           cliente.tipo_cliente,
           codigo,
@@ -66,7 +69,7 @@ export async function crearCliente(conexion, datos, usuarioId, intentos = 5) {
           usuarioId
         ]
       );
-      return { id: resultado.insertId, codice: codigo };
+      return { id, codice: codigo };
     } catch (error) {
       if (error.code !== 'ER_DUP_ENTRY' || cliente.codice) throw error;
       ultimoError = error;

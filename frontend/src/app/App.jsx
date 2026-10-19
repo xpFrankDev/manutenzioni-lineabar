@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Menu, Plus, ReceiptText, Wrench } from 'lucide-react';
-import { llamarApi } from '../compartido/api/cliente.js';
+import { guardarSesion, llamarApi } from '../compartido/api/cliente.js';
 import { Toggle } from '../compartido/componentes/Toggle.jsx';
 import { CLAVES, RUTA_ACCESO, RUTAS, RUTAS_HOJA, hojaDesdeRuta, paginaDesdeRuta } from '../compartido/constantes.js';
 import { IDIOMA_POR_DEFECTO, obtenerCatalogo } from '../compartido/i18n/index.js';
@@ -39,6 +39,7 @@ export function App() {
     if (sesion !== 'check') return;
     llamarApi('/auth/sessione')
       .then((datos) => {
+        guardarSesion(datos);
         setUsuario(datos.utente);
         setSesion('ok');
       })

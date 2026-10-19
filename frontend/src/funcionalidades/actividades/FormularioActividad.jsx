@@ -45,9 +45,9 @@ export function FormularioActividad({ c, alCerrar, alGuardar }) {
         method: 'POST',
         body: JSON.stringify({
           ...formulario,
-          tecnici: formulario.tecnici.map(Number),
-          clienteId: Number(formulario.clienteId),
-          macchinaId: Number(formulario.macchinaId)
+          tecnici: formulario.tecnici,
+          clienteId: formulario.clienteId,
+          macchinaId: formulario.macchinaId
         })
       });
       alGuardar();
@@ -57,7 +57,7 @@ export function FormularioActividad({ c, alCerrar, alGuardar }) {
   }
 
   return (
-    <div className="sheet-wrap">
+    <div className="sheet-wrap" role="dialog" aria-modal="true">
       <form className="sheet task-sheet" onSubmit={guardar}>
         <header>
           <div>
@@ -65,7 +65,7 @@ export function FormularioActividad({ c, alCerrar, alGuardar }) {
               {c.add} {c.tasks}
             </h2>
           </div>
-          <button type="button" onClick={alCerrar}>
+          <button type="button" onClick={alCerrar} aria-label={c.cancel}>
             <X />
           </button>
         </header>
@@ -144,7 +144,7 @@ export function FormularioActividad({ c, alCerrar, alGuardar }) {
           {error && <p className="error">{error}</p>}
         </main>
         <footer>
-          <button type="button" onClick={alCerrar}>
+          <button type="button" onClick={alCerrar} aria-label={c.cancel}>
             {c.cancel}
           </button>
           <button className="primary">

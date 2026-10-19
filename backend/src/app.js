@@ -2,6 +2,7 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 import { entorno } from './configuracion/entorno.js';
+import { leerCookies } from './intermedios/cookies.js';
 import { manejadorErrores } from './intermedios/errores.js';
 import { limiteGeneral } from './intermedios/limite.js';
 import { rutasActividades } from './modulos/actividades/rutas.js';
@@ -19,7 +20,8 @@ import { rutasTablero } from './modulos/tablero/rutas.js';
 export function crearApp() {
   const app = express();
 
-  app.set('trust proxy', 1);
+  app.set('trust proxy', entorno.trustProxy);
+  app.disable('x-powered-by');
   app.use(helmet());
   app.use(
     cors({
@@ -28,6 +30,7 @@ export function crearApp() {
     })
   );
   app.use(express.json({ limit: '12mb' }));
+  app.use(leerCookies);
 
   app.get('/api/salute', (_req, res) => res.json({ stato: 'ok' }));
 

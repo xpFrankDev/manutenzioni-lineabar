@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { enTransaccion } from '../../base-datos/pool.js';
+import { limiteOcr } from '../../intermedios/limite.js';
 import { exigirSesion } from '../../intermedios/sesion.js';
 import {
   analizarScontrino,
@@ -11,7 +12,7 @@ import {
 
 export const rutasScontrini = Router();
 
-rutasScontrini.post('/scontrini/analisi', exigirSesion, async (req, res) => {
+rutasScontrini.post('/scontrini/analisi', limiteOcr, exigirSesion, async (req, res) => {
   try {
     const resultado = await analizarScontrino({
       imagen: req.body?.immagine,

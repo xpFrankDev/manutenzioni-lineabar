@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { consultar, consultarUno } from '../../base-datos/pool.js';
+import { nuevoId } from '../../utilidades/identificadores.js';
 import { obtenerParametros } from '../parametros/servicio.js';
 
 export const DIAS_PROXIMOS = 30;
@@ -51,8 +52,8 @@ export async function programarCalendario(conexion, { macchinaId, fecha, manuten
     if (!meses) continue;
     const proxima = sumarMeses(fecha, meses);
     await conexion.execute(
-      'INSERT INTO calendario_manutenzioni_macchine (fk_macchina,fk_pezzo,fk_manutenzione_origine,frequenza_mesi,ultima_esecuzione,prossima_manutenzione,stato_calendario,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,"programmato",?,?) ON DUPLICATE KEY UPDATE fk_manutenzione_origine=VALUES(fk_manutenzione_origine),frequenza_mesi=VALUES(frequenza_mesi),ultima_esecuzione=VALUES(ultima_esecuzione),prossima_manutenzione=VALUES(prossima_manutenzione),stato_calendario="programmato",note=NULL,utente_modifica=VALUES(utente_modifica),stato="attivo"',
-      [macchinaId, recambio.pezzoId, manutencionId, meses, fecha, proxima, usuarioId, usuarioId]
+      'INSERT INTO calendario_manutenzioni_macchine (id,fk_macchina,fk_pezzo,fk_manutenzione_origine,frequenza_mesi,ultima_esecuzione,prossima_manutenzione,stato_calendario,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,"programmato",?,?) ON DUPLICATE KEY UPDATE fk_manutenzione_origine=VALUES(fk_manutenzione_origine),frequenza_mesi=VALUES(frequenza_mesi),ultima_esecuzione=VALUES(ultima_esecuzione),prossima_manutenzione=VALUES(prossima_manutenzione),stato_calendario="programmato",note=NULL,utente_modifica=VALUES(utente_modifica),stato="attivo"',
+      [nuevoId(), macchinaId, recambio.pezzoId, manutencionId, meses, fecha, proxima, usuarioId, usuarioId]
     );
     programados.push({ pezzoId: recambio.pezzoId, prossimaManutenzione: proxima, frequenzaMesi: meses });
   }
@@ -65,7 +66,7 @@ function construirFiltros({ clienteId, desde, hasta, estado, tecnicoId }) {
 
   if (clienteId) {
     condiciones.push('cl.id=?');
-    valores.push(Number(clienteId));
+    valores.push(clienteId);
   }
   if (desde) {
     condiciones.push('c.prossima_manutenzione>=?');
@@ -79,7 +80,7 @@ function construirFiltros({ clienteId, desde, hasta, estado, tecnicoId }) {
     condiciones.push(
       '(c.fk_attivita IS NULL OR EXISTS (SELECT 1 FROM attivita_tecnici at WHERE at.fk_attivita=c.fk_attivita AND at.fk_tecnico=? AND at.stato="attivo"))'
     );
-    valores.push(Number(tecnicoId));
+    valores.push(tecnicoId);
   }
 
   const hoy = hoyIso();
@@ -154,15 +155,15 @@ export async function resumenCalendario({ tecnicoId = null } = {}) {
 }
 
 export async function obtenerEntradaCalendario(id) {
-  return consultarUno(`SELECT ${COLUMNAS_CALENDARIO} ${DESDE_CALENDARIO} WHERE c.id=?`, [Number(id)]);
+  return consultarUno(`SELECT ${COLUMNAS_CALENDARIO} ${DESDE_CALENDARIO} WHERE c.id=?`, [id]);
 }
 
 export async function actualizarEntradaCalendario(id, datos, usuarioId) {
   await consultar(
     'UPDATE calendario_manutenzioni_macchine SET prossima_manutenzione=COALESCE(?,prossima_manutenzione),frequenza_mesi=COALESCE(?,frequenza_mesi),stato_calendario=COALESCE(?,stato_calendario),note=COALESCE(?,note),utente_modifica=? WHERE id=?',
-    [datos.prossimaManutenzione ?? null, datos.frequenzaMesi ?? null, datos.statoCalendario ?? null, datos.note ?? null, usuarioId, Number(id)]
+    [datos.prossimaManutenzione ?? null, datos.frequenzaMesi ?? null, datos.statoCalendario ?? null, datos.note ?? null, usuarioId, id]
   );
-  return Number(id);
+  return id;
 }
 
 export const esquemaReprogramacion = z.object({
@@ -173,7 +174,7 @@ export const esquemaReprogramacion = z.object({
 });
 
 export const esquemaProgramacion = z.object({
-  tecnici: z.array(z.coerce.number().int().positive()).min(1).max(20),
+  tecnici: z.array(z.string().uuid()).min(1).max(20),
   priorita: z.enum(['bassa', 'normale', 'alta']).default('normale'),
   richiedeAppuntamento: z.boolean().default(true),
   osservazione: z.string().trim().min(5).max(3000).optional(),

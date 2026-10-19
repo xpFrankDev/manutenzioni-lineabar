@@ -124,11 +124,15 @@ export function Configuracion({ c }) {
               </span>
             </button>
             <Estado value={fila.stato === 'attivo' ? 'risolto' : 'da_rifare'} c={c} />
-            <button title={c.edit} onClick={() => setEdicion(fila)}>
+            <button title={c.edit} aria-label={`${c.edit}: ${fila.nome ?? fila.codice_unico ?? ''}`} onClick={() => setEdicion(fila)}>
               <Pencil size={17} />
             </button>
             {fila.stato === 'attivo' && (
-              <button title={c.deactivate} onClick={() => desactivar(fila)}>
+              <button
+                title={c.deactivate}
+                aria-label={`${c.deactivate}: ${fila.nome ?? fila.codice_unico ?? ''}`}
+                onClick={() => desactivar(fila)}
+              >
                 <Ban size={17} />
               </button>
             )}

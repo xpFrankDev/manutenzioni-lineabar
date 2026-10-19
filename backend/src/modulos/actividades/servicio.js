@@ -1,5 +1,6 @@
 import { consultar, consultarUno } from '../../base-datos/pool.js';
 import { esTecnico } from '../../intermedios/sesion.js';
+import { nuevoId } from '../../utilidades/identificadores.js';
 import { crearIntervento } from '../interventos/servicio.js';
 
 export async function puedeAccederActividad(req, id) {
@@ -50,9 +51,11 @@ export async function obtenerActividad(id) {
 }
 
 export async function crearActividad(conexion, datos, usuarioId) {
-  const [actividad] = await conexion.execute(
-    'INSERT INTO attivita (fk_cliente,fk_macchina,fk_assegnato,titolo,osservazione,richiede_appuntamento,scadenza,priorita,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,?,?,?)',
+  const id = nuevoId();
+  await conexion.execute(
+    'INSERT INTO attivita (id,fk_cliente,fk_macchina,fk_assegnato,titolo,osservazione,richiede_appuntamento,scadenza,priorita,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
     [
+      id,
       datos.clienteId,
       datos.macchinaId,
       datos.tecnici[0],
@@ -68,10 +71,10 @@ export async function crearActividad(conexion, datos, usuarioId) {
   for (const tecnico of datos.tecnici) {
     await conexion.execute(
       'INSERT INTO attivita_tecnici (fk_attivita,fk_tecnico,utente_crea,utente_modifica) VALUES (?,?,?,?)',
-      [actividad.insertId, tecnico, usuarioId, usuarioId]
+      [id, tecnico, usuarioId, usuarioId]
     );
   }
-  return actividad.insertId;
+  return id;
 }
 
 export async function actualizarActividad(conexion, id, datos, usuarioId) {

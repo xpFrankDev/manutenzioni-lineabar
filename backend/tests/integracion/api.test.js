@@ -57,6 +57,44 @@ test('flujo completo de Linea Bar', async (t) => {
     assert.equal((await pedir(base, '/auth/sessione', { token: 'token-falso' })).estado, 401);
   });
 
+  await t.test('sesión en cookie HttpOnly y CSRF en mutaciones', async () => {
+    const acceso = await fetch(`${base}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(ADMIN)
+    });
+    assert.equal(acceso.status, 200);
+    const galletas = acceso.headers.getSetCookie();
+    const cookie = galletas.map((valor) => valor.split(';')[0]).join('; ');
+    const csrf = galletas
+      .find((valor) => valor.startsWith('lineabar_csrf='))
+      ?.split(';')[0]
+      .slice('lineabar_csrf='.length);
+    assert.ok(csrf, 'la cookie CSRF debe emitirse');
+    assert.ok(
+      galletas.some((valor) => valor.startsWith('lineabar_sesion=') && /HttpOnly/i.test(valor)),
+      'la cookie de sesión debe ser HttpOnly'
+    );
+
+    const sinCsrf = await fetch(`${base}/parametros`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Cookie: cookie },
+      body: JSON.stringify({ parametros: [{ chiave: 'aviso_manutencion_dias', valore: '7' }] })
+    });
+    assert.equal(sinCsrf.status, 403);
+
+    const conCsrf = await fetch(`${base}/parametros`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Cookie: cookie, 'X-CSRF-Token': csrf },
+      body: JSON.stringify({ parametros: [{ chiave: 'aviso_manutencion_dias', valore: '7' }] })
+    });
+    assert.equal(conCsrf.status, 200);
+
+    const sesion = await fetch(`${base}/auth/sessione`, { headers: { Cookie: cookie } });
+    assert.equal(sesion.status, 200);
+    assert.equal((await sesion.json()).utente.ruolo, 'amministratore');
+  });
+
   await t.test('rotación de refresh token y detección de reuso', async () => {
     const primera = await pedir(base, '/auth/refresh', { metodo: 'POST', cuerpo: { refresco: admin.refresco } });
     assert.equal(primera.estado, 200);
@@ -208,6 +246,10 @@ test('flujo completo de Linea Bar', async (t) => {
     assert.match(cliente.datos.codice, /^PRIV-\d{4,}$/);
     clienteCampoId = cliente.datos.id;
 
+    const marcas = await pedir(base, '/marche', { token: tecnico.token });
+    assert.equal(marcas.estado, 200);
+    assert.ok(marcas.datos.length > 0, 'debe existir al menos una marca');
+
     const maquina = await pedir(base, '/maquinas', {
       metodo: 'POST',
       token: tecnico.token,
@@ -216,7 +258,7 @@ test('flujo completo de Linea Bar', async (t) => {
         codice_unico: `MC-PRUEBA-${SELLO}`.slice(0, 50),
         tipo_macchina: 'macchina_caffe',
         modello: 'Test 2000',
-        fk_marca: 1
+        fk_marca: marcas.datos[0].id
       }
     });
     assert.equal(maquina.estado, 201);

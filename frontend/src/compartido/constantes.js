@@ -1,6 +1,4 @@
 export const CLAVES = {
-  sesion: 'lineabar_sessione',
-  refresco: 'lineabar_refresco',
   idioma: 'lineabar_lang',
   tema: 'lineabar_theme'
 };

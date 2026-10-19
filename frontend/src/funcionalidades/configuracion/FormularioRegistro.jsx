@@ -11,7 +11,7 @@ function caracteristicasIniciales(valor) {
     .split(';')
     .map((par) => {
       const [tipoCaratteristicaId, quantita] = par.split(':');
-      return { tipoCaratteristicaId: Number(tipoCaratteristicaId), quantita: Number(quantita) };
+      return { tipoCaratteristicaId, quantita: Number(quantita) };
     })
     .filter((fila) => fila.tipoCaratteristicaId && fila.quantita);
 }
@@ -67,13 +67,13 @@ export function FormularioRegistro({ recurso, registro, proveedores, clientes, c
   }
 
   return (
-    <div className="sheet-wrap">
+    <div className="sheet-wrap" role="dialog" aria-modal="true">
       <form className="sheet config-sheet" onSubmit={guardar}>
         <header>
           <div>
             <h2>{etiquetaDeRecurso(recurso, c)}</h2>
           </div>
-          <button type="button" onClick={alCerrar}>
+          <button type="button" onClick={alCerrar} aria-label={c.cancel}>
             <X />
           </button>
         </header>
@@ -204,7 +204,7 @@ export function FormularioRegistro({ recurso, registro, proveedores, clientes, c
                       onChange={(e) =>
                         setCaracteristicas((actual) =>
                           actual.map((elemento, posicion) =>
-                            posicion === indice ? { ...elemento, tipoCaratteristicaId: Number(e.target.value) } : elemento
+                            posicion === indice ? { ...elemento, tipoCaratteristicaId: e.target.value } : elemento
                           )
                         )
                       }
@@ -302,7 +302,7 @@ export function FormularioRegistro({ recurso, registro, proveedores, clientes, c
           {error && <p className="error">{error}</p>}
         </main>
         <footer>
-          <button type="button" onClick={alCerrar}>
+          <button type="button" onClick={alCerrar} aria-label={c.cancel}>
             {c.cancel}
           </button>
           <button className="primary">

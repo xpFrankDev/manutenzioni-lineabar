@@ -3,6 +3,8 @@ import test from 'node:test';
 import { proximasManutenciones, sumarMeses } from '../src/compartido/dominio/calendario.js';
 import { importeManoDeObra, TARIFA_MANO_DE_OBRA_HORA } from '../src/compartido/dominio/mano-de-obra.js';
 import { fechaDeHoy, formatearFecha, formatearMoneda } from '../src/compartido/utilidades/formato.js';
+import { es } from '../src/compartido/i18n/es.js';
+import { it } from '../src/compartido/i18n/it.js';
 
 test('sumarMeses no desborda el fin de mes', () => {
   assert.equal(sumarMeses('2026-01-31', 1), '2026-02-28');
@@ -39,4 +41,9 @@ test('el formato de moneda y fecha respeta el idioma', () => {
 
 test('fechaDeHoy devuelve el formato ISO que espera la API', () => {
   assert.match(fechaDeHoy(), /^\d{4}-\d{2}-\d{2}$/);
+});
+
+test('el catálogo español cubre todas las claves italianas', () => {
+  const faltantes = Object.keys(it).filter((clave) => !(clave in es));
+  assert.deepEqual(faltantes, []);
 });

@@ -24,7 +24,7 @@ export async function consultarUno(sql, valores = [], conexion = pool) {
   return filas[0] ?? null;
 }
 
-/** Ejecuta una sentencia de escritura y devuelve el resultado con insertId. */
+/** Ejecuta una sentencia de escritura y devuelve el resultado del driver. */
 export async function ejecutar(sql, valores = [], conexion = pool) {
   const [resultado] = await conexion.execute(sql, valores);
   return resultado;

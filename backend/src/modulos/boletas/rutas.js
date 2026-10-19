@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { consultar, consultarUno, enTransaccion } from '../../base-datos/pool.js';
 import { alcanceTecnico, exigirSesion } from '../../intermedios/sesion.js';
+import { nuevoId } from '../../utilidades/identificadores.js';
 import { crearIntervento } from '../interventos/servicio.js';
 import { obtenerParametros } from '../parametros/servicio.js';
 import { esquemaBoleta, esquemaEstadoBoleta } from './esquemas.js';
@@ -10,7 +11,7 @@ export const rutasBoletas = Router();
 
 async function puedeAccederBoleta(req, id) {
   if (req.utente.ruolo !== 'tecnico') return true;
-  const fila = await consultarUno('SELECT id FROM boletas WHERE id=? AND fk_tecnico=?', [Number(id), req.utente.sub]);
+  const fila = await consultarUno('SELECT id FROM boletas WHERE id=? AND fk_tecnico=?', [id, req.utente.sub]);
   return Boolean(fila);
 }
 
@@ -69,9 +70,11 @@ rutasBoletas.post('/boletas', exigirSesion, async (req, res) => {
         entrada.data.persone,
         parametros.tarifa_mano_de_obra_hora
       );
-      const [boleta] = await conexion.execute(
-        'INSERT INTO boletas (fk_cliente,fk_tecnico,fk_scontrino,codice_boleta,data,prezzo_totale,utente_crea,utente_modifica,stato) VALUES (?,?,?,?,?,?,?,?,"emessa")',
+      const boletaId = nuevoId();
+      await conexion.execute(
+        'INSERT INTO boletas (id,fk_cliente,fk_tecnico,fk_scontrino,codice_boleta,data,prezzo_totale,utente_crea,utente_modifica,stato) VALUES (?,?,?,?,?,?,?,?,?,"emessa")',
         [
+          boletaId,
           intervento.clienteId,
           req.utente.sub,
           entrada.data.scontrinoId ?? null,
@@ -84,15 +87,15 @@ rutasBoletas.post('/boletas', exigirSesion, async (req, res) => {
       );
       await conexion.execute(
         'INSERT INTO boletas_manutenzioni (fk_boleta,fk_manutenzione,utente_crea,utente_modifica) VALUES (?,?,?,?)',
-        [boleta.insertId, intervento.id, req.utente.sub, req.utente.sub]
+        [boletaId, intervento.id, req.utente.sub, req.utente.sub]
       );
       await conexion.execute(
         'INSERT INTO boletas_macchine (fk_boleta,fk_macchina,utente_crea,utente_modifica) VALUES (?,?,?,?)',
-        [boleta.insertId, entrada.data.macchinaId, req.utente.sub, req.utente.sub]
+        [boletaId, entrada.data.macchinaId, req.utente.sub, req.utente.sub]
       );
       await conexion.execute(
         'INSERT INTO boletas_operatori (fk_boleta,fk_operatore,utente_crea,utente_modifica) VALUES (?,?,?,?)',
-        [boleta.insertId, req.utente.sub, req.utente.sub, req.utente.sub]
+        [boletaId, req.utente.sub, req.utente.sub, req.utente.sub]
       );
       if (entrada.data.scontrinoId) {
         await conexion.execute(
@@ -101,7 +104,7 @@ rutasBoletas.post('/boletas', exigirSesion, async (req, res) => {
         );
       }
       return {
-        id: boleta.insertId,
+        id: boletaId,
         codice,
         manutenzioneId: intervento.id,
         prezzoTotale: totales.total,
@@ -121,9 +124,9 @@ rutasBoletas.put('/boletas/:id', exigirSesion, async (req, res) => {
     return res.status(403).json({ errore: 'Boleta non assegnata' });
   }
 
-  const boleta = await consultarUno('SELECT id FROM boletas WHERE id=?', [Number(req.params.id)]);
+  const boleta = await consultarUno('SELECT id FROM boletas WHERE id=?', [req.params.id]);
   if (!boleta) return res.status(404).json({ errore: 'Boleta non trovata' });
 
   await consultar('UPDATE boletas SET stato=?,utente_modifica=? WHERE id=?', [estado.data, req.utente.sub, req.params.id]);
-  return res.json({ id: Number(req.params.id), stato: estado.data });
+  return res.json({ id: req.params.id, stato: estado.data });
 });

@@ -48,7 +48,7 @@ rutasActividades.put('/attivita/:id', exigirSesion, autorizar(...ROLES_ADMINISTR
   if (!entrada.success) return res.status(422).json({ errore: 'Dati attività non validi' });
   try {
     await enTransaccion((conexion) => actualizarActividad(conexion, req.params.id, entrada.data, req.utente.sub));
-    return res.json({ id: Number(req.params.id) });
+    return res.json({ id: req.params.id });
   } catch (error) {
     return res.status(400).json({ errore: error.message || 'Impossibile aggiornare attività' });
   }
@@ -59,7 +59,7 @@ rutasActividades.post('/attivita/:id/prendi', exigirSesion, async (req, res) => 
     return res.status(403).json({ errore: 'Attività non assegnata' });
   }
   await iniciarActividad(req.params.id, req.utente.sub);
-  return res.json({ id: Number(req.params.id), stato: 'in_corso' });
+  return res.json({ id: req.params.id, stato: 'in_corso' });
 });
 
 rutasActividades.post('/attivita/:id/chiudi', exigirSesion, async (req, res) => {
@@ -78,7 +78,7 @@ rutasActividades.post('/attivita/:id/chiudi', exigirSesion, async (req, res) => 
     const id = await enTransaccion((conexion) =>
       cerrarActividad(conexion, { ...actividad, id: req.params.id }, entrada.data, req.utente.sub)
     );
-    return res.json({ id: Number(req.params.id), manutenzioneId: id });
+    return res.json({ id: req.params.id, manutenzioneId: id });
   } catch (error) {
     return res.status(400).json({ errore: error.message || 'Impossibile chiudere attività' });
   }

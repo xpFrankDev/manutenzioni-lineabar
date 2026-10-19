@@ -15,14 +15,14 @@ export function DetalleRegistro({ tipo, id, c, idioma, alCerrar }) {
   }, [tipo, id]);
 
   return (
-    <div className="sheet-wrap">
+    <div className="sheet-wrap" role="dialog" aria-modal="true">
       <section className="sheet detail-sheet">
         <header>
           <div>
             <p className="eyebrow">{tipo === 'boletas' ? c.receipts : c.jobs}</p>
             <h2>{datos?.codice_boleta || `${datos?.marca ?? ''} ${datos?.modello ?? ''}`.trim() || c.details}</h2>
           </div>
-          <button onClick={alCerrar}>
+          <button onClick={alCerrar} aria-label={c.close}>
             <X />
           </button>
         </header>

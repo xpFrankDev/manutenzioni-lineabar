@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { consultarUno, pool } from '../../base-datos/pool.js';
+import { nuevoId } from '../../utilidades/identificadores.js';
 import { crearCliente, normalizarCliente } from '../clientes/servicio.js';
 import { actualizarMaquina, crearMaquina, normalizarMaquina, TIPOS_MAQUINA } from '../maquinas/servicio.js';
 
@@ -11,7 +12,7 @@ export { TIPOS_MAQUINA };
 const esquemaCaracteristicas = z
   .array(
     z.object({
-      tipoCaratteristicaId: z.coerce.number().int().positive(),
+      tipoCaratteristicaId: z.string().uuid(),
       quantita: z.coerce.number().positive().max(99999)
     })
   )
@@ -58,7 +59,7 @@ export const catalogoConfigurable = {
     listado:
       'SELECT p.id,p.nome,p.codice_unico,p.tipo_macchina,CAST(p.prezzo AS DECIMAL(10,2)) prezzo,p.intervallo_mesi,p.fk_marca,p.stato,ma.nome marca,(SELECT GROUP_CONCAT(CONCAT(ptc.fk_tipo_caratteristica,":",CAST(ptc.quantita AS DOUBLE)) SEPARATOR ";") FROM pezzi_tipi_caratteristiche ptc WHERE ptc.fk_pezzo=p.id AND ptc.stato="attivo") caratteristiche,(SELECT GROUP_CONCAT(CONCAT(t.nome," ",CAST(ptc.quantita AS DOUBLE),COALESCE(CONCAT(" ",t.unita_misura),"")) SEPARATOR ", ") FROM pezzi_tipi_caratteristiche ptc JOIN tipi_caratteristiche t ON t.id=ptc.fk_tipo_caratteristica WHERE ptc.fk_pezzo=p.id AND ptc.stato="attivo") caratteristiche_label FROM pezzi p LEFT JOIN marche ma ON ma.id=p.fk_marca ORDER BY p.stato DESC,p.nome',
     validar: (datos) => ({
-      fk_marca: datos.fk_marca ? z.coerce.number().int().positive().parse(datos.fk_marca) : null,
+      fk_marca: datos.fk_marca ? z.string().uuid().parse(datos.fk_marca) : null,
       nome: z.string().trim().min(2).max(150).parse(datos.nome),
       codice_unico: z.string().trim().min(4).max(60).parse(datos.codice_unico).toUpperCase(),
       tipo_macchina: z.enum(TIPOS_MAQUINA).parse(datos.tipo_macchina),
@@ -130,10 +131,12 @@ async function idRol(codigo, conexion) {
 
 async function crearUsuario(conexion, registro, usuarioId) {
   const hash = await bcrypt.hash(registro.password, 12);
+  const id = nuevoId();
   try {
-    const [resultado] = await conexion.execute(
-      'INSERT INTO utenti (fk_ruolo,codice_usuario,nome,email,password_hash,stato,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,?)',
+    await conexion.execute(
+      'INSERT INTO utenti (id,fk_ruolo,codice_usuario,nome,email,password_hash,stato,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,?,?)',
       [
+        id,
         await idRol(registro.ruolo, conexion),
         registro.codice_usuario,
         registro.nome,
@@ -144,7 +147,7 @@ async function crearUsuario(conexion, registro, usuarioId) {
         usuarioId
       ]
     );
-    return { id: resultado.insertId };
+    return { id };
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') throw new Error('Codice utente o email già utilizzati');
     throw error;
@@ -164,7 +167,7 @@ async function actualizarUsuario(conexion, id, registro, usuarioId) {
         hash,
         registro.stato,
         usuarioId,
-        Number(id)
+        id
       ]
     );
   } catch (error) {
@@ -199,15 +202,16 @@ export async function crearRegistro(recurso, catalogo, registro, usuarioId) {
     return crearUsuario(pool, registro, usuarioId);
   }
 
-  const columnas = [...catalogo.columnas, 'utente_crea', 'utente_modifica'];
-  const [registroCreado] = await pool.execute(
+  const id = nuevoId();
+  const columnas = ['id', ...catalogo.columnas, 'utente_crea', 'utente_modifica'];
+  await pool.execute(
     `INSERT INTO ${catalogo.tabla} (${columnas.join(',')}) VALUES (${columnas.map(() => '?').join(',')})`,
-    [...catalogo.columnas.map((columna) => registro[columna]), usuarioId, usuarioId]
+    [id, ...catalogo.columnas.map((columna) => registro[columna]), usuarioId, usuarioId]
   );
   if (recurso === 'pezzi') {
-    await sincronizarCaracteristicas(pool, registroCreado.insertId, registro.caratteristiche, usuarioId);
+    await sincronizarCaracteristicas(pool, id, registro.caratteristiche, usuarioId);
   }
-  return { id: registroCreado.insertId };
+  return { id };
 }
 
 export async function actualizarRegistro(recurso, catalogo, id, registro, usuarioId) {
@@ -223,7 +227,7 @@ export async function actualizarRegistro(recurso, catalogo, id, registro, usuari
         registro.citta,
         registro.stato,
         usuarioId,
-        Number(id)
+        id
       ]
     );
     return;
@@ -239,16 +243,16 @@ export async function actualizarRegistro(recurso, catalogo, id, registro, usuari
 
   await pool.execute(
     `UPDATE ${catalogo.tabla} SET ${catalogo.columnas.map((columna) => `${columna}=?`).join(',')},utente_modifica=? WHERE id=?`,
-    [...catalogo.columnas.map((columna) => registro[columna]), usuarioId, Number(id)]
+    [...catalogo.columnas.map((columna) => registro[columna]), usuarioId, id]
   );
   if (recurso === 'pezzi') {
-    await sincronizarCaracteristicas(pool, Number(id), registro.caratteristiche, usuarioId);
+    await sincronizarCaracteristicas(pool, id, registro.caratteristiche, usuarioId);
   }
 }
 
 export async function desactivarRegistro(recurso, catalogo, id, usuarioId) {
-  if (catalogo.protegido && Number(id) === Number(usuarioId)) {
+  if (catalogo.protegido && String(id) === String(usuarioId)) {
     throw new Error('Non puoi disattivare il tuo stesso utente');
   }
-  await pool.execute(`UPDATE ${catalogo.tabla} SET stato="inattivo",utente_modifica=? WHERE id=?`, [usuarioId, Number(id)]);
+  await pool.execute(`UPDATE ${catalogo.tabla} SET stato="inattivo",utente_modifica=? WHERE id=?`, [usuarioId, id]);
 }

@@ -223,7 +223,7 @@ export function HojaTrabajo({ tipo, c, idioma, alCerrar, alGuardar }) {
       const completo = {
         ...nuevaMaquina,
         id: creado.id,
-        cliente_id: Number(nuevaMaquina.fk_cliente),
+        cliente_id: nuevaMaquina.fk_cliente,
         cliente: cliente.nome,
         indirizzo: cliente.indirizzo,
         marca: marcas.find((marca) => String(marca.id) === String(nuevaMaquina.fk_marca))?.nome ?? ''
@@ -262,14 +262,14 @@ export function HojaTrabajo({ tipo, c, idioma, alCerrar, alGuardar }) {
   }
 
   return (
-    <div className="sheet-wrap">
+    <div className="sheet-wrap" role="dialog" aria-modal="true">
       <section className="sheet workflow">
         <header>
           <div>
             <p className="eyebrow">{titulo}</p>
             <h2>{encabezado}</h2>
           </div>
-          <button onClick={alCerrar}>
+          <button onClick={alCerrar} aria-label={c.close}>
             <X />
           </button>
         </header>

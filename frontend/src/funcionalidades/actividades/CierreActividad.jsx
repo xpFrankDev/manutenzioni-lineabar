@@ -60,13 +60,13 @@ export function CierreActividad({ id, c, idioma, alCerrar, alGuardar }) {
   );
 
   return (
-    <div className="sheet-wrap">
+    <div className="sheet-wrap" role="dialog" aria-modal="true">
       <form className="sheet task-sheet" onSubmit={guardar}>
         <header>
           <div>
             <h2>{c.closeTask}</h2>
           </div>
-          <button type="button" onClick={alCerrar}>
+          <button type="button" onClick={alCerrar} aria-label={c.cancel}>
             <X />
           </button>
         </header>
@@ -132,7 +132,7 @@ export function CierreActividad({ id, c, idioma, alCerrar, alGuardar }) {
           {error && <p className="error">{error}</p>}
         </main>
         <footer>
-          <button type="button" onClick={alCerrar}>
+          <button type="button" onClick={alCerrar} aria-label={c.cancel}>
             {c.cancel}
           </button>
           <button className="primary">{c.close}</button>

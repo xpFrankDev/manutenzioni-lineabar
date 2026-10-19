@@ -2,6 +2,12 @@
 
 Applicazione mobile-first per registrare interventi, boletas, ricambi e pianificazione manutenzioni per Linea Bar di Gianluca Testa.
 
+## Documentazione
+
+Lo stato del progetto, l'architettura, la sicurezza, la verifica e le decisioni
+aperte vivono in `docs/` (entrata: `docs/00-indice.md`). Il piano successivo al
+roadmap è `docs/09-post-roadmap.md`. `ROADMAP.md` resta come registro storico.
+
 ## Struttura
 
 - `frontend/`: React + Vite, tema chiaro/scuro e catalogo i18n italiano/spagnolo. Codice organizzato in `app/`, `compartido/` e `funcionalidades/`.
@@ -75,7 +81,8 @@ npm run test:unidad
 
 La suite di integrazione ricrea una base dedicata (`lineabar_test`), applica
 migrazioni e semilla e verifica accesso, refresh, dati maestri, flusso di campo,
-calendario, boleta, scontrino, permessi per ruolo, report e difese di sicurezza:
+calendario, boleta, scontrino, permessi per ruolo, report e difese di sicurezza.
+Lo stesso controllo gira in GitHub Actions (`.github/workflows/verificacion.yml`):
 
 ```bash
 cd backend
@@ -159,6 +166,12 @@ I codici sono generati nel servizio applicativo dentro una transazione: clienti 
 ## Sicurezza
 
 L'API non espone password in output, limita i tentativi di login, imposta header di sicurezza, valida input sul server e applica il ruolo dal JWT. Il token di accesso dura 10 minuti; la sessione si rinnova con un refresh token opaco ruotato a ogni uso, salvato solo come hash e revocato in caso di riuso sospetto, quindi l'utente non torna al login durante il lavoro in campo. Il ruolo limita anche lettura, modifica e annullamento di interventi e boletas ai tecnici che li hanno registrati.
+
+Stato e limiti reali sono in `docs/04-seguridad.md`: i token sono ancora conservati
+in `localStorage` (debito critico `D-01`, da migrare a cookie `HttpOnly` + CSRF) e
+il valore di `TRUST_PROXY_HOPS` deve riflettere i due Nginx davanti all'API, altrimenti
+il limite di accesso non è per cliente. Il SPA applica una CSP stretta e il CSV
+neutralizza le formule. Le decisioni aperte sono in `docs/07-decisiones-abiertas.md`.
 
 In produzione usare HTTPS, un `JWT_SECRET` lungo e casuale, password database a privilegi minimi e la porta di MariaDB solo su loopback. Le immagini degli scontrini restano nella base per semplicità di backup: se il volume cresce, conviene spostarle su storage esterno firmato mantenendo la stessa tabella. L'analisi OCR/IA va eseguita dietro un endpoint autenticato, non direttamente dal browser.
 

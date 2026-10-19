@@ -123,6 +123,26 @@ test('el CSV de boletas escapa separadores y comillas', () => {
   assert.equal(csv.split('\r\n').length, 2);
 });
 
+test('el CSV neutraliza fórmulas introducidas en nombres de cliente', () => {
+  const csv = boletasACsv([
+    {
+      codice_boleta: 'BL-202609-0002',
+      data: '2026-09-22',
+      stato: 'emessa',
+      cliente: '=HYPERLINK("http://malo")',
+      codice_cliente: 'PRIV-0002',
+      macchina: 'La Cimbali M100 MC-2',
+      tecnico: 'Dev',
+      ore: 1,
+      persone: 1,
+      ubicazione: 'cliente',
+      esito: 'risolto',
+      prezzo_totale: '10.00'
+    }
+  ]);
+  assert.match(csv, /"'=HYPERLINK\(""http:\/\/malo""\)"/);
+});
+
 test('hoyIso devuelve una fecha ISO utilizable en SQL', () => {
   assert.match(hoyIso(), /^\d{4}-\d{2}-\d{2}$/);
 });

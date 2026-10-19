@@ -1,7 +1,8 @@
-import { CLAVES, RUTA_ACCESO } from '../constantes.js';
+import { RUTA_ACCESO } from '../constantes.js';
 
 // `import.meta.env` existe bajo Vite; en pruebas de Node queda indefinido.
 const URL_API = import.meta.env?.VITE_API_URL ?? '/lineabar/api';
+const COOKIE_CSRF = 'lineabar_csrf';
 
 export class ErrorApi extends Error {
   constructor(estado, mensaje) {
@@ -11,26 +12,26 @@ export class ErrorApi extends Error {
   }
 }
 
+// El token CSRF vive en memoria y nunca se persiste en el navegador. La sesión
+// viaja en cookies HttpOnly que JavaScript no puede leer.
+let csrfEnMemoria = null;
+
+function leerCookie(nombre) {
+  if (typeof document === 'undefined') return null;
+  const coincidencia = document.cookie.match(new RegExp(`(?:^|; )${nombre}=([^;]*)`));
+  return coincidencia ? decodeURIComponent(coincidencia[1]) : null;
+}
+
+function csrfActual() {
+  return csrfEnMemoria ?? leerCookie(COOKIE_CSRF);
+}
+
 export function guardarSesion(sesion) {
-  if (typeof sesion === 'string') {
-    localStorage.setItem(CLAVES.sesion, sesion);
-    return;
-  }
-  localStorage.setItem(CLAVES.sesion, sesion.token);
-  if (sesion.refresco) localStorage.setItem(CLAVES.refresco, sesion.refresco);
-}
-
-export function leerSesion() {
-  return localStorage.getItem(CLAVES.sesion);
-}
-
-export function leerRefresco() {
-  return localStorage.getItem(CLAVES.refresco);
+  if (sesion?.csrf) csrfEnMemoria = sesion.csrf;
 }
 
 export function borrarSesion() {
-  localStorage.removeItem(CLAVES.sesion);
-  localStorage.removeItem(CLAVES.refresco);
+  csrfEnMemoria = null;
 }
 
 function cerrarPorSesionExpirada() {
@@ -39,20 +40,18 @@ function cerrarPorSesionExpirada() {
 }
 
 // Un único refresco en vuelo: varias peticiones que reciben 401 a la vez
-// comparten la rotación del token en lugar de invalidarse entre ellas.
+// comparten la rotación de la sesión en lugar de invalidarse entre ellas.
 let refrescoEnCurso = null;
 
 async function renovarSesion() {
-  const refresco = leerRefresco();
-  if (!refresco) return null;
   if (refrescoEnCurso) return refrescoEnCurso;
 
   refrescoEnCurso = (async () => {
     try {
       const respuesta = await fetch(`${URL_API}/auth/refresh`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresco })
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' }
       });
       if (!respuesta.ok) {
         borrarSesion();
@@ -60,7 +59,7 @@ async function renovarSesion() {
       }
       const sesion = await respuesta.json();
       guardarSesion(sesion);
-      return sesion.token;
+      return true;
     } catch {
       return null;
     } finally {
@@ -71,13 +70,15 @@ async function renovarSesion() {
   return refrescoEnCurso;
 }
 
-async function peticion(ruta, opciones) {
-  const token = leerSesion();
+async function peticion(ruta, opciones = {}) {
+  const metodo = String(opciones.method || 'GET').toUpperCase();
+  const csrf = csrfActual();
   return fetch(`${URL_API}${ruta}`, {
     ...opciones,
+    credentials: 'same-origin',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(csrf && metodo !== 'GET' && metodo !== 'HEAD' ? { 'X-CSRF-Token': csrf } : {}),
       ...(opciones.headers || {})
     }
   });
@@ -99,14 +100,11 @@ export async function llamarApi(ruta, opciones = {}, reintentar = true) {
 }
 
 export async function cerrarSesion() {
-  const refresco = leerRefresco();
-  if (refresco) {
-    await fetch(`${URL_API}/auth/logout`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresco })
-    }).catch(() => {});
-  }
+  await fetch(`${URL_API}/auth/logout`, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' }
+  }).catch(() => {});
   borrarSesion();
 }
 

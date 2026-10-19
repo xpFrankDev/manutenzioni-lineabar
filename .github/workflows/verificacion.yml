@@ -1,0 +1,73 @@
+name: verificacion
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  calidad:
+    name: Sintaxis, pruebas y build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+      - name: Backend
+        run: |
+          npm ci --prefix backend --no-audit --no-fund
+          npm run verificar --prefix backend
+          npm run test:unidad --prefix backend
+      - name: Frontend
+        run: |
+          npm ci --prefix frontend --no-audit --no-fund
+          npm test --prefix frontend
+          npm run build --prefix frontend
+      - name: Dependencias sin vulnerabilidades altas
+        run: |
+          npm audit --omit=dev --audit-level=high --prefix backend
+          npm audit --omit=dev --audit-level=high --prefix frontend
+
+  integracion:
+    name: Integración con MariaDB
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: root-ci
+          MARIADB_ROOT_HOST: "%"
+          MARIADB_DATABASE: lineabar_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mariadb-admin ping -h 127.0.0.1 -uroot -proot-ci --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci --prefix backend --no-audit --no-fund
+      - name: Preparar base y ejecutar la suite
+        env:
+          NODE_ENV: test
+          DB_HOST: 127.0.0.1
+          DB_PORT: "3306"
+          MARIADB_DATABASE: lineabar_test
+          LINEABAR_MIGRATIONS_USER: root
+          LINEABAR_MIGRATIONS_PASSWORD: root-ci
+          LINEABAR_DB_USER: root
+          LINEABAR_DB_PASSWORD: root-ci
+          JWT_SECRET: secreto-de-integracion-continua-lineabar
+          LINEABAR_TEST_ADMIN_PASSWORD: prueba-test-2026
+        run: npm test --prefix backend

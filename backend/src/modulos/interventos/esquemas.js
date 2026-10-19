@@ -1,13 +1,13 @@
 import { z } from 'zod';
 
 export const esquemaRecambio = z.object({
-  pezzoId: z.coerce.number().int().positive(),
+  pezzoId: z.string().uuid(),
   quantita: z.coerce.number().positive().max(100)
 });
 
 export const esquemaIntervento = z.object({
-  clienteId: z.coerce.number().int().positive().nullable().optional(),
-  macchinaId: z.coerce.number().int().positive(),
+  clienteId: z.string().uuid().nullable().optional(),
+  macchinaId: z.string().uuid(),
   data: z.string().date(),
   ubicazione: z.enum(['cliente', 'magazzino']),
   note: z.string().trim().max(2000).optional().nullable(),
@@ -15,5 +15,5 @@ export const esquemaIntervento = z.object({
   ore: z.coerce.number().positive().max(24),
   persone: z.coerce.number().int().positive().max(20),
   ricambi: z.array(esquemaRecambio).max(60).default([]),
-  scontrinoId: z.coerce.number().int().positive().nullable().optional()
+  scontrinoId: z.string().uuid().nullable().optional()
 });

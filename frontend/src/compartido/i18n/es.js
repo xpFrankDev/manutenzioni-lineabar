@@ -1,6 +1,6 @@
 import { it } from './it.js';
 
-const es = {
+export const es = {
   login: 'Ingresar',
   access: 'Acceso reservado',
   code: 'Código de usuario',

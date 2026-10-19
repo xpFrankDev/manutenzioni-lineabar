@@ -15,6 +15,17 @@ export const limiteRefresco = rateLimit({
   legacyHeaders: false
 });
 
+/**
+ * El análisis OCR consume CPU y memoria del servidor: tiene un límite propio
+ * más bajo que el general para que una ráfaga de fotos no bloquee la API.
+ */
+export const limiteOcr = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 /** Límite general defensivo: alto para no molestar al uso normal en campo. */
 export const limiteGeneral = rateLimit({
   windowMs: 60 * 1000,
