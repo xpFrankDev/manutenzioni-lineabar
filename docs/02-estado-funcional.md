@@ -46,10 +46,11 @@ Esto último se corrige con `docs/00`–`09`; lo no resuelto queda en `07`.
   manutención.
 - **Maestros** `[V]`: proveedores, clientes, máquinas, marcas, piezas,
   características, usuarios y parámetros.
-- **Ficha de máquina** `[V]`: detalle con carrusel de fotos (guardadas en MariaDB),
-  cliente y proveedor identificados, datos de la máquina, historial de
-  manutenciones con o sin boleta y su fecha, próxima manutención, enlace NFC
-  copiable y gestión de accesos por técnico.
+- **Ficha de máquina** `[V]`: detalle con carrusel de fotos ampliables (guardadas
+  en MariaDB), código y matrícula, cliente y proveedor identificados con etiqueta
+  de origen, datos de la máquina, historial de manutenciones con o sin boleta y
+  su fecha/hora, próxima manutención, enlace NFC copiable y gestión de accesos
+  por técnico. Toda la tarjeta del historial abre el mantenimiento.
 - **Reportes** `[V]`: cierre mensual, ranking de clientes/piezas/tipos, previsión y CSV.
 - **Configuración** `[V]`: tarifa horaria, días de aviso, horizonte y previsión.
 - **Control de acceso a fichas** `[V]`: tabla `macchine_utenti`, altas automáticas
@@ -62,6 +63,8 @@ Esto último se corrige con `docs/00`–`09`; lo no resuelto queda en `07`.
   sin configuración ni reportes.
 - **Avisos de interfaz** `[V]`: confirmaciones y notificaciones de marca propias,
   sin `confirm()`/`alert()` nativos, con bloqueo de scroll del fondo en modales.
+- **Carga visible** `[V]`: skeletons en panel, listas, calendario, reportes,
+  configuración, fichas y modales para evitar saltos y pantallas vacías.
 - **Actividades** `[V]`: pulsar una tarea abre su ficha completa con acciones de
   tomar o cerrar.
 

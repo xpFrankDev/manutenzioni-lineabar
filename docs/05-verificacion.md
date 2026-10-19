@@ -121,7 +121,7 @@ por esta comprobación técnica.
 
 | Comprobación | Resultado |
 | --- | --- |
-| Migraciones `0012`–`0016` | **Aplicadas**: fotos/accesos, hora de manutención, menús/permisos y claves de configuración en italiano. |
+| Migraciones `0012`–`0017` | **Aplicadas**: fotos/accesos, hora de manutención, menús/permisos, claves de configuración en italiano y matrícula de máquina. |
 | Assets del SPA | `index-*.js` y `index-*.css` **200**; la página ya no queda en blanco. |
 | URL NFC sin sesión | Redirige a `/lineabar/login?next=/lineabar/macchine/<uuid>`. |
 | Login y retorno | Tras `dev01`, vuelve exactamente a la ficha solicitada. |

@@ -108,9 +108,11 @@ relaziona tramite un numero correlativo. La migrazione `0010_uuid_identificadore
 converte una base esistente conservando i dati. Per conoscere quante righe ha ogni
 tabella senza modificare nulla: `cd backend && npm run datos:estado`.
 
-Ogni macchina ha una **ficha** (`/lineabar/macchine/<uuid>`) con foto caricate nel
-volume MariaDB, dati di cliente e fornitore, storico manutenzioni con o senza
-boleta, link per NFC e gestione degli accessi per tecnico. La ficha e le foto
+Ogni macchina ha una **ficha** (`/lineabar/macchine/<uuid>`) con codice e
+**matricola**, foto caricate nel volume MariaDB, dati di cliente e fornitore con
+etichetta di origine, storico manutenzioni con o senza boleta, link per NFC e
+gestione degli accessi per tecnico. Le schermate mostrano skeleton durante il
+caricamento. La ficha e le foto
 richiedono sessione e autorizzazione: senza sessione si viene portati al login e
 senza permesso si mostra una pagina 403; un link inesistente mostra la 404.
 
