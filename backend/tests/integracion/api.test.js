@@ -465,6 +465,19 @@ test('flujo completo de Linea Bar', async (t) => {
     assert.equal(tarea.cliente, `Bar Campo ${SELLO}`);
     assert.equal(tarea.stato_attivita, 'aperta');
 
+    // Cerrar la tarea crea la manutención y guarda su UUID en la tarea.
+    assert.equal(
+      (await pedir(base, `/attivita/${programar.datos.attivitaId}/prendi`, { metodo: 'POST', token: tecnico.token })).estado,
+      200
+    );
+    const cierre = await pedir(base, `/attivita/${programar.datos.attivitaId}/chiudi`, {
+      metodo: 'POST',
+      token: tecnico.token,
+      cuerpo: { descrizione: 'Cierre de prueba desde integración', ore: 1, persone: 1, ricambi: [] }
+    });
+    assert.equal(cierre.estado, 200);
+    assert.match(cierre.datos.manutenzioneId, /^[0-9a-f-]{36}$/i);
+
     // El calendario del técnico se limita a sus tareas o a lo aún sin asignar.
     const calendarioTecnico2 = await pedir(base, '/calendario?estado=pendientes', { token: tecnico2.token });
     assert.ok(!calendarioTecnico2.datos.some((fila) => fila.id === entradaCalendarioId));
