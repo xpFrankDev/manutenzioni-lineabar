@@ -9,7 +9,7 @@
 | # | Trabajo | Relación | Criterio de aceptación |
 | --- | --- | --- | --- |
 | 1 | Sesión en cookie `HttpOnly` + CSRF en memoria; retirar tokens de `localStorage`. | S-01, `D-01` | **Hecho en código** `[V]`: login/refresco emiten cookie `HttpOnly; SameSite=Strict`; mutaciones exigen `X-CSRF-Token`; `localStorage` sin tokens. Pendiente: suite completa en CI/VPS. |
-| 2 | Rotación atómica del refresh token y ventana de gracia ante reuso concurrente. | S-05 | Dos refrescos simultáneos no invalidan la sesión legítima; el reuso malicioso sigue revocando la cadena; prueba con concurrencia. |
+| 2 | Rotación atómica del refresh token y ventana de gracia ante reuso concurrente. | S-05 | **Hecho** `[V]` (2026-10-19): reclamo atómico y ventana de 10 s; suite de integración con reuso inmediato y robo fuera de ventana. |
 | 3 | Auditoría de eventos de seguridad y retención. | S-09, `D-06` | Tabla de auditoría; se registran acceso, refresco, cierre, denegación y cambios de usuario; retención definida. |
 | 4 | Validación de identificadores de ruta y de cuerpos pendientes. | S-11 | Todas las rutas con `:id` validan UUID y devuelven 400/404 coherentes. |
 | 5 | Copia de seguridad y restauración probadas. | S-18, `D-07` | Copia programada, restauración verificada y procedimiento en `06-operaciones.md`. |

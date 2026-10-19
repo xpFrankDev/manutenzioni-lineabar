@@ -117,6 +117,20 @@ Despliegue mediante `infraestructura/despliegue/actualizar.sh` sobre
 página con lector de pantalla. El despliegue no se declara visualmente aprobado
 por esta comprobación técnica.
 
+## 3quater. Ficha de máquina, accesos y NFC en producción (2026-10-19)
+
+| Comprobación | Resultado |
+| --- | --- |
+| Migración `0012_macchine_foto_y_accesos.sql` | **Aplicada**; tablas `macchine_foto` y `macchine_utenti`; datos intactos. |
+| Assets del SPA | `index-*.js` y `index-*.css` **200**; la página ya no queda en blanco. |
+| URL NFC sin sesión | Redirige a `/lineabar/login?next=/lineabar/macchine/<uuid>`. |
+| Login y retorno | Tras `dev01`, vuelve exactamente a la ficha solicitada. |
+| Ficha de máquina | **200** con cliente, proveedor, datos, historial, próxima manutención, enlace NFC y accesos. |
+| Foto de máquina | Subida **201**, servicio **200** `image/png` y borrado **204** con sesión de administrador. |
+| Ruta inexistente | Pantalla **404** de marca. |
+| Suite de integración sobre copia fresca | **15/15**, incluida ficha, fotos, accesos, 403/404 y rotación atómica del refresh. |
+| GitHub Actions | **Verde** en `main`. |
+
 ## 4. Suites existentes
 
 ### Backend
