@@ -33,7 +33,7 @@ function respuestaSesion(usuario, token, refresco, csrf) {
     utente: {
       id: usuario.id,
       nome: usuario.nome,
-      codigo_usuario: usuario.codigo_usuario,
+      codigo_usuario: usuario.codice_usuario,
       ruolo: usuario.ruolo
     },
     scadeInMinuti: entorno.sesion.minutosVigencia,
