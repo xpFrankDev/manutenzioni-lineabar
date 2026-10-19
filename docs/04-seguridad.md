@@ -39,6 +39,8 @@ borde (`D-02`). Las dependencias con vulnerabilidad conocida se corrigieron el
 | CSV neutro frente a inyección de fórmulas | `backend/src/modulos/reportes/servicio.js` (`prefijoPeligroso`) |
 | Cabeceras del SPA (CSP, HSTS, `X-Frame-Options: DENY`, Permissions-Policy) | `frontend/nginx.conf` |
 | Acceso a la ficha y fotos de máquina solo para administrador o técnico autorizado | `backend/src/modulos/maquinas/rutas.js`, `puedeAccederMaquina` |
+| Permisos modulares por menú y rol (`menu`, `ruoli_menu`) en navegación y API | `backend/src/intermedios/permisos.js`, `modulos/permisos/servicio.js`, `frontend/src/compartido/permisos.js` |
+| Confirmaciones y avisos propios sin diálogos nativos | `frontend/src/compartido/componentes/Avisos.jsx` |
 | Fotos de máquina validadas por MIME/base64/tamaño y servidas con sesión | `maquinas/servicio.js`, `utilidades/imagenes.js`, `macchine_foto` |
 | Tema inicial sin script inline (CSP estricta de script) | `frontend/public/theme-init.js` |
 

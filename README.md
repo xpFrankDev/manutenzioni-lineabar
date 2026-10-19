@@ -114,6 +114,12 @@ boleta, link per NFC e gestione degli accessi per tecnico. La ficha e le foto
 richiedono sessione e autorizzazione: senza sessione si viene portati al login e
 senza permesso si mostra una pagina 403; un link inesistente mostra la 404.
 
+In **Impostazioni → Ruoli e permessi** si configura per ogni ruolo quali sezioni
+sono visibili e quali modificabili. Le tabelle `menu` e `ruoli_menu` alimentano
+sia la navigazione sia i controlli del backend. I valori di configurazione sono
+in italiano; le risposte di modifica usano avvisi e conferme della interfaccia,
+non i dialoghi nativi del browser.
+
 Le migrazioni sono file SQL numerati in `backend/src/base-datos/migraciones/`. Il runner le applica in ordine, si interrompe al primo errore e registra ogni file applicato, quindi rieseguirlo è sicuro. Una nuova migrazione si aggiunge come file con il numero successivo: non modificare file già applicati.
 
 ## Dati di dimostrazione

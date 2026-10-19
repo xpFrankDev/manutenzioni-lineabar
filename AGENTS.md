@@ -19,7 +19,8 @@
 
 - Interfaz operativa móvil primero: jerarquía clara, espaciado deliberado, objetivos táctiles de al menos 44 px y contraste accesible en tema claro y oscuro.
 - Azul para navegación, acciones principales y contexto de máquina; los colores de estado se reservan para estados reales del trabajo.
-- Todo control nuevo necesita estados de foco, error, carga, vacío y confirmación visibles.
+- Todo control nuevo necesita estados de foco, error, carga, vacío y confirmación visibles. Las confirmaciones y los avisos de éxito usan `AvisosProvider`/`useAvisos`; no se usan `confirm()` ni `alert()` nativos.
+- Cualquier modal bloquea el scroll del documento y conserva su propio scroll interno.
 - Cualquier cambio visual relevante se verifica sobre la aplicación renderizada antes de darlo por terminado.
 
 ## Persistencia y datos
@@ -33,7 +34,8 @@
 ## Seguridad de aplicación
 
 - La sesión viaja en cookies `HttpOnly` (`lineabar_sesion` y `lineabar_refresco`) y el token CSRF vive en memoria; las mutaciones por cookie exigen `X-CSRF-Token`. Prohibido persistir tokens, credenciales, sesiones o secretos en `localStorage`, `sessionStorage`, IndexedDB o cookies legibles por JavaScript.
-- Todo endpoint valida el rol y la propiedad del registro **en el servidor**; ningún permiso se deriva de un identificador enviado por el cliente.
+- Todo endpoint valida el rol, el permiso de menú (`menu`/`ruoli_menu`) y la propiedad del registro **en el servidor**; ningún permiso se deriva de un identificador enviado por el cliente. La navegación del cliente refleja la misma matriz, pero no la sustituye.
+- Los textos y valores persistidos en la base de datos van en italiano; el código y los comentarios van en español.
 - Toda entrada se valida con Zod en el servidor; no confiar en la validación del cliente.
 - Los errores no exponen trazas, SQL ni secretos.
 - Un cambio de seguridad relevante se acompaña de una prueba negativa.

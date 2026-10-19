@@ -56,6 +56,14 @@ Esto último se corrige con `docs/00`–`09`; lo no resuelto queda en `07`.
   al crear máquina, manutención, boleta o tarea, backfill histórico y gestión
   explícita por el administrador. Las rutas sin sesión redirigen al login; sin
   autorización muestran una pantalla 403 de marca; una ruta inexistente muestra 404.
+- **Permisos modulares** `[V]`: tablas `menu` y `ruoli_menu`; el administrador
+  decide por rol qué secciones se ven y cuáles se pueden modificar. La navegación
+  y las rutas del backend respetan la matriz; el rol técnico parte con campo y
+  sin configuración ni reportes.
+- **Avisos de interfaz** `[V]`: confirmaciones y notificaciones de marca propias,
+  sin `confirm()`/`alert()` nativos, con bloqueo de scroll del fondo en modales.
+- **Actividades** `[V]`: pulsar una tarea abre su ficha completa con acciones de
+  tomar o cerrar.
 
 ## 4. Huecos funcionales declarados
 
