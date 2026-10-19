@@ -57,12 +57,13 @@ export function DetalleMaquina({ id, c, idioma, usuario, alVolver, alAbrirBoleta
   useBloquearScroll(fotoAbierta);
   const esAdministrador = usuario?.ruolo === 'amministratore';
 
-  const cargar = useCallback(async () => {
+  const cargar = useCallback(async (seleccionarId = null) => {
     try {
       const detalle = await llamarApi(`/maquinas/${id}`);
       setDatos(detalle);
       setError(null);
-      setIndice(0);
+      const posicion = seleccionarId ? (detalle.foto ?? []).findIndex((foto) => foto.id === seleccionarId) : 0;
+      setIndice(posicion >= 0 ? posicion : 0);
       setFotoAbierta(false);
       if (esAdministrador) {
         const lista = await llamarApi(`/maquinas/${id}/accesos`).catch(() => null);
@@ -127,13 +128,13 @@ export function DetalleMaquina({ id, c, idioma, usuario, alVolver, alAbrirBoleta
     setMensaje('');
     try {
       const immagine = await comprimirImagen(archivo);
-      await llamarApi(`/maquinas/${id}/foto`, {
+      const foto = await llamarApi(`/maquinas/${id}/foto`, {
         method: 'POST',
         body: JSON.stringify({ immagine, nomeFile: archivo.name, didascalia: '' })
       });
       setMensaje(c.saved);
       notificar(c.saved);
-      await cargar();
+      await cargar(foto.id);
     } catch (e) {
       setMensaje(e.message);
       notificar(e.message, 'error');
