@@ -205,7 +205,7 @@ export async function obtenerDetalleMaquina(maquinaId) {
 }
 
 export async function guardarFotoMaquina(maquinaId, datos, usuarioId) {
-  const { tipoMime, base64, bytes, nombreFile } = analizarImagenEntrada(datos, { maximoBytes: 6 * 1024 * 1024 });
+  const { tipoMime, base64, bytes, nomeFile } = analizarImagenEntrada(datos, { maximoBytes: 6 * 1024 * 1024 });
   const id = nuevoId();
   const orden = await consultarUno(
     'SELECT COALESCE(MAX(ordine),0)+1 orden FROM macchine_foto WHERE fk_macchina=? AND stato="attivo"',
@@ -214,9 +214,9 @@ export async function guardarFotoMaquina(maquinaId, datos, usuarioId) {
   const didascalia = datos.didascalia ? String(datos.didascalia).trim().slice(0, 255) : null;
   await ejecutar(
     'INSERT INTO macchine_foto (id,fk_macchina,nome_file,tipo_mime,dimensione,immagine,didascalia,ordine,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,?,?,?)',
-    [id, maquinaId, nombreFile, tipoMime, bytes, Buffer.from(base64, 'base64'), didascalia, orden.orden, usuarioId, usuarioId]
+    [id, maquinaId, nomeFile, tipoMime, bytes, Buffer.from(base64, 'base64'), didascalia, orden.orden, usuarioId, usuarioId]
   );
-  return { id, nome_file: nombreFile, tipo_mime: tipoMime, dimensione: bytes, didascalia, ordine: orden.orden };
+  return { id, nome_file: nomeFile, tipo_mime: tipoMime, dimensione: bytes, didascalia, ordine: orden.orden };
 }
 
 export async function obtenerImagenMaquina(maquinaId, fotoId) {
