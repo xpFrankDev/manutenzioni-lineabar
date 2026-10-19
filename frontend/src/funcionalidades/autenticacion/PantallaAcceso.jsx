@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ChevronRight, CircleAlert } from 'lucide-react';
 import { guardarSesion, llamarApi } from '../../compartido/api/cliente.js';
 import { Toggle } from '../../compartido/componentes/Toggle.jsx';
-import { RUTAS } from '../../compartido/constantes.js';
+import { destinoSeguro } from '../../compartido/constantes.js';
 import { obtenerCatalogo } from '../../compartido/i18n/index.js';
 
 export function PantallaAcceso({ idioma, cambiarIdioma, tema, cambiarTema }) {
@@ -23,7 +23,7 @@ export function PantallaAcceso({ idioma, cambiarIdioma, tema, cambiarTema }) {
         body: JSON.stringify({ codigo_usuario: codigo.trim(), password: contrasena })
       });
       guardarSesion(sesion);
-      location.assign(RUTAS.dashboard);
+      location.assign(destinoSeguro(new URLSearchParams(location.search).get('next')));
     } catch {
       setError(c.loginError);
     } finally {

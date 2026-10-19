@@ -1,25 +1,8 @@
 import { consultar, consultarUno, ejecutar } from '../../base-datos/pool.js';
 import { nuevoId } from '../../utilidades/identificadores.js';
+import { analizarImagenEntrada, normalizarNombreArchivo } from '../../utilidades/imagenes.js';
 import { crearCliente } from '../clientes/servicio.js';
 import { detectarCliente, mejorCoincidencia } from './ocr.js';
-
-export const TIPOS_IMAGEN = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
-
-export function analizarImagenEntrada({ immagine, tipoMime, nomeFile }) {
-  if (!immagine || typeof immagine !== 'string') throw new Error('Carica la foto dello scontrino');
-
-  const coincidencia = /^data:(image\/[a-z0-9.+-]+);base64,(.+)$/i.exec(immagine.trim());
-  const tipo = (coincidencia?.[1] ?? tipoMime ?? 'image/jpeg').toLowerCase();
-  const base64 = (coincidencia?.[2] ?? immagine).replace(/\s+/g, '');
-
-  if (!TIPOS_IMAGEN.includes(tipo)) throw new Error('Formato immagine non supportato');
-  if (!/^[A-Za-z0-9+/=]+$/.test(base64)) throw new Error('Immagine non valida');
-
-  const bytes = Math.floor((base64.length * 3) / 4);
-  if (bytes > 8 * 1024 * 1024) throw new Error('La foto supera gli 8 MB consentiti');
-
-  return { tipoMime: tipo, base64, bytes, nomeFile: (nomeFile || 'scontrino.jpg').slice(0, 190) };
-}
 
 async function buscarClienteSugerido(nombre) {
   if (!nombre) return null;
@@ -85,11 +68,6 @@ function normalizarEntrada(imagen) {
   const entrada = typeof imagen === 'string' ? { immagine: imagen } : imagen;
   const { tipoMime, base64, bytes, nomeFile } = analizarImagenEntrada(entrada);
   return { tipoMime, base64, bytes, nombreFile: normalizarNombreArchivo(nomeFile) };
-}
-
-export function normalizarNombreArchivo(nombre) {
-  const limpio = String(nombre ?? 'scontrino.jpg').replace(/[^\w.\-]+/g, '_');
-  return (limpio || 'scontrino.jpg').slice(0, 190);
 }
 
 export async function obtenerScontrino(id) {

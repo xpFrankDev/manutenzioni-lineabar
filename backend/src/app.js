@@ -12,6 +12,7 @@ import { rutasCalendario } from './modulos/calendario/rutas.js';
 import { rutasCatalogos } from './modulos/catalogos/rutas.js';
 import { rutasConfiguracion } from './modulos/configuracion/rutas.js';
 import { rutasInterventos } from './modulos/interventos/rutas.js';
+import { rutasMaquinas } from './modulos/maquinas/rutas.js';
 import { rutasParametros } from './modulos/parametros/rutas.js';
 import { rutasReportes } from './modulos/reportes/rutas.js';
 import { rutasScontrini } from './modulos/scontrini/rutas.js';
@@ -38,6 +39,7 @@ export function crearApp() {
   app.use('/api', rutasAutenticacion);
   app.use('/api', rutasTablero);
   app.use('/api', rutasCatalogos);
+  app.use('/api', rutasMaquinas);
   app.use('/api', rutasInterventos);
   app.use('/api', rutasBoletas);
   app.use('/api', rutasCalendario);

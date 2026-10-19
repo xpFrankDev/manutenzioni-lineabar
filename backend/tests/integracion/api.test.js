@@ -272,6 +272,77 @@ test('flujo completo de Linea Bar', async (t) => {
     assert.equal(creada.cliente, `Bar Campo ${SELLO}`);
   });
 
+  await t.test('ficha de máquina: acceso por usuario, fotos y autorización', async () => {
+    tecnico2 = await iniciarSesion(base, `tec2${SELLO}`.toLowerCase().slice(0, 40), 'TecnicoPrueba2026');
+
+    // El creador técnico y el administrador ven la ficha; otro técnico no.
+    assert.equal((await pedir(base, `/maquinas/${maquinaId}`, { token: tecnico.token })).estado, 200);
+    assert.equal((await pedir(base, `/maquinas/${maquinaId}`, { token: admin.token })).estado, 200);
+    assert.equal((await pedir(base, `/maquinas/${maquinaId}`, { token: tecnico2.token })).estado, 403);
+    assert.equal((await pedir(base, '/maquinas/no-es-uuid', { token: admin.token })).estado, 404);
+
+    const ficha = await pedir(base, `/maquinas/${maquinaId}`, { token: admin.token });
+    assert.equal(ficha.datos.cliente, `Bar Campo ${SELLO}`);
+    assert.equal(Array.isArray(ficha.datos.foto), true);
+    assert.equal(Array.isArray(ficha.datos.manutenzioni), true);
+
+    // El administrador consulta y concede acceso explícito.
+    const accesos = await pedir(base, `/maquinas/${maquinaId}/accesos`, { token: admin.token });
+    assert.equal(accesos.estado, 200);
+    const registroTecnico2 = accesos.datos.tecnici.find((fila) => fila.id === tecnico2.utente.id);
+    assert.ok(registroTecnico2);
+    assert.equal(Number(registroTecnico2.accesso), 0);
+
+    const conAcceso = await pedir(base, `/maquinas/${maquinaId}/accesos`, {
+      metodo: 'PUT',
+      token: admin.token,
+      cuerpo: { usuarios: [tecnico2.utente.id] }
+    });
+    assert.equal(conAcceso.estado, 200);
+    assert.equal((await pedir(base, `/maquinas/${maquinaId}`, { token: tecnico2.token })).estado, 200);
+
+    const sinAcceso = await pedir(base, `/maquinas/${maquinaId}/accesos`, {
+      metodo: 'PUT',
+      token: admin.token,
+      cuerpo: { usuarios: [] }
+    });
+    assert.equal(sinAcceso.estado, 200);
+    assert.equal((await pedir(base, `/maquinas/${maquinaId}`, { token: tecnico2.token })).estado, 403);
+
+    // El técnico autorizado sube una foto y otro usuario sin acceso no la ve.
+    const subida = await pedir(base, `/maquinas/${maquinaId}/foto`, {
+      metodo: 'POST',
+      token: tecnico.token,
+      cuerpo: { immagine: PNG_1X1, nomeFile: 'macchina-prueba.png' }
+    });
+    assert.equal(subida.estado, 201);
+    const fotoId = subida.datos.id;
+
+    const imagen = await fetch(`${base}/maquinas/${maquinaId}/foto/${fotoId}`, {
+      headers: { Authorization: `Bearer ${tecnico.token}` }
+    });
+    assert.equal(imagen.status, 200);
+    assert.equal(imagen.headers.get('content-type'), 'image/png');
+
+    const imagenAjena = await fetch(`${base}/maquinas/${maquinaId}/foto/${fotoId}`, {
+      headers: { Authorization: `Bearer ${tecnico2.token}` }
+    });
+    assert.equal(imagenAjena.status, 403);
+
+    const subidaInvalida = await pedir(base, `/maquinas/${maquinaId}/foto`, {
+      metodo: 'POST',
+      token: tecnico.token,
+      cuerpo: { immagine: 'data:text/plain;base64,SG9sYQ==' }
+    });
+    assert.equal(subidaInvalida.estado, 400);
+
+    const eliminada = await pedir(base, `/maquinas/${maquinaId}/foto/${fotoId}`, {
+      metodo: 'DELETE',
+      token: admin.token
+    });
+    assert.equal(eliminada.estado, 204);
+  });
+
   await t.test('intervención: horas, personas, ricambio y calendario', async () => {
     const creada = await pedir(base, '/interventi', {
       metodo: 'POST',
@@ -299,6 +370,14 @@ test('flujo completo de Linea Bar', async (t) => {
     assert.equal(Number(detalle.datos.ricambi[0].quantita), 2);
     assert.equal(detalle.datos.prossime.length, 1);
     assert.equal(String(detalle.datos.prossime[0].prossima_manutenzione).slice(0, 10), sumarMeses(HOY, 5));
+
+    const ficha = await pedir(base, `/maquinas/${maquinaId}`, { token: admin.token });
+    assert.equal(ficha.estado, 200);
+    const registro = ficha.datos.manutenzioni.find((fila) => fila.id === intervencionId);
+    assert.ok(registro);
+    assert.equal(registro.boleta_id, null);
+    assert.equal(Number(registro.ore), 1.5);
+    assert.equal(registro.ricambi.length, 1);
   });
 
   await t.test('calendario: la manutención se renueva según el intervalo del ricambio', async () => {
@@ -409,6 +488,11 @@ test('flujo completo de Linea Bar', async (t) => {
       cuerpo: { stato: 'inventado' }
     });
     assert.equal(estadoInvalido.estado, 422);
+
+    const ficha = await pedir(base, `/maquinas/${maquinaId}`, { token: admin.token });
+    const registro = ficha.datos.manutenzioni.find((fila) => fila.boleta_id === boletaId);
+    assert.ok(registro, 'el historial debe relacionar la boleta con la máquina');
+    assert.equal(registro.codice_boleta, creada.datos.codice);
   });
 
   await t.test('un técnico no accede a interventos ni boletas ajenos', async () => {

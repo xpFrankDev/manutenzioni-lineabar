@@ -1,6 +1,7 @@
 import { consultarUno } from '../../base-datos/pool.js';
 import { nuevoId } from '../../utilidades/identificadores.js';
 import { programarCalendario } from '../calendario/servicio.js';
+import { otorgarAccesoMaquina } from '../maquinas/servicio.js';
 
 /** Agrupa líneas repetidas del mismo ricambio antes de consultar precios. */
 export function agruparRecambios(recambios = []) {
@@ -77,6 +78,7 @@ export async function crearIntervento(conexion, entrada, tecnicoId) {
     'INSERT INTO macchine_manutenzioni (fk_macchina,fk_manutenzione,utente_crea,utente_modifica) VALUES (?,?,?,?)',
     [maquina.id, manutencionId, tecnicoId, tecnicoId]
   );
+  await otorgarAccesoMaquina(conexion, maquina.id, tecnicoId);
   for (const riga of recambios.righe) {
     await conexion.execute(
       'INSERT INTO pezzi_manutenzioni (fk_manutenzione,fk_pezzo,quantita,prezzo_unitario,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?)',

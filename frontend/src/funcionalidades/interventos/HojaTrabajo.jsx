@@ -21,30 +21,7 @@ import { proximasManutenciones } from '../../compartido/dominio/calendario.js';
 import { TIPOS_MAQUINA, ICONOS_MAQUINA, nombreTipoMaquina } from '../../compartido/dominio/maquinas.js';
 import { importeManoDeObra } from '../../compartido/dominio/mano-de-obra.js';
 import { fechaDeHoy, formatearFecha, formatearMoneda } from '../../compartido/utilidades/formato.js';
-
-const ANCHO_MAXIMO_FOTO = 1600;
-
-async function comprimirImagen(archivo) {
-  const original = await new Promise((resolver, rechazar) => {
-    const lector = new FileReader();
-    lector.onload = () => resolver(lector.result);
-    lector.onerror = rechazar;
-    lector.readAsDataURL(archivo);
-  });
-  if (!('createImageBitmap' in window)) return original;
-
-  try {
-    const bitmap = await createImageBitmap(archivo);
-    const escala = Math.min(1, ANCHO_MAXIMO_FOTO / Math.max(bitmap.width, bitmap.height));
-    const lienzo = document.createElement('canvas');
-    lienzo.width = Math.round(bitmap.width * escala);
-    lienzo.height = Math.round(bitmap.height * escala);
-    lienzo.getContext('2d').drawImage(bitmap, 0, 0, lienzo.width, lienzo.height);
-    return lienzo.toDataURL('image/jpeg', 0.82);
-  } catch {
-    return original;
-  }
-}
+import { comprimirImagen } from '../../compartido/utilidades/imagenes.js';
 
 export function HojaTrabajo({ tipo, c, idioma, alCerrar, alGuardar }) {
   const esBoleta = tipo === 'receipt';

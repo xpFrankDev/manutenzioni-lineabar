@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  Boxes,
   CalendarClock,
   ClipboardList,
   LayoutDashboard,
@@ -19,6 +20,7 @@ const ENLACES = [
   ['mantenimientos', Wrench, 'jobs', 'siempre'],
   ['calendario', CalendarClock, 'calendar', 'siempre'],
   ['tareas', ClipboardList, 'tasks', 'siempre'],
+  ['macchine', Boxes, 'machines', 'siempre'],
   ['reportes', BarChart3, 'reports', 'administrador'],
   ['configuracion', Settings, 'settings', 'administrador']
 ];

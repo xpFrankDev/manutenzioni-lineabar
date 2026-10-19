@@ -31,6 +31,9 @@ test('las pantallas principales se renderizan sin errores', async () => {
   assert.match(pantallas.reportes, /Informes/);
   assert.match(pantallas.configuracion, /Datos configurables/);
   assert.match(pantallas.actividades, /Tareas/);
+  assert.match(pantallas.maquinas, /Máquinas/);
+  assert.match(pantallas.maquina, /Cargando/);
+  assert.match(pantallas.error403, /Acceso reservado/);
   assert.match(pantallas.estados, /Vencido/);
   assert.match(pantallas.estados, /Completada/);
 });

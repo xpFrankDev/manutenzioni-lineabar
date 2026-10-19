@@ -26,6 +26,14 @@ export const limiteOcr = rateLimit({
   legacyHeaders: false
 });
 
+/** Subida de fotos de máquina: menos frecuente que el uso normal de la API. */
+export const limiteFotos = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 60,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 /** Límite general defensivo: alto para no molestar al uso normal en campo. */
 export const limiteGeneral = rateLimit({
   windowMs: 60 * 1000,

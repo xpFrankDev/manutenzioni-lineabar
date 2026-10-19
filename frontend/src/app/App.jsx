@@ -2,7 +2,15 @@ import { useEffect, useState } from 'react';
 import { Menu, Plus, ReceiptText, Wrench } from 'lucide-react';
 import { guardarSesion, llamarApi } from '../compartido/api/cliente.js';
 import { Toggle } from '../compartido/componentes/Toggle.jsx';
-import { CLAVES, RUTA_ACCESO, RUTAS, RUTAS_HOJA, hojaDesdeRuta, paginaDesdeRuta } from '../compartido/constantes.js';
+import {
+  CLAVES,
+  RUTA_ACCESO,
+  RUTAS,
+  RUTAS_HOJA,
+  hojaDesdeRuta,
+  maquinaIdDesdeRuta,
+  paginaDesdeRuta
+} from '../compartido/constantes.js';
 import { IDIOMA_POR_DEFECTO, obtenerCatalogo } from '../compartido/i18n/index.js';
 import { Actividades } from '../funcionalidades/actividades/Actividades.jsx';
 import { PantallaAcceso } from '../funcionalidades/autenticacion/PantallaAcceso.jsx';
@@ -11,7 +19,10 @@ import { Configuracion } from '../funcionalidades/configuracion/Configuracion.js
 import { DetalleRegistro } from '../funcionalidades/interventos/DetalleRegistro.jsx';
 import { HojaTrabajo } from '../funcionalidades/interventos/HojaTrabajo.jsx';
 import { ListaOperaciones } from '../funcionalidades/interventos/ListaOperaciones.jsx';
+import { DetalleMaquina } from '../funcionalidades/maquinas/DetalleMaquina.jsx';
+import { ListaMaquinas } from '../funcionalidades/maquinas/ListaMaquinas.jsx';
 import { Navegacion } from '../funcionalidades/navegacion/Navegacion.jsx';
+import { PantallaError } from '../funcionalidades/errores/PantallaError.jsx';
 import { Reportes } from '../funcionalidades/reportes/Reportes.jsx';
 import { Tablero } from '../funcionalidades/tablero/Tablero.jsx';
 
@@ -19,10 +30,12 @@ export function App() {
   const [idioma, setIdioma] = useState(() => localStorage.getItem(CLAVES.idioma) || IDIOMA_POR_DEFECTO);
   const [tema, setTema] = useState(() => localStorage.getItem(CLAVES.tema) || 'dark');
   const [pagina, setPagina] = useState(() => paginaDesdeRuta(location.pathname));
+  const [maquinaId, setMaquinaId] = useState(() => maquinaIdDesdeRuta(location.pathname));
   const [menu, setMenu] = useState(false);
   const [acciones, setAcciones] = useState(false);
   const [hoja, setHoja] = useState(() => hojaDesdeRuta(location.pathname));
   const [detalle, setDetalle] = useState(null);
+  const [detalleBoleta, setDetalleBoleta] = useState(null);
   const [tareasPendientes, setTareasPendientes] = useState(0);
   const [avisosCalendario, setAvisosCalendario] = useState(0);
   const [usuario, setUsuario] = useState(null);
@@ -69,8 +82,10 @@ export function App() {
   useEffect(() => {
     const sincronizar = () => {
       setPagina(paginaDesdeRuta(location.pathname));
+      setMaquinaId(maquinaIdDesdeRuta(location.pathname));
       setHoja(hojaDesdeRuta(location.pathname));
       setDetalle(null);
+      setDetalleBoleta(null);
     };
     addEventListener('popstate', sincronizar);
     return () => removeEventListener('popstate', sincronizar);
@@ -80,7 +95,14 @@ export function App() {
 
   function ir(destino) {
     setPagina(destino);
+    setMaquinaId(null);
     history.pushState({}, '', RUTAS[destino]);
+  }
+
+  function abrirMaquina(id) {
+    setPagina('maquina');
+    setMaquinaId(id);
+    history.pushState({}, '', `/lineabar/macchine/${id}`);
   }
 
   function abrirHoja(tipo) {
@@ -91,7 +113,7 @@ export function App() {
 
   function cerrarHoja() {
     setHoja(null);
-    history.pushState({}, '', RUTAS[pagina]);
+    history.pushState({}, '', RUTAS[pagina] ?? location.pathname);
   }
 
   if (location.pathname === RUTA_ACCESO) {
@@ -117,12 +139,25 @@ export function App() {
       <ListaOperaciones tipo="interventi" c={c} idioma={idioma} alCrear={() => abrirHoja('maintenance')} />
     ) : pagina === 'tareas' ? (
       <Actividades c={c} idioma={idioma} usuario={usuario} />
+    ) : pagina === 'macchine' ? (
+      <ListaMaquinas c={c} alAbrir={abrirMaquina} />
+    ) : pagina === 'maquina' && maquinaId ? (
+      <DetalleMaquina
+        id={maquinaId}
+        c={c}
+        idioma={idioma}
+        usuario={usuario}
+        alVolver={() => ir('macchine')}
+        alAbrirBoleta={(id) => setDetalleBoleta(id)}
+      />
     ) : pagina === 'calendario' ? (
       <Calendario c={c} idioma={idioma} usuario={usuario} />
     ) : pagina === 'reportes' && esAdministrador ? (
       <Reportes c={c} idioma={idioma} />
     ) : pagina === 'configuracion' && esAdministrador ? (
       <Configuracion c={c} />
+    ) : pagina === '404' || (pagina === 'maquina' && !maquinaId) ? (
+      <PantallaError tipo="404" c={c} alVolver={() => ir('dashboard')} />
     ) : (
       tablero
     );
@@ -177,6 +212,9 @@ export function App() {
         />
       )}
       {detalle && <DetalleRegistro tipo="interventi" id={detalle} c={c} idioma={idioma} alCerrar={() => setDetalle(null)} />}
+      {detalleBoleta && (
+        <DetalleRegistro tipo="boletas" id={detalleBoleta} c={c} idioma={idioma} alCerrar={() => setDetalleBoleta(null)} />
+      )}
     </>
   );
 }

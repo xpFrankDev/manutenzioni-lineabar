@@ -29,7 +29,9 @@ export function borrarSesion() {
 
 function cerrarPorSesionExpirada() {
   borrarSesion();
-  if (location.pathname !== RUTA_ACCESO) location.replace(RUTA_ACCESO);
+  if (location.pathname === RUTA_ACCESO) return;
+  const retorno = encodeURIComponent(`${location.pathname}${location.search}`);
+  location.replace(`${RUTA_ACCESO}?next=${retorno}`);
 }
 
 // Un único refresco en vuelo: varias peticiones que reciben 401 a la vez

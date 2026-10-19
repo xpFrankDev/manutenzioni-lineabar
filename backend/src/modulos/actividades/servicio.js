@@ -2,6 +2,7 @@ import { consultar, consultarUno } from '../../base-datos/pool.js';
 import { esTecnico } from '../../intermedios/sesion.js';
 import { nuevoId } from '../../utilidades/identificadores.js';
 import { crearIntervento } from '../interventos/servicio.js';
+import { otorgarAccesoMaquina } from '../maquinas/servicio.js';
 
 export async function puedeAccederActividad(req, id) {
   if (!esTecnico(req)) return true;
@@ -73,6 +74,7 @@ export async function crearActividad(conexion, datos, usuarioId) {
       'INSERT INTO attivita_tecnici (fk_attivita,fk_tecnico,utente_crea,utente_modifica) VALUES (?,?,?,?)',
       [id, tecnico, usuarioId, usuarioId]
     );
+    if (datos.macchinaId) await otorgarAccesoMaquina(conexion, datos.macchinaId, tecnico);
   }
   return id;
 }
