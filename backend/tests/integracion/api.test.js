@@ -318,10 +318,11 @@ test('flujo completo de Linea Bar', async (t) => {
     const sinAcceso = await pedir(base, `/maquinas/${maquinaId}/accesos`, {
       metodo: 'PUT',
       token: admin.token,
-      cuerpo: { usuarios: [] }
+      cuerpo: { usuarios: [tecnico.utente.id] }
     });
     assert.equal(sinAcceso.estado, 200);
     assert.equal((await pedir(base, `/maquinas/${maquinaId}`, { token: tecnico2.token })).estado, 403);
+    assert.equal((await pedir(base, `/maquinas/${maquinaId}`, { token: tecnico.token })).estado, 200);
 
     // El técnico autorizado sube una foto y otro usuario sin acceso no la ve.
     const subida = await pedir(base, `/maquinas/${maquinaId}/foto`, {
