@@ -64,6 +64,7 @@ async function sembrar() {
   const conexion = await abrirConexionConEspera();
   try {
     await ejecutarArchivo(conexion, 'datos-base.sql');
+    await ejecutarArchivo(conexion, 'datos-menu.sql');
     console.log('Datos maestros sincronizados.');
 
     await asegurarAdministrador(conexion);
