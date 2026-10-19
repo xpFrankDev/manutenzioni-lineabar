@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { CalendarClock, Clock3, X } from 'lucide-react';
 import { llamarApi } from '../../compartido/api/cliente.js';
 import { Estado } from '../../compartido/componentes/Estado.jsx';
+import { SkeletonSheet } from '../../compartido/componentes/Skeleton.jsx';
 import { formatearFecha, formatearHora, formatearMoneda } from '../../compartido/utilidades/formato.js';
 import { useBloquearScroll } from '../../compartido/utilidades/scroll.js';
 
@@ -30,7 +31,7 @@ export function DetalleRegistro({ tipo, id, c, idioma, alCerrar }) {
         </header>
         <main>
           {error && <p className="error">{error}</p>}
-          {!datos && <p>{c.loading}</p>}
+          {!datos && <SkeletonSheet />}
           {datos && (
             <>
               <div className="detail-line">

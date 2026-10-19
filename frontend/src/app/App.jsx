@@ -24,6 +24,7 @@ import { DetalleMaquina } from '../funcionalidades/maquinas/DetalleMaquina.jsx';
 import { ListaMaquinas } from '../funcionalidades/maquinas/ListaMaquinas.jsx';
 import { Navegacion } from '../funcionalidades/navegacion/Navegacion.jsx';
 import { PantallaError } from '../funcionalidades/errores/PantallaError.jsx';
+import { SkeletonLogin } from '../compartido/componentes/Skeleton.jsx';
 import { Reportes } from '../funcionalidades/reportes/Reportes.jsx';
 import { Tablero } from '../funcionalidades/tablero/Tablero.jsx';
 
@@ -120,7 +121,7 @@ export function App() {
   if (location.pathname === RUTA_ACCESO) {
     return <PantallaAcceso idioma={idioma} cambiarIdioma={setIdioma} tema={tema} cambiarTema={setTema} />;
   }
-  if (sesion !== 'ok') return <main className="login">{c.loading}</main>;
+  if (sesion !== 'ok') return <SkeletonLogin />;
 
   const menuDePagina = {
     dashboard: 'dashboard',

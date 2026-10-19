@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Save, X } from 'lucide-react';
 import { llamarApi } from '../../compartido/api/cliente.js';
 import { useAvisos } from '../../compartido/componentes/Avisos.jsx';
+import { SkeletonSheet } from '../../compartido/componentes/Skeleton.jsx';
 import { useBloquearScroll } from '../../compartido/utilidades/scroll.js';
 
 function maquinasDelCliente(maquinas, clienteId) {
@@ -24,6 +25,7 @@ export function FormularioActividad({ c, alCerrar, alGuardar }) {
     richiedeAppuntamento: false
   });
   const [error, setError] = useState('');
+  const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
     Promise.all([llamarApi('/clienti'), llamarApi('/maquinas'), llamarApi('/tecnici')])
@@ -32,7 +34,8 @@ export function FormularioActividad({ c, alCerrar, alGuardar }) {
         setMaquinas(listaMaquinas);
         setTecnicos(listaTecnicos);
       })
-      .catch((e) => setError(e.message));
+      .catch((e) => setError(e.message))
+      .finally(() => setCargando(false));
   }, []);
 
   const establecer = (clave, valor) => setFormulario((actual) => ({ ...actual, [clave]: valor }));
@@ -60,6 +63,20 @@ export function FormularioActividad({ c, alCerrar, alGuardar }) {
       setError(e.message);
       notificar(e.message, 'error');
     }
+  }
+
+  if (cargando) {
+    return (
+      <div className="sheet-wrap" role="dialog" aria-modal="true">
+        <section className="sheet task-sheet">
+          <header>
+            <div><h2>{c.add} {c.tasks}</h2></div>
+            <button type="button" onClick={alCerrar} aria-label={c.cancel}><X /></button>
+          </header>
+          <SkeletonSheet />
+        </section>
+      </div>
+    );
   }
 
   return (

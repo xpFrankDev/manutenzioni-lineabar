@@ -127,6 +127,7 @@ export function FormularioRegistro({ recurso, registro, proveedores, clientes, c
           {recurso === 'macchine' && (
             <>
               {campo('codice_unico', c.machineCode, 'MC-XXX-0001')}
+              {campo('matricola', c.serialNumber, 'MAT-000000000')}
               <Campo label={c.machineType}>
                 <select
                   value={formulario.tipo_macchina || 'macchina_caffe'}

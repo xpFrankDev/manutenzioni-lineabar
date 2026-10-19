@@ -3,6 +3,7 @@ import { Minus, Plus, Search, X } from 'lucide-react';
 import { llamarApi } from '../../compartido/api/cliente.js';
 import { formatearMoneda } from '../../compartido/utilidades/formato.js';
 import { useAvisos } from '../../compartido/componentes/Avisos.jsx';
+import { SkeletonSheet } from '../../compartido/componentes/Skeleton.jsx';
 import { useBloquearScroll } from '../../compartido/utilidades/scroll.js';
 
 export function CierreActividad({ id, c, idioma, alCerrar, alGuardar }) {
@@ -77,6 +78,7 @@ export function CierreActividad({ id, c, idioma, alCerrar, alGuardar }) {
           </button>
         </header>
         <main>
+          {!actividad && <SkeletonSheet />}
           {actividad && (
             <div className="detail-line">
               <b>

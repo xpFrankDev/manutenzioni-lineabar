@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ShieldCheck } from 'lucide-react';
 import { llamarApi } from '../../compartido/api/cliente.js';
 import { useAvisos } from '../../compartido/componentes/Avisos.jsx';
+import { SkeletonList } from '../../compartido/componentes/Skeleton.jsx';
 
 export function PermisosRoles({ c, alVolver }) {
   const { notificar } = useAvisos();
@@ -76,7 +77,7 @@ export function PermisosRoles({ c, alVolver }) {
 
       {error && <p className="error">{error}</p>}
       {roles === null ? (
-        <p>{c.loading}</p>
+        <SkeletonList filas={4} />
       ) : (
         <section className="permissions-panel">
           <div className="role-tabs" role="tablist" aria-label={c.roles}>

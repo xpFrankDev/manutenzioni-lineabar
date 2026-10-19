@@ -23,9 +23,9 @@ export function renderizarPantallas() {
     login: conAvisos(
       <PantallaAcceso idioma={idioma} cambiarIdioma={nada} tema="light" cambiarTema={nada} />
     ),
-    boleta: conAvisos(<HojaTrabajo tipo="receipt" c={c} idioma={idioma} alCerrar={nada} alGuardar={nada} />),
+    boleta: conAvisos(<HojaTrabajo tipo="receipt" c={c} idioma={idioma} alCerrar={nada} alGuardar={nada} cargandoInicial={false} />),
     mantenimiento: conAvisos(
-      <HojaTrabajo tipo="maintenance" c={c} idioma={idioma} alCerrar={nada} alGuardar={nada} />
+      <HojaTrabajo tipo="maintenance" c={c} idioma={idioma} alCerrar={nada} alGuardar={nada} cargandoInicial={false} />
     ),
     calendario: conAvisos(<Calendario c={c} idioma={idioma} usuario={usuario} />),
     reportes: conAvisos(<Reportes c={c} idioma={idioma} />),

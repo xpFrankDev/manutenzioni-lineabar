@@ -115,3 +115,35 @@ html[data-theme=dark] .error-card i.denied{background:#40201f;color:#ffb4ab}
 .error-card p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
 @media(min-width:721px){.machine-grid{grid-template-columns:1fr 1fr}.machine-list-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.machine-carousel{max-width:520px}.machine-photo{max-height:320px}}
 .history-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+
+/* Etiqueta de origen del cliente y acciones de la ficha */
+.origin-tag{display:inline-flex;align-items:center;min-height:20px;padding:0 7px;border-radius:999px;font:800 9px Manrope;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.origin-tag.private{background:#e8edf5;color:#52657c}
+.origin-tag.romcafe{background:#fff0d6;color:#965500}
+.origin-tag.cimbali{background:#fde4e1;color:#a33c34}
+.origin-tag.supplier{background:var(--pale);color:var(--blue)}
+html[data-theme=dark] .origin-tag.private{background:#26374d;color:#b9c9dc}
+html[data-theme=dark] .origin-tag.romcafe{background:#493409;color:#ffd276}
+html[data-theme=dark] .origin-tag.cimbali{background:#4b2323;color:#ffaaa5}
+.client-name-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.client-name-row b{font:800 16px Manrope}
+.machine-client-line{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.history-item.clickable{cursor:pointer;transition:border-color .15s,background .15s}
+.history-item.clickable:hover,.history-item.clickable:focus-visible{border-color:var(--blue);background:var(--pale);outline:none}
+.photo-delete{position:absolute;top:10px;right:10px;width:38px;height:38px;border:1px solid #e7b9b4;border-radius:999px;background:#fff2f0;color:#ad3c3c;display:grid;place-items:center;box-shadow:0 4px 12px #0002}
+html[data-theme=dark] .photo-delete{background:#40201f;border-color:#6b3431;color:#ffb4ab}
+
+/* Encabezado de máquina: la flecha queda arriba y el nombre debajo. */
+.machine-detail-head{grid-template-columns:minmax(0,1fr) auto;align-items:start}
+.machine-detail-head .back-button{grid-column:1/-1;justify-self:start;margin-bottom:8px}
+.machine-detail-head>div{grid-column:1;grid-row:2}
+.machine-detail-head>.status{grid-column:2;grid-row:2;justify-self:end;margin-top:4px}
+.machine-photo-open{display:block;width:100%;height:100%;border:0;padding:0;background:transparent;cursor:zoom-in}
+.machine-photo-open img{display:block;width:100%;height:100%;object-fit:cover}
+.photo-processing{position:absolute;inset:0;background:#08172b99;color:#fff;display:grid;place-items:center;gap:8px;font:800 12px Manrope;backdrop-filter:blur(2px)}
+.spinner{width:26px;height:26px;border:3px solid #ffffff55;border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.photo-lightbox{position:fixed;z-index:100;inset:0;background:#02070eeb;display:grid;place-items:center;padding:18px}
+.photo-lightbox img{max-width:100%;max-height:88vh;object-fit:contain;border-radius:12px}
+.photo-lightbox-close{position:fixed;top:14px;right:14px;width:44px;height:44px;border:1px solid #ffffff44;border-radius:999px;background:#08172bcc;color:#fff;display:grid;place-items:center}
+@media(prefers-reduced-motion:reduce){.spinner{animation:none}}

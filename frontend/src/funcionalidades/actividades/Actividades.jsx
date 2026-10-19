@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import { llamarApi } from '../../compartido/api/cliente.js';
 import { useAvisos } from '../../compartido/componentes/Avisos.jsx';
 import { Estado } from '../../compartido/componentes/Estado.jsx';
+import { SkeletonList } from '../../compartido/componentes/Skeleton.jsx';
 import { formatearFecha } from '../../compartido/utilidades/formato.js';
 import { CierreActividad } from './CierreActividad.jsx';
 import { DetalleActividad } from './DetalleActividad.jsx';
@@ -64,7 +65,7 @@ export function Actividades({ c, idioma, usuario }) {
       {error && <p className="error">{error}</p>}
       <section className="operation-list">
         {filas === null ? (
-          <p>{c.loading}</p>
+          <SkeletonList filas={4} />
         ) : filas.length ? (
           filas.map((actividad) => (
             <article key={actividad.id}>

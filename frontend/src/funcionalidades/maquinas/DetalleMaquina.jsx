@@ -10,6 +10,7 @@ import {
   Copy,
   ImagePlus,
   MapPin,
+  X,
   ShieldCheck,
   Trash2,
   Wrench
@@ -17,11 +18,14 @@ import {
 import { llamarApi } from '../../compartido/api/cliente.js';
 import { useAvisos } from '../../compartido/componentes/Avisos.jsx';
 import { Estado } from '../../compartido/componentes/Estado.jsx';
+import { origenCliente } from '../../compartido/dominio/clientes.js';
 import { nombreTipoMaquina } from '../../compartido/dominio/maquinas.js';
 import { rutaMaquina } from '../../compartido/constantes.js';
 import { formatearFecha, formatearHora } from '../../compartido/utilidades/formato.js';
 import { comprimirImagen } from '../../compartido/utilidades/imagenes.js';
+import { useBloquearScroll } from '../../compartido/utilidades/scroll.js';
 import { PantallaError } from '../errores/PantallaError.jsx';
+import { SkeletonMaquina } from '../../compartido/componentes/Skeleton.jsx';
 
 const MIN_FOTO_BYTES = 20 * 1024;
 const MAX_FOTO_BYTES = 6 * 1024 * 1024;
@@ -48,7 +52,9 @@ export function DetalleMaquina({ id, c, idioma, usuario, alVolver, alAbrirBoleta
   const [mensaje, setMensaje] = useState('');
   const [accesos, setAccesos] = useState(null);
   const [guardandoAccesos, setGuardandoAccesos] = useState(false);
+  const [fotoAbierta, setFotoAbierta] = useState(false);
   const entradaFoto = useRef(null);
+  useBloquearScroll(fotoAbierta);
   const esAdministrador = usuario?.ruolo === 'amministratore';
 
   const cargar = useCallback(async () => {
@@ -57,6 +63,7 @@ export function DetalleMaquina({ id, c, idioma, usuario, alVolver, alAbrirBoleta
       setDatos(detalle);
       setError(null);
       setIndice(0);
+      setFotoAbierta(false);
       if (esAdministrador) {
         const lista = await llamarApi(`/maquinas/${id}/accesos`).catch(() => null);
         if (lista) setAccesos(lista.tecnici);
@@ -70,6 +77,15 @@ export function DetalleMaquina({ id, c, idioma, usuario, alVolver, alAbrirBoleta
     cargar();
   }, [cargar]);
 
+  useEffect(() => {
+    if (!fotoAbierta) return undefined;
+    const alPresionar = (evento) => {
+      if (evento.key === 'Escape') setFotoAbierta(false);
+    };
+    addEventListener('keydown', alPresionar);
+    return () => removeEventListener('keydown', alPresionar);
+  }, [fotoAbierta]);
+
   if (error?.estado === 403) return <PantallaError tipo="403" c={c} alVolver={alVolver} />;
   if (error?.estado === 404) return <PantallaError tipo="404" c={c} alVolver={alVolver} />;
   if (error) {
@@ -79,12 +95,18 @@ export function DetalleMaquina({ id, c, idioma, usuario, alVolver, alAbrirBoleta
       </main>
     );
   }
-  if (!datos) return <main className="content loading">{c.loading}</main>;
+  if (!datos) return <SkeletonMaquina c={c} />;
 
   const fotos = datos.foto ?? [];
   const actual = fotos[indice] ?? null;
   const urlFoto = actual ? `/lineabar/api/maquinas/${id}/foto/${actual.id}` : null;
   const urlNfc = `${location.origin}${rutaMaquina(id)}`;
+  const origen = origenCliente(datos, c);
+
+  function errorFoto(mensaje) {
+    setMensaje(mensaje);
+    notificar(mensaje, 'error');
+  }
 
   function moverFoto(delta) {
     if (!fotos.length) return;
@@ -95,11 +117,11 @@ export function DetalleMaquina({ id, c, idioma, usuario, alVolver, alAbrirBoleta
     const archivo = evento.target.files?.[0];
     evento.target.value = '';
     if (!archivo) return;
-    if (archivo.size < MIN_FOTO_BYTES) return setMensaje(c.photoTooSmall);
-    if (archivo.size > MAX_FOTO_BYTES) return setMensaje(c.photoTooLarge);
+    if (archivo.size < MIN_FOTO_BYTES) return errorFoto(c.photoTooSmall);
+    if (archivo.size > MAX_FOTO_BYTES) return errorFoto(c.photoTooLarge);
     const dimensiones = await dimensionesImagen(archivo);
     if (dimensiones && (dimensiones.ancho < MIN_FOTO_ANCHO || dimensiones.alto < MIN_FOTO_ALTO || dimensiones.ancho > MAX_FOTO_LADO || dimensiones.alto > MAX_FOTO_LADO)) {
-      return setMensaje(c.photoTooSmall);
+      return errorFoto(c.photoTooSmall);
     }
     setSubiendo(true);
     setMensaje('');
@@ -190,12 +212,38 @@ export function DetalleMaquina({ id, c, idioma, usuario, alVolver, alAbrirBoleta
       <section className="machine-carousel" aria-roledescription="carousel" aria-label={c.photos}>
         <div className="machine-photo">
           {actual ? (
-            <img src={urlFoto} alt={actual.didascalia || `${c.photoOf} ${indice + 1}`} loading="lazy" />
+            <button
+              type="button"
+              className="machine-photo-open"
+              onClick={() => setFotoAbierta(true)}
+              aria-label={c.viewPhoto}
+            >
+              <img src={urlFoto} alt={actual.didascalia || `${c.photoOf} ${indice + 1}`} loading="lazy" />
+            </button>
           ) : (
             <span className="machine-photo-empty">
               <Camera size={30} />
               {c.noPhotos}
             </span>
+          )}
+          {(esAdministrador || actual?.utente_crea === usuario?.sub) && actual && (
+            <button
+              className="photo-delete"
+              onClick={(e) => {
+                e.stopPropagation();
+                borrarFoto(actual.id);
+              }}
+              aria-label={c.deletePhoto}
+              title={c.deletePhoto}
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
+          {subiendo && (
+            <div className="photo-processing" role="status" aria-live="polite">
+              <span className="spinner" />
+              {c.photoUploading}
+            </div>
           )}
           {fotos.length > 1 && (
             <>
@@ -226,11 +274,6 @@ export function DetalleMaquina({ id, c, idioma, usuario, alVolver, alAbrirBoleta
           <ImagePlus size={17} />
           {subiendo ? c.photoUploading : c.addPhoto}
         </button>
-        {(esAdministrador || actual?.utente_crea === usuario?.sub) && actual && (
-          <button className="text-action danger" onClick={() => borrarFoto(actual.id)}>
-            <Trash2 size={14} /> {c.deletePhoto}
-          </button>
-        )}
         <input
           ref={entradaFoto}
           type="file"
@@ -248,8 +291,11 @@ export function DetalleMaquina({ id, c, idioma, usuario, alVolver, alAbrirBoleta
             <Building2 size={18} />
             <h2>{c.clientData}</h2>
           </header>
-          <b>{datos.cliente}</b>
-          <small>{datos.cliente_codice} · {datos.cliente_tipo === 'fornitore' ? c.linked : c.private}</small>
+          <div className="client-name-row">
+            <b>{datos.cliente}</b>
+            <span className={`origin-tag ${origen.tono}`}>{origen.etiqueta}</span>
+          </div>
+          <small>{datos.cliente_codice}</small>
           <p>
             <MapPin size={14} /> {datos.cliente_indirizzo}, {datos.cliente_citta}
           </p>
@@ -262,6 +308,7 @@ export function DetalleMaquina({ id, c, idioma, usuario, alVolver, alAbrirBoleta
           </header>
           <dl>
             <div><dt>{c.machineCode}</dt><dd>{datos.codice_unico}</dd></div>
+            <div><dt>{c.serialNumber}</dt><dd>{datos.matricola || '—'}</dd></div>
             <div><dt>{c.machineType}</dt><dd>{nombreTipoMaquina(datos.tipo_macchina, c)}</dd></div>
             <div><dt>{c.model}</dt><dd>{datos.modello || '—'}</dd></div>
             <div><dt>{c.brand}</dt><dd>{datos.marca || '—'}</dd></div>
@@ -280,7 +327,19 @@ export function DetalleMaquina({ id, c, idioma, usuario, alVolver, alAbrirBoleta
         {datos.manutenzioni.length ? (
           <div className="history-list">
             {datos.manutenzioni.map((fila) => (
-              <article className="history-item" key={fila.id}>
+              <article
+                className="history-item clickable"
+                key={fila.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => alAbrirIntervento?.(fila.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    alAbrirIntervento?.(fila.id);
+                  }
+                }}
+              >
                 <header>
                   <b>{formatearFecha(fila.data, idioma)}{fila.ora ? ` · ${formatearHora(fila.ora)}` : ''}</b>
                   <Estado value={fila.esito} c={c} />
@@ -288,10 +347,7 @@ export function DetalleMaquina({ id, c, idioma, usuario, alVolver, alAbrirBoleta
                 <small>
                   {fila.tecnico} · {fila.ubicazione === 'magazzino' ? c.warehouse : c.customerSite} · {Number(fila.ore)} h × {Number(fila.persone)}
                 </small>
-                <div className="history-actions">
-                  <button className="text-action" onClick={() => alAbrirIntervento?.(fila.id)}>
-                    {c.viewMaintenance}
-                  </button>
+                <div className="history-actions" onClick={(e) => e.stopPropagation()}>
                   {fila.boleta_id ? (
                     <button className="boleta-badge" onClick={() => alAbrirBoleta?.(fila.boleta_id)}>
                       {c.withBoleta} · {fila.codice_boleta}
@@ -332,6 +388,24 @@ export function DetalleMaquina({ id, c, idioma, usuario, alVolver, alAbrirBoleta
           </div>
           <small>{c.accessHelp}</small>
         </section>
+      )}
+
+      {fotoAbierta && actual && (
+        <div className="photo-lightbox" role="dialog" aria-modal="true" onClick={() => setFotoAbierta(false)}>
+          <button
+            type="button"
+            className="photo-lightbox-close"
+            aria-label={c.close}
+            onClick={() => setFotoAbierta(false)}
+          >
+            <X size={22} />
+          </button>
+          <img
+            src={urlFoto}
+            alt={actual.didascalia || `${c.photoOf} ${indice + 1}`}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
       )}
 
       {esAdministrador && accesos && (

@@ -10,6 +10,12 @@ export const esquemaMaquina = z.object({
   fk_fornitore: z.string().uuid().nullable().optional(),
   fk_marca: z.string().uuid().nullable().optional(),
   codice_unico: z.string().trim().min(4).max(50),
+  matricola: z
+    .string()
+    .trim()
+    .min(4)
+    .max(60)
+    .refine((valor) => (valor.match(/\d/g) ?? []).length >= 4, 'La matricola deve contenere almeno 4 cifre'),
   tipo_macchina: z.enum(TIPOS_MAQUINA),
   modello: z.string().trim().max(100).nullable().optional(),
   stato: z.enum(['attivo', 'inattivo']).default('attivo')
@@ -56,13 +62,14 @@ export async function crearMaquina(conexion, datos, usuarioId) {
   const marcaId = await resolverMarca(maquina, conexion);
   const id = nuevoId();
   await conexion.execute(
-    'INSERT INTO macchine (id,fk_cliente,fk_marca,fk_fornitore,codice_unico,tipo_macchina,modello,stato,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,?,?,?)',
+    'INSERT INTO macchine (id,fk_cliente,fk_marca,fk_fornitore,codice_unico,matricola,tipo_macchina,modello,stato,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
     [
       id,
       maquina.fk_cliente,
       marcaId,
       maquina.fk_fornitore,
       maquina.codice_unico,
+      maquina.matricola,
       maquina.tipo_macchina,
       maquina.modello,
       maquina.stato,
@@ -78,12 +85,13 @@ export async function actualizarMaquina(conexion, id, datos, usuarioId) {
   const maquina = normalizarMaquina(datos);
   const marcaId = await resolverMarca(maquina, conexion);
   await conexion.execute(
-    'UPDATE macchine SET fk_cliente=?,fk_marca=?,fk_fornitore=?,codice_unico=?,tipo_macchina=?,modello=?,stato=?,utente_modifica=? WHERE id=?',
+    'UPDATE macchine SET fk_cliente=?,fk_marca=?,fk_fornitore=?,codice_unico=?,matricola=?,tipo_macchina=?,modello=?,stato=?,utente_modifica=? WHERE id=?',
     [
       maquina.fk_cliente,
       marcaId,
       maquina.fk_fornitore,
       maquina.codice_unico,
+      maquina.matricola,
       maquina.tipo_macchina,
       maquina.modello,
       maquina.stato,
@@ -148,12 +156,14 @@ export async function sincronizarAccesosMaquina(conexion, maquinaId, usuarios, a
 
 export async function obtenerDetalleMaquina(maquinaId) {
   const maquina = await consultarUno(
-    `SELECT m.id,m.codice_unico,m.tipo_macchina,m.modello,m.stato,m.creato_at,m.modificato_at,
+    `SELECT m.id,m.codice_unico,m.matricola,m.tipo_macchina,m.modello,m.stato,m.creato_at,m.modificato_at,
             c.id cliente_id,c.codice cliente_codice,c.nome cliente,c.indirizzo cliente_indirizzo,c.citta cliente_citta,c.tipo_cliente cliente_tipo,
+            cf.id cliente_fornitore_id,cf.codice cliente_fornitore_codice,cf.nome cliente_fornitore,
             f.id fornitore_id,f.codice fornitore_codice,f.nome fornitore,
             ma.id marca_id,ma.nome marca
        FROM macchine m
        JOIN clienti c ON c.id=m.fk_cliente
+       LEFT JOIN fornitori cf ON cf.id=c.fk_fornitore
        LEFT JOIN fornitori f ON f.id=m.fk_fornitore
        LEFT JOIN marche ma ON ma.id=m.fk_marca
       WHERE m.id=?`,
@@ -206,6 +216,11 @@ export async function obtenerDetalleMaquina(maquinaId) {
 
 export async function guardarFotoMaquina(maquinaId, datos, usuarioId) {
   const { tipoMime, base64, bytes, nomeFile } = analizarImagenEntrada(datos, { maximoBytes: 6 * 1024 * 1024 });
+  const existente = await consultarUno(
+    'SELECT id FROM macchine_foto WHERE fk_macchina=? AND nome_file=? AND stato="attivo"',
+    [maquinaId, nombreFile]
+  );
+  if (existente) throw new Error('Esiste già una foto con questo nome per questa macchina');
   const id = nuevoId();
   const orden = await consultarUno(
     'SELECT COALESCE(MAX(ordine),0)+1 orden FROM macchine_foto WHERE fk_macchina=? AND stato="attivo"',

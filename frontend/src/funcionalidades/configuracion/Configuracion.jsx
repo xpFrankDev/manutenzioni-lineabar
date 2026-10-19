@@ -4,6 +4,7 @@ import { llamarApi } from '../../compartido/api/cliente.js';
 import { useAvisos } from '../../compartido/componentes/Avisos.jsx';
 import { FormularioRegistro } from './FormularioRegistro.jsx';
 import { PermisosRoles } from './PermisosRoles.jsx';
+import { SkeletonList } from '../../compartido/componentes/Skeleton.jsx';
 import { RECURSOS_CONFIGURABLES, metadatosDeRecurso } from './catalogo.js';
 
 export function Configuracion({ c }) {
@@ -15,9 +16,11 @@ export function Configuracion({ c }) {
   const [edicion, setEdicion] = useState(null);
   const [consulta, setConsulta] = useState('');
   const [error, setError] = useState('');
+  const [cargando, setCargando] = useState(false);
 
   const cargar = async () => {
     if (!recurso || recurso === 'roles') return;
+    setCargando(true);
     try {
       const [listado, listaProveedores, listaClientes] = await Promise.all([
         llamarApi(`/configurazione/${recurso}`),
@@ -30,6 +33,8 @@ export function Configuracion({ c }) {
       setError('');
     } catch (e) {
       setError(e.message);
+    } finally {
+      setCargando(false);
     }
   };
 
@@ -113,6 +118,9 @@ export function Configuracion({ c }) {
         <input value={consulta} onChange={(e) => setConsulta(e.target.value)} placeholder={c.search} />
       </div>
       {error && <p className="error">{error}</p>}
+      {cargando ? (
+        <SkeletonList filas={5} />
+      ) : (
       <section className="config-records">
         {filtradas.map((fila) => (
           <article key={fila.id} className={fila.stato === 'inattivo' ? 'inactive' : ''}>
@@ -120,7 +128,7 @@ export function Configuracion({ c }) {
               <span>
                 <b>
                   {recurso === 'macchine'
-                    ? `${fila.fornitore || '—'} ${fila.modello || ''} · ${fila.codice_unico}`
+                    ? `${fila.fornitore || '—'} ${fila.modello || ''} · ${fila.codice_unico} · ${fila.matricola || '—'}`
                     : recurso === 'utenti'
                       ? `${fila.nome} · ${fila.codice_usuario}`
                       : recurso === 'parametri'
@@ -156,6 +164,7 @@ export function Configuracion({ c }) {
           </article>
         ))}
       </section>
+      )}
       {edicion && (
         <FormularioRegistro
           recurso={recurso}

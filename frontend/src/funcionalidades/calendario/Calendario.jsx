@@ -3,6 +3,7 @@ import { CalendarClock, CalendarPlus, CalendarX2, CircleAlert, Pencil, RefreshCw
 import { llamarApi } from '../../compartido/api/cliente.js';
 import { useAvisos } from '../../compartido/componentes/Avisos.jsx';
 import { Estado } from '../../compartido/componentes/Estado.jsx';
+import { SkeletonList } from '../../compartido/componentes/Skeleton.jsx';
 import { fechaDeHoy, formatearFecha } from '../../compartido/utilidades/formato.js';
 import { useBloquearScroll } from '../../compartido/utilidades/scroll.js';
 
@@ -97,7 +98,7 @@ export function Calendario({ c, idioma, usuario }) {
 
       <section className="operation-list">
         {filas === null ? (
-          <p>{c.loading}</p>
+          <SkeletonList filas={5} />
         ) : filas.length ? (
           filas.map((fila) => (
             <article key={fila.id}>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { CalendarClock, Check, ChevronRight, CircleAlert, ClipboardList, Euro, Wrench } from 'lucide-react';
 import { llamarApi } from '../../compartido/api/cliente.js';
 import { Estado } from '../../compartido/componentes/Estado.jsx';
+import { SkeletonDashboard } from '../../compartido/componentes/Skeleton.jsx';
 import { formatearFecha, formatearMoneda } from '../../compartido/utilidades/formato.js';
 
 export function Tablero({ c, idioma, usuario, alAbrirDetalle, alIrCalendario }) {
@@ -21,7 +22,7 @@ export function Tablero({ c, idioma, usuario, alAbrirDetalle, alIrCalendario }) 
       </main>
     );
   }
-  if (!datos) return <main className="content loading">{c.loading}</main>;
+  if (!datos) return <SkeletonDashboard />;
 
   const metricas = [
     [Wrench, c.done, datos.metriche.interventi],

@@ -41,7 +41,7 @@ export const catalogoConfigurable = {
     tabla: 'macchine',
     propio: true,
     listado:
-      'SELECT m.id,m.codice_unico,m.tipo_macchina,m.modello,m.fk_cliente,m.fk_fornitore,m.fk_marca,m.stato,c.nome cliente,c.indirizzo,COALESCE(f.nome,ma.nome) fornitore FROM macchine m JOIN clienti c ON c.id=m.fk_cliente LEFT JOIN fornitori f ON f.id=m.fk_fornitore LEFT JOIN marche ma ON ma.id=m.fk_marca ORDER BY m.stato DESC,c.nome,m.modello',
+      'SELECT m.id,m.codice_unico,m.matricola,m.tipo_macchina,m.modello,m.fk_cliente,m.fk_fornitore,m.fk_marca,m.stato,c.nome cliente,c.indirizzo,c.tipo_cliente,cf.nome cliente_fornitore,COALESCE(f.nome,ma.nome) fornitore FROM macchine m JOIN clienti c ON c.id=m.fk_cliente LEFT JOIN fornitori cf ON cf.id=c.fk_fornitore LEFT JOIN fornitori f ON f.id=m.fk_fornitore LEFT JOIN marche ma ON ma.id=m.fk_marca ORDER BY m.stato DESC,c.nome,m.modello',
     validar: (datos) => normalizarMaquina(datos)
   },
   marche: {

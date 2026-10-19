@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ChevronRight, Plus, Search } from 'lucide-react';
 import { llamarApi } from '../../compartido/api/cliente.js';
 import { Estado } from '../../compartido/componentes/Estado.jsx';
+import { SkeletonList } from '../../compartido/componentes/Skeleton.jsx';
 import { formatearFecha, formatearMoneda } from '../../compartido/utilidades/formato.js';
 import { DetalleRegistro } from './DetalleRegistro.jsx';
 
@@ -51,7 +52,7 @@ export function ListaOperaciones({ tipo, c, idioma, alCrear }) {
       {error && <p className="error">{error}</p>}
       <section className="operation-list">
         {filas === null ? (
-          <p>{c.loading}</p>
+          <SkeletonList filas={4} />
         ) : listadas.length ? (
           listadas.map((fila) => (
             <article key={fila.id}>

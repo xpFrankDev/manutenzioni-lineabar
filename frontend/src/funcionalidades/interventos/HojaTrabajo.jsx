@@ -23,9 +23,10 @@ import { importeManoDeObra } from '../../compartido/dominio/mano-de-obra.js';
 import { fechaDeHoy, formatearFecha, formatearMoneda, horaDeAhora } from '../../compartido/utilidades/formato.js';
 import { comprimirImagen } from '../../compartido/utilidades/imagenes.js';
 import { useAvisos } from '../../compartido/componentes/Avisos.jsx';
+import { SkeletonSheet } from '../../compartido/componentes/Skeleton.jsx';
 import { useBloquearScroll } from '../../compartido/utilidades/scroll.js';
 
-export function HojaTrabajo({ tipo, c, idioma, alCerrar, alGuardar }) {
+export function HojaTrabajo({ tipo, c, idioma, alCerrar, alGuardar, cargandoInicial = true }) {
   useBloquearScroll();
   const { notificar } = useAvisos();
   const esBoleta = tipo === 'receipt';
@@ -54,6 +55,7 @@ export function HojaTrabajo({ tipo, c, idioma, alCerrar, alGuardar }) {
   const [analizando, setAnalizando] = useState(false);
   const [error, setError] = useState('');
   const [guardando, setGuardando] = useState(false);
+  const [cargandoDatos, setCargandoDatos] = useState(cargandoInicial);
   const entradaFoto = useRef(null);
 
   useEffect(() => {
@@ -63,7 +65,8 @@ export function HojaTrabajo({ tipo, c, idioma, alCerrar, alGuardar }) {
         setClientes(listaClientes);
         setMaquinas(listaMaquinas);
       })
-      .catch((e) => setError(e.message));
+      .catch((e) => setError(e.message))
+      .finally(() => setCargandoDatos(false));
 
     // Los auxiliares no deben bloquear el alta si alguno no responde.
     llamarApi('/marche')
@@ -244,6 +247,25 @@ export function HojaTrabajo({ tipo, c, idioma, alCerrar, alGuardar }) {
     } finally {
       setGuardando(false);
     }
+  }
+
+  if (cargandoDatos) {
+    return (
+      <div className="sheet-wrap" role="dialog" aria-modal="true">
+        <section className="sheet workflow">
+          <header>
+            <div>
+              <p className="eyebrow">{titulo}</p>
+              <h2>{encabezado}</h2>
+            </div>
+            <button onClick={alCerrar} aria-label={c.close}>
+              <X />
+            </button>
+          </header>
+          <SkeletonSheet />
+        </section>
+      </div>
+    );
   }
 
   return (
@@ -441,6 +463,14 @@ export function HojaTrabajo({ tipo, c, idioma, alCerrar, alGuardar }) {
                     />
                   </label>
                   <label>
+                    {c.serialNumber}
+                    <input
+                      value={nuevaMaquina.matricola || ''}
+                      onChange={(e) => setNuevaMaquina({ ...nuevaMaquina, matricola: e.target.value })}
+                      placeholder="MAT-000000000"
+                    />
+                  </label>
+                  <label>
                     {c.machineType}
                     <select
                       value={nuevaMaquina.tipo_macchina}
@@ -496,7 +526,7 @@ export function HojaTrabajo({ tipo, c, idioma, alCerrar, alGuardar }) {
                       title={c.newMachine}
                       aria-label={c.newMachine}
                       onClick={() =>
-                        setNuevaMaquina({ fk_cliente: cliente.id, codice_unico: '', tipo_macchina: 'macchina_caffe', modello: '', fk_marca: '' })
+                        setNuevaMaquina({ fk_cliente: cliente.id, codice_unico: '', matricola: '', tipo_macchina: 'macchina_caffe', modello: '', fk_marca: '' })
                       }
                     >
                       <Plus size={19} />

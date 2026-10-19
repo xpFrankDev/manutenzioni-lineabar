@@ -3,6 +3,7 @@ import { Download, TrendingUp } from 'lucide-react';
 import { descargarArchivo, llamarApi } from '../../compartido/api/cliente.js';
 import { nombreTipoMaquina } from '../../compartido/dominio/maquinas.js';
 import { fechaDeHoy, formatearMoneda } from '../../compartido/utilidades/formato.js';
+import { SkeletonReport } from '../../compartido/componentes/Skeleton.jsx';
 
 /**
  * Safari en iPhone no ofrece selector nativo para `input type="month"`, así
@@ -88,7 +89,7 @@ export function Reportes({ c, idioma }) {
       </label>
 
       {error && <p className="error">{error}</p>}
-      {!datos && !error && <p className="loading">{c.loading}</p>}
+      {!datos && !error && <SkeletonReport />}
 
       {datos && (
         <>

@@ -272,6 +272,7 @@ test('flujo completo de Linea Bar', async (t) => {
       cuerpo: {
         fk_cliente: clienteCampoId,
         codice_unico: `MC-PRUEBA-${SELLO}`.slice(0, 50),
+        matricola: 'MAT-20260001',
         tipo_macchina: 'macchina_caffe',
         modello: 'Test 2000',
         fk_marca: marcas.datos[0].id
@@ -336,6 +337,7 @@ test('flujo completo de Linea Bar', async (t) => {
 
     const ficha = await pedir(base, `/maquinas/${maquinaId}`, { token: admin.token });
     assert.equal(ficha.datos.cliente, `Bar Campo ${SELLO}`);
+    assert.equal(ficha.datos.matricola, 'MAT-20260001');
     assert.equal(Array.isArray(ficha.datos.foto), true);
     assert.equal(Array.isArray(ficha.datos.manutenzioni), true);
 
@@ -371,6 +373,14 @@ test('flujo completo de Linea Bar', async (t) => {
     });
     assert.equal(subida.estado, 201);
     const fotoId = subida.datos.id;
+
+    const duplicada = await pedir(base, `/maquinas/${maquinaId}/foto`, {
+      metodo: 'POST',
+      token: tecnico.token,
+      cuerpo: { immagine: PNG_1X1, nomeFile: 'macchina-prueba.png' }
+    });
+    assert.equal(duplicada.estado, 400);
+    assert.match(duplicada.datos.errore, /nome/i);
 
     const imagen = await fetch(`${base}/maquinas/${maquinaId}/foto/${fotoId}`, {
       headers: { Authorization: `Bearer ${tecnico.token}` }
