@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Ban, ChevronLeft, ChevronRight, Pencil, Plus, Search } from 'lucide-react';
 import { llamarApi } from '../../compartido/api/cliente.js';
 import { useAvisos } from '../../compartido/componentes/Avisos.jsx';
-import { Estado } from '../../compartido/componentes/Estado.jsx';
 import { FormularioRegistro } from './FormularioRegistro.jsx';
 import { PermisosRoles } from './PermisosRoles.jsx';
 import { RECURSOS_CONFIGURABLES, metadatosDeRecurso } from './catalogo.js';
@@ -139,7 +138,9 @@ export function Configuracion({ c }) {
                 </small>
               </span>
             </button>
-            <Estado value={fila.stato === 'attivo' ? 'risolto' : 'da_rifare'} c={c} />
+            <span className={`status ${fila.stato === 'attivo' ? 'good' : 'warn'}`}>
+              {fila.stato === 'attivo' ? c.active : c.inactive}
+            </span>
             <button title={c.edit} aria-label={`${c.edit}: ${fila.nome ?? fila.codice_unico ?? ''}`} onClick={() => setEdicion(fila)}>
               <Pencil size={17} />
             </button>
