@@ -26,6 +26,12 @@ export function exigirSesion(req, res, siguiente) {
     return res.status(401).json({ errore: 'Sessione non valida o scaduta' });
   }
 
+  // Una sesión emitida antes de implantar CSRF no puede mutar: se fuerza el
+  // refresco para que reciba el claim y el cliente vuelva a operar.
+  if (credencial.origen === 'cookie' && !req.utente.csrf) {
+    return res.status(401).json({ errore: 'Sessione da rinnovare' });
+  }
+
   // La cookie viaja automáticamente: toda mutación exige el CSRF que el JWT
   // transporta y que el cliente guarda solo en memoria.
   if (credencial.origen === 'cookie' && !esMetodoSeguro(req.method)) {
