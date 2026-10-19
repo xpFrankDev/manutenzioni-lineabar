@@ -15,7 +15,8 @@
 | `cd backend && npm audit --omit=dev` | **OK — 0 vulnerabilidades** tras `npm audit fix`. |
 | `cd frontend && npm audit --omit=dev` | **OK — 0 vulnerabilidades** tras `npm audit fix`. |
 | Migración UUID sobre copia de la base de producción | **OK** — `0010_uuid_identificadores.js` aplicada sobre `lineabar_uuid_test` (copia de `lineabar`): conteos preservados (`clienti` 3, `macchine` 3, `manutenzioni` 7, `boletas` 4, `utenti` 1, `calendario` 3), `id` en `char(36)`, 35 claves foráneas y los 3 índices dependientes recreados. |
-| Suite de integración contra la copia migrada | **OK — 14/14** pruebas, incluidas cookie `HttpOnly`, CSRF, CRUD, campo, calendario, boleta, scontrino, roles, reportes y defensas. | |
+| Suite de integración contra la copia migrada | **OK — 15/15** pruebas, incluidas cookie `HttpOnly`, CSRF, rotación atómica del refresh, CRUD, campo, ficha de máquina, fotos, accesos, calendario, boleta, scontrino, roles, reportes y defensas. |
+| Assets del SPA | **OK** — `index-*.js` y `index-*.css` responden **200** con `application/javascript`/`text/css` (antes redirigían a `http` con barra final y CSP los bloqueaba). | |
 
 ### Vulnerabilidades corregidas
 

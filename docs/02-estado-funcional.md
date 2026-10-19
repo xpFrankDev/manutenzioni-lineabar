@@ -46,8 +46,16 @@ Esto último se corrige con `docs/00`–`09`; lo no resuelto queda en `07`.
   manutención.
 - **Maestros** `[V]`: proveedores, clientes, máquinas, marcas, piezas,
   características, usuarios y parámetros.
+- **Ficha de máquina** `[V]`: detalle con carrusel de fotos (guardadas en MariaDB),
+  cliente y proveedor identificados, datos de la máquina, historial de
+  manutenciones con o sin boleta y su fecha, próxima manutención, enlace NFC
+  copiable y gestión de accesos por técnico.
 - **Reportes** `[V]`: cierre mensual, ranking de clientes/piezas/tipos, previsión y CSV.
 - **Configuración** `[V]`: tarifa horaria, días de aviso, horizonte y previsión.
+- **Control de acceso a fichas** `[V]`: tabla `macchine_utenti`, altas automáticas
+  al crear máquina, manutención, boleta o tarea, backfill histórico y gestión
+  explícita por el administrador. Las rutas sin sesión redirigen al login; sin
+  autorización muestran una pantalla 403 de marca; una ruta inexistente muestra 404.
 
 ## 4. Huecos funcionales declarados
 

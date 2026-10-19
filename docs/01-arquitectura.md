@@ -37,6 +37,7 @@ esquemas Zod y servicios:
 - `reportes`: cierre mensual y exportación CSV (solo administrador).
 - `parametros`: tarifa, días de aviso y horizontes configurables.
 - `actividades`: tareas programadas, asignación multi-técnico y cierre.
+- `maquinas`: ficha de máquina, fotos, historial, enlace NFC y accesos por usuario.
 - `configuracion`: CRUD genérico de maestros con lista blanca de tablas/columnas.
 
 Infraestructura transversal:

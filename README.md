@@ -108,6 +108,12 @@ relaziona tramite un numero correlativo. La migrazione `0010_uuid_identificadore
 converte una base esistente conservando i dati. Per conoscere quante righe ha ogni
 tabella senza modificare nulla: `cd backend && npm run datos:estado`.
 
+Ogni macchina ha una **ficha** (`/lineabar/macchine/<uuid>`) con foto caricate nel
+volume MariaDB, dati di cliente e fornitore, storico manutenzioni con o senza
+boleta, link per NFC e gestione degli accessi per tecnico. La ficha e le foto
+richiedono sessione e autorizzazione: senza sessione si viene portati al login e
+senza permesso si mostra una pagina 403; un link inesistente mostra la 404.
+
 Le migrazioni sono file SQL numerati in `backend/src/base-datos/migraciones/`. Il runner le applica in ordine, si interrompe al primo errore e registra ogni file applicato, quindi rieseguirlo è sicuro. Una nuova migrazione si aggiunge come file con il numero successivo: non modificare file già applicati.
 
 ## Dati di dimostrazione

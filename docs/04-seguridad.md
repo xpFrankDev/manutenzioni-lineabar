@@ -38,6 +38,8 @@ borde (`D-02`). Las dependencias con vulnerabilidad conocida se corrigieron el
 | Errores uniformes; el manejador final no expone la traza | `backend/src/intermedios/errores.js` |
 | CSV neutro frente a inyección de fórmulas | `backend/src/modulos/reportes/servicio.js` (`prefijoPeligroso`) |
 | Cabeceras del SPA (CSP, HSTS, `X-Frame-Options: DENY`, Permissions-Policy) | `frontend/nginx.conf` |
+| Acceso a la ficha y fotos de máquina solo para administrador o técnico autorizado | `backend/src/modulos/maquinas/rutas.js`, `puedeAccederMaquina` |
+| Fotos de máquina validadas por MIME/base64/tamaño y servidas con sesión | `maquinas/servicio.js`, `utilidades/imagenes.js`, `macchine_foto` |
 | Tema inicial sin script inline (CSP estricta de script) | `frontend/public/theme-init.js` |
 
 ### 2.2 Frontend
@@ -81,7 +83,8 @@ borde (`D-02`). Las dependencias con vulnerabilidad conocida se corrigieron el
 | --- | --- | --- |
 | Robo de sesión por XSS | Sin HTML dinámico; datos como texto | Tokens en `localStorage` sin `HttpOnly` (S-01) y sin CSP hasta ahora (S-04) |
 | Fuerza bruta en acceso | Límite por IP corregido; comparación en tiempo constante | Sin bloqueo por cuenta (S-10) |
-| Cruce entre técnicos | Alcance por propiedad en cada consulta y detalle | El catálogo es global (S-08) |
+| Cruce entre técnicos | Alcance por propiedad en cada consulta y detalle; ficha de máquina restringida por `macchine_utenti` | El catálogo `GET /maquinas` sigue siendo global (S-08); la ficha y las fotos no |
+| Acceso anónimo por NFC/URL | Redirección al login con `next` seguro; API 401 sin sesión y 403 sin autorización | La URL del SPA es pública como shell; los datos no se sirven sin sesión |
 | Inyección SQL | Parámetros `?`; lista blanca de tablas | Ninguno declarado |
 | Inyección en CSV | Neutralización de fórmulas | Ninguno declarado |
 | Denegación por abuso de OCR | Límite específico + cola + tiempo límite | Consumo de CPU por petición (S-07) |
