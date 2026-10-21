@@ -17,7 +17,10 @@ repository):
 
 - `LINEABAR_AI_ENDPOINT`: URL completo dell'endpoint (predefinito OpenCode Go).
 - `LINEABAR_AI_API_KEY`: chiave segreta; non viene registrata né restituita.
-- `LINEABAR_AI_MODELO`: modello da usare.
+- `LINEABAR_AI_MODELO`: modello base, per esempio `deepseek-v4.1-flash`.
+- `LINEABAR_AI_REASONING_EFFORT`: `low`, `high` o `max`. Se el modelo se
+escribe como `deepseek-v4.1-flash#high`, el backend separa la variante y envía
+`reasoning_effort=high`; el ID enviado a la API no lleva `#`.
 - `LINEABAR_AI_TIEMPO_LIMITE_MS`: timeout della chiamata.
 
 Se endpoint o chiave mancano, il servizio usa il pianificatore locale

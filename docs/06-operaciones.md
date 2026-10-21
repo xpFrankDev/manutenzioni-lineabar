@@ -45,8 +45,10 @@ En otra terminal: `cd frontend && npm install && npm run dev` (Vite en
 - `LINEABAR_ACCESO_MINUTOS` (10) y `LINEABAR_REFRESCO_DIAS` (30).
 - `LINEABAR_CARGAR_ABRUZZO=1` carga los 15 bares de prueba con Google Maps; en
   una instalación real debe quedar en `0`.
-- `LINEABAR_AI_ENDPOINT`, `LINEABAR_AI_API_KEY` y `LINEABAR_AI_MODELO`: endpoint
-  compatible con Chat Completions, clave **solo en el servidor** y modelo. Si
+- `LINEABAR_AI_ENDPOINT`, `LINEABAR_AI_API_KEY`, `LINEABAR_AI_MODELO` y
+  `LINEABAR_AI_REASONING_EFFORT`: endpoint compatible con Chat Completions, clave
+  **solo en el servidor**, modelo base (`deepseek-v4.1-flash`) y esfuerzo
+  (`low`/`high`/`max`). Si
   faltan, la programación usa el fallback local; la clave nunca se imprime ni se
   envía al navegador.
 

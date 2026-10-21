@@ -25,13 +25,17 @@ async function instrucciones() {
 }
 
 function endpointConfigurado() {
+  const modeloConfigurado = process.env.LINEABAR_AI_MODELO || 'deepseek-v4.1-flash';
+  const [modelo, variante] = modeloConfigurado.split('#');
   return {
     // Endpoint OpenAI-compatible de OpenCode Go; se puede sustituir por otro.
     endpoint:
       process.env.LINEABAR_AI_ENDPOINT ||
       'https://opencode.ai/inference/openai/v1/chat/completions',
     apiKey: process.env.LINEABAR_AI_API_KEY || process.env.OPENCODE_API_KEY || '',
-    modelo: process.env.LINEABAR_AI_MODELO || 'deepseek-v4.1-flash',
+    modelo,
+    // OpenCode usa #high en el selector, pero la API recibe reasoning_effort.
+    esfuerzo: process.env.LINEABAR_AI_REASONING_EFFORT || variante || 'high',
     tiempoLimiteMs: Number(process.env.LINEABAR_AI_TIEMPO_LIMITE_MS || 45000)
   };
 }
@@ -53,6 +57,7 @@ export async function generarProgramaConIa(entrada) {
     body: JSON.stringify({
       model: configuracion.modelo,
       temperature: 0,
+      ...(configuracion.esfuerzo ? { reasoning_effort: configuracion.esfuerzo } : {}),
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: await instrucciones() },
