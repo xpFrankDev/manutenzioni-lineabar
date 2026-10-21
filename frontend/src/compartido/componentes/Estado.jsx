@@ -11,10 +11,12 @@ export function Estado({ value, c }) {
     imminente: c.imminentState,
     prossimo: c.soonState,
     programmato: c.scheduled,
+    pianificata: c.pianificata,
     eseguito: c.completed,
     sospeso: c.suspended,
     aperta: c.openTask,
     in_corso: c.inProgress,
+    in_viaggio: c.onTheWay,
     completata: c.completed
   };
   const tonos = {
@@ -23,9 +25,11 @@ export function Estado({ value, c }) {
     completata: 'good',
     eseguito: 'good',
     programmato: 'good',
+    pianificata: 'warn',
     bozza: 'warn',
     parziale: 'warn',
     in_corso: 'warn',
+    in_viaggio: 'warn',
     imminente: 'warn',
     oggi: 'warn',
     prossimo: 'warn',

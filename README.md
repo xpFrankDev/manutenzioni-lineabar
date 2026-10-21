@@ -110,7 +110,7 @@ tabella senza modificare nulla: `cd backend && npm run datos:estado`.
 
 Ogni macchina ha una **ficha** (`/lineabar/macchine/<uuid>`) con codice e
 **matricola**, foto caricate nel volume MariaDB, dati di cliente e fornitore con
-etichetta di origine, storico manutenzioni con o senza boleta, link per NFC e
+etichetta di origine, storico manutenzioni con o senza boleta, link per NFC, scrittura Web NFC su Android o copia per l’app NFC su iPhone, e
 gestione degli accessi per tecnico. Le schermate mostrano skeleton durante il
 caricamento. La ficha e le foto
 richiedono sessione e autorizzazione: senza sessione si viene portati al login e
@@ -126,7 +126,7 @@ Le migrazioni sono file SQL numerati in `backend/src/base-datos/migraciones/`. I
 
 ## Dati di dimostrazione
 
-`backend/src/base-datos/semillas/datos-demostracion.sql` carica clienti, macchine e registri illustrativi di settembre 2026. Serve solo allo sviluppo: in produzione si imposta `LINEABAR_CARGAR_DEMO=0`, così una nuova installazione parte con i soli dati maestri reali.
+`backend/src/base-datos/semillas/datos-demostracion.sql` carica clienti, macchine e registri illustrativi di settembre 2026. Serve solo allo sviluppo: in produzione si imposta `LINEABAR_CARGAR_DEMO=0`, così una nuova installazione parte con i soli dati maestri reali. `datos-abruzzo.sql` aggiunge quindici bar dimostrativi dell’Abruzzo con link Google Maps e coordinate per provare la programmazione per zone; si attiva con `LINEABAR_CARGAR_ABRUZZO=1`.
 
 ## Utente amministratore iniziale
 
@@ -160,6 +160,30 @@ quando viene usato in un intervento o in una boleta. La pagina
 dal dettaglio un amministratore può programmare l'attività per un tecnico,
 riprogrammare data e frequenza o sospendere la voce. La navigazione mostra il
 numero di manutenzioni da gestire e il pannello espone le più urgenti.
+
+## Programmazione giornaliera
+
+`/lineabar/programmazione` raggruppa le manutenzioni in un giro giornaliero.
+L’amministratore sceglie data, tecnico, numero massimo di tappe (3–6) e minuti
+minimi/massimi tra siti (10–30 di norma); il backend usa i link Google Maps e le
+coordinate dei clienti per stimare gli spostamenti. Il tecnico vede solo i giri
+assegnati o ancora liberi, può prendere il lotto, segnare una tappa «in viaggio»
+e chiuderla; il lotto passa a «completata» quando tutte le tappe sono chiuse.
+
+La generazione può usare un modello compatibile con Chat Completions. La chiave
+resta esclusivamente nel `.env` del server (`LINEABAR_AI_API_KEY`) e non viene
+mai restituita al browser; senza chiave o endpoint il pianificatore locale
+deterministico produce comunque un giro valido e lo marca come `fallback`.
+Le istruzioni e il contratto JSON vivono in `backend/src/ai/programmazione/`.
+
+## Catalogo modelli
+
+`Impostazioni → Modelli macchina` contiene i modelli commerciali di caffè,
+lavastoviglie e produttori di ghiaccio raccolti dalle schede Cimbali, Hausbrandt,
+Winterhalter e Scotsman, con immagine principale e link alla scheda del
+produttore. Il catalogo è informativo: non crea né modifica le macchine
+installate. Le immagini esterne sono ammesse dalla CSP del SPA solo per i domini
+dei produttori elencati.
 
 ## Report
 

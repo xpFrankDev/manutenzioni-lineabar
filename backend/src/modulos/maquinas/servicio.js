@@ -157,7 +157,7 @@ export async function sincronizarAccesosMaquina(conexion, maquinaId, usuarios, a
 export async function obtenerDetalleMaquina(maquinaId) {
   const maquina = await consultarUno(
     `SELECT m.id,m.codice_unico,m.matricola,m.tipo_macchina,m.modello,m.stato,m.creato_at,m.modificato_at,
-            c.id cliente_id,c.codice cliente_codice,c.nome cliente,c.indirizzo cliente_indirizzo,c.citta cliente_citta,c.tipo_cliente cliente_tipo,
+            c.id cliente_id,c.codice cliente_codice,c.nome cliente,c.indirizzo cliente_indirizzo,c.url_mappe cliente_url_mappe,c.citta cliente_citta,c.tipo_cliente cliente_tipo,
             cf.id cliente_fornitore_id,cf.codice cliente_fornitore_codice,cf.nome cliente_fornitore,
             f.id fornitore_id,f.codice fornitore_codice,f.nome fornitore,
             ma.id marca_id,ma.nome marca

@@ -1,6 +1,6 @@
 # 03 — Modelo de datos
 
-> **Estado: DISEÑO VERIFICADO (revisión 2026-10-19).** Fuente: migraciones
+> **Estado: DISEÑO VERIFICADO (revisión 2026-10-21).** Fuente: migraciones
 > versionadas en `backend/src/base-datos/migraciones/`. El contrato de datos está
 > en italiano y no se renombra sin migración aprobada.
 
@@ -34,6 +34,11 @@
 | `0008_sesiones_refresco.sql` | Sesiones de refresco con hash, caducidad y revocación. |
 | `0009_parametros_operativos.sql` | Tabla `parametros` y valores por defecto. |
 | `0010_uuid_identificadores.js` | Convierte todas las claves primarias y foráneas a UUID conservando los datos. |
+| `0011_fk_manutenzione_chiusura_uuid.sql` | FK de cierre de actividad a manutención. |
+| `0012_macchine_foto_y_accesos.sql` | Fotos de máquina y autorizaciones `macchine_utenti`. |
+| `0014_manutenzioni_ora.sql`, `0015_menu_e_permessi.sql`, `0016_parametri_italiani.sql`, `0017_macchine_matricola.sql` | Hora, menús/permisos, parámetros en italiano y matrícula. |
+| `0018_programmazione_giornaliera.sql` | `programmazioni`, columnas de ruta en `attivita`, coordenadas/Google Maps en clientes y menú de programación. |
+| `0019_modelli_macchina.sql` | Catálogo comercial `modelli_macchina` con imagen y scheda del fabricante. |
 
 El runner (`migraciones/ejecutar.js`) crea `migraciones_aplicadas`, aplica en
 orden, se detiene al primer error y registra cada archivo; es idempotente. Si
@@ -46,7 +51,7 @@ detecta una instalación anterior al control de versiones, registra lo ya aplica
 | `ruoli` | Roles `amministratore`/`tecnico`. | — |
 | `utenti` | Usuarios con `password_hash` bcrypt. | `fk_ruolo` |
 | `fornitori`, `marche` | Maestros de proveedor y marca. | — |
-| `clienti` | Clientes con código único `PRIV-NNNN` o `<PROVEEDOR>-NNNN`. | `fk_fornitore` |
+| `clienti` | Clientes con código único `PRIV-NNNN` o `<PROVEEDOR>-NNNN`, `url_mappe` y coordenadas para rutas. | `fk_fornitore` |
 | `macchine` | Máquinas con `codice_unico` y tipo. | `fk_cliente`, `fk_marca`, `fk_fornitore` |
 | `manutenzioni` | Intervención con fecha, ubicación, esito, horas y personas. | `fk_cliente`, `fk_tecnico` |
 | `macchine_manutenzioni` | Relación N:M intervención–máquina. | — |
@@ -54,7 +59,9 @@ detecta una instalación anterior al control de versiones, registra lo ya aplica
 | `pezzi_manutenzioni` | Ricambi usados con precio congelado. | `fk_manutenzione`, `fk_pezzo` |
 | `boletas`, `boletas_manutenzioni`, `boletas_macchine`, `boletas_operatori` | Boleta y sus vínculos. | `fk_cliente`, `fk_tecnico`, `fk_scontrino` |
 | `calendario_manutenzioni_macchine` | Próxima manutención por máquina y ricambio. | `fk_macchina`, `fk_pezzo`, `fk_attivita` |
-| `attivita`, `attivita_tecnici` | Tareas programadas y asignación. | `fk_cliente`, `fk_macchina`, `fk_tecnico` |
+| `attivita`, `attivita_tecnici` | Tareas programadas y asignación; `in_viaggio`, orden de tapa y minutos desde la anterior. | `fk_cliente`, `fk_macchina`, `fk_tecnico`, `fk_programmazione` |
+| `programmazioni` | Lote diario de tareas con técnico, estado, límites de ruta, origen IA/fallback y resumen. | `fk_tecnico` |
+| `modelli_macchina` | Catálogo comercial por marca, tipo, imagen y scheda oficial. | `fk_marca` |
 | `scontrini` | Imagen, texto OCR y nombre detectado. | `fk_cliente`, `fk_tecnico` |
 | `sesiones_refresco` | Refresh tokens (solo hash) con rotación. | `fk_utente` |
 | `parametros` | Tarifa, avisos, horizontes. | — |
@@ -67,6 +74,10 @@ detecta una instalación anterior al control de versiones, registra lo ya aplica
   septiembre de 2026; solo se carga con `LINEABAR_CARGAR_DEMO=1`.
 - `semillas/sembrar.js` `[V]`: crea o sincroniza el administrador con
   `LINEABAR_ADMIN_PASSWORD` cifrada en tiempo de ejecución; nunca se versiona un hash.
+- `semillas/datos-abruzzo.sql` `[V]`: 15 bares demostrativos de Abruzzo con
+  Google Maps y coordenadas; solo con `LINEABAR_CARGAR_ABRUZZO=1`.
+- `semillas/datos-base.sql` `[V]`: incluye 27 modelos comerciales con imagen y
+  enlace a la scheda del fabricante.
 
 ## 5. Códigos de negocio
 
@@ -81,6 +92,9 @@ detecta una instalación anterior al control de versiones, registra lo ya aplica
 ## 6. Persistencia de imágenes
 
 Las fotos de scontrini se guardan como `LONGBLOB` en `scontrini.immagine` `[V]`.
+Las fotos de máquina se guardan igual en `macchine_foto.immagine`; las imágenes
+comerciales de `modelli_macchina` son URL externas de los fabricantes y la CSP
+solo permite sus dominios.
 Ventaja: una sola copia de seguridad. Límite `[D]`: no hay política de retención
 ni almacenamiento externo firmado (`D-08` en `07`).
 

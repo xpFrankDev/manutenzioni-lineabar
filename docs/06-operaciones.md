@@ -1,6 +1,6 @@
 # 06 — Operaciones
 
-> **Estado: GUÍA VERIFICADA PARCIALMENTE (revisión 2026-10-19).** Los comandos
+> **Estado: GUÍA VERIFICADA PARCIALMENTE (revisión 2026-10-21).** Los comandos
 > existen en el repositorio `[V]`; el despliegue en el VPS no se ejecutó en esta
 > sesión `[NV]`. Cualquier cambio en el VPS requiere aprobación explícita.
 
@@ -43,6 +43,12 @@ En otra terminal: `cd frontend && npm install && npm run dev` (Vite en
 - `LINEABAR_OCR_*`: proveedor (`tesseract` por defecto), idioma, endpoint opcional,
   modelo, tiempo límite y tamaño máximo.
 - `LINEABAR_ACCESO_MINUTOS` (10) y `LINEABAR_REFRESCO_DIAS` (30).
+- `LINEABAR_CARGAR_ABRUZZO=1` carga los 15 bares de prueba con Google Maps; en
+  una instalación real debe quedar en `0`.
+- `LINEABAR_AI_ENDPOINT`, `LINEABAR_AI_API_KEY` y `LINEABAR_AI_MODELO`: endpoint
+  compatible con Chat Completions, clave **solo en el servidor** y modelo. Si
+  faltan, la programación usa el fallback local; la clave nunca se imprime ni se
+  envía al navegador.
 
 Las plantillas están en `.env.example` (raíz, usado por Compose) y
 `backend/.env.example` (desarrollo local). **Nunca** se versiona `.env` ni se
@@ -53,7 +59,7 @@ imprime su contenido.
 ```bash
 cd backend
 npm run migraciones   # aplica pendientes y registra en migraciones_aplicadas
-npm run sembrar       # sincroniza maestros y administrador; demo con LINEABAR_CARGAR_DEMO=1
+npm run sembrar       # sincroniza maestros y administrador; demo con LINEABAR_CARGAR_DEMO=1; Abruzzo con LINEABAR_CARGAR_ABRUZZO=1
 ```
 
 Reglas: no modificar una migración aplicada; añadir el número siguiente; el runner

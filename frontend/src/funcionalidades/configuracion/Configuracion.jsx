@@ -126,6 +126,9 @@ export function Configuracion({ c }) {
           <article key={fila.id} className={fila.stato === 'inattivo' ? 'inactive' : ''}>
             <button className="record-open" onClick={() => setEdicion(fila)}>
               <span>
+                {recurso === 'modelli' && fila.immagine_url && (
+                  <img className="catalog-thumb" src={fila.immagine_url} alt="" loading="lazy" />
+                )}
                 <b>
                   {recurso === 'macchine'
                     ? `${fila.fornitore || '—'} ${fila.modello || ''} · ${fila.codice_unico} · ${fila.matricola || '—'}`
@@ -142,7 +145,7 @@ export function Configuracion({ c }) {
                       ? `${fila.email} · ${fila.ruolo}`
                       : recurso === 'parametri'
                         ? `${fila.valore} · ${fila.descrizione ?? ''}`
-                        : fila.caratteristiche_label || fila.codice || fila.unita_misura || fila.fornitore || ''}
+                        : fila.caratteristiche_label || fila.marca || fila.codice || fila.unita_misura || fila.fornitore || ''}
                 </small>
               </span>
             </button>

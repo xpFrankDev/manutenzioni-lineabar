@@ -680,6 +680,68 @@ test('flujo completo de Linea Bar', async (t) => {
     assert.equal((await pedir(base, `/reportes/riepilogo?periodo=invalido`, { token: admin.token })).estado, 400);
   });
 
+
+  await t.test('programmazione giornaliera: IA/fallback, lote y estados', async () => {
+    const modelos = await pedir(base, '/configurazione/modelli', { token: admin.token });
+    assert.equal(modelos.estado, 200);
+    assert.ok(modelos.datos.some((fila) => fila.nome === 'M200' && fila.immagine_url));
+
+    const candidatos = await pedir(base, `/programmazioni/candidati?data=${HOY}`, { token: admin.token });
+    assert.equal(candidatos.estado, 200);
+    assert.ok(candidatos.datos.length >= 3, 'debe haber mantenimientos de Abruzzo para programar');
+
+    const sinPermiso = await pedir(base, '/programmazioni/genera', {
+      metodo: 'POST',
+      token: tecnico.token,
+      cuerpo: { data: HOY, tecnicoId: tecnico.utente.id, maxTappe: 6 }
+    });
+    assert.equal(sinPermiso.estado, 403);
+
+    const generado = await pedir(base, '/programmazioni/genera', {
+      metodo: 'POST',
+      token: admin.token,
+      cuerpo: { data: HOY, tecnicoId: tecnico.utente.id, maxTappe: 6, minutiMin: 10, minutiMax: 30 }
+    });
+    assert.equal(generado.estado, 201);
+    assert.ok(generado.datos.tappe >= 3);
+    assert.ok(['ia', 'fallback'].includes(generado.datos.origine));
+
+    const listaTecnico = await pedir(base, '/programmazioni', { token: tecnico.token });
+    assert.equal(listaTecnico.estado, 200);
+    const lote = listaTecnico.datos.find((fila) => fila.id === generado.datos.id);
+    assert.ok(lote);
+    assert.equal(lote.fk_tecnico, tecnico.utente.id);
+
+    const detalle = await pedir(base, `/programmazioni/${generado.datos.id}`, { token: tecnico.token });
+    assert.equal(detalle.estado, 200);
+    assert.ok(detalle.datos.tappe.length >= 3);
+    const primera = detalle.datos.tappe[0];
+    assert.ok(primera.url_mappe);
+
+    const enViaje = await pedir(base, `/attivita/${primera.id}/stato`, {
+      metodo: 'PATCH',
+      token: tecnico.token,
+      cuerpo: { stato: 'in_viaggio' }
+    });
+    assert.equal(enViaje.estado, 200);
+    assert.equal(enViaje.datos.stato, 'in_viaggio');
+
+    const iniciar = await pedir(base, `/programmazioni/${generado.datos.id}/prendi`, {
+      metodo: 'POST',
+      token: tecnico.token
+    });
+    assert.equal(iniciar.estado, 200);
+    const completar = await pedir(base, `/programmazioni/${generado.datos.id}/stato`, {
+      metodo: 'PATCH',
+      token: tecnico.token,
+      cuerpo: { stato: 'completata' }
+    });
+    assert.equal(completar.estado, 200);
+
+    const listadoAdmin = await pedir(base, '/programmazioni', { token: admin.token });
+    assert.ok(listadoAdmin.datos.some((fila) => fila.id === generado.datos.id && fila.stato === 'completata'));
+  });
+
   await t.test('defensas: inyección SQL, parámetros inválidos y límite de acceso', async () => {
     const inyeccion = await pedir(base, '/auth/login', {
       metodo: 'POST',

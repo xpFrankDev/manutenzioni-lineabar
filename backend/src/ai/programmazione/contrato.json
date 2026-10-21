@@ -1,0 +1,32 @@
+{
+  "version": "1.0",
+  "input": {
+    "data": "YYYY-MM-DD",
+    "tecnico": "string",
+    "maxTappe": 6,
+    "minutiMin": 10,
+    "minutiMax": 30,
+    "candidati": [
+      {
+        "attivitaId": "uuid",
+        "cliente": "string",
+        "indirizzo": "string",
+        "citta": "string",
+        "latitudine": 42.35,
+        "longitudine": 13.39,
+        "macchina": "string",
+        "scadenza": "YYYY-MM-DD",
+        "priorita": "bassa|normale|alta"
+      }
+    ],
+    "matriceViaggio": [
+      { "da": "uuid", "a": "uuid", "minuti": 18 }
+    ]
+  },
+  "output": {
+    "tappe": [
+      { "attivitaId": "uuid", "ordine": 1, "minutiDaPrecedente": 0 }
+    ],
+    "riepilogo": "string"
+  }
+}

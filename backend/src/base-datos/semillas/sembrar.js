@@ -73,6 +73,13 @@ async function sembrar() {
       await ejecutarArchivo(conexion, 'datos-demostracion.sql');
       console.log('Datos de demostración cargados.');
     }
+
+    // Los bares de Abruzzo son datos de prueba para la programación por rutas.
+    // Se cargan aparte para no mezclarlos con una instalación real.
+    if (process.env.LINEABAR_CARGAR_ABRUZZO === '1') {
+      await ejecutarArchivo(conexion, 'datos-abruzzo.sql');
+      console.log('Clientes y máquinas demostrativos de Abruzzo cargados.');
+    }
   } finally {
     await conexion.end();
   }

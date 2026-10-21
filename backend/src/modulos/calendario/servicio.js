@@ -52,7 +52,7 @@ export async function programarCalendario(conexion, { macchinaId, fecha, manuten
     if (!meses) continue;
     const proxima = sumarMeses(fecha, meses);
     await conexion.execute(
-      'INSERT INTO calendario_manutenzioni_macchine (id,fk_macchina,fk_pezzo,fk_manutenzione_origine,frequenza_mesi,ultima_esecuzione,prossima_manutenzione,stato_calendario,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,"programmato",?,?) ON DUPLICATE KEY UPDATE fk_manutenzione_origine=VALUES(fk_manutenzione_origine),frequenza_mesi=VALUES(frequenza_mesi),ultima_esecuzione=VALUES(ultima_esecuzione),prossima_manutenzione=VALUES(prossima_manutenzione),stato_calendario="programmato",note=NULL,utente_modifica=VALUES(utente_modifica),stato="attivo"',
+      'INSERT INTO calendario_manutenzioni_macchine (id,fk_macchina,fk_pezzo,fk_manutenzione_origine,frequenza_mesi,ultima_esecuzione,prossima_manutenzione,stato_calendario,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,"programmato",?,?) ON DUPLICATE KEY UPDATE fk_manutenzione_origine=VALUES(fk_manutenzione_origine),frequenza_mesi=VALUES(frequenza_mesi),ultima_esecuzione=VALUES(ultima_esecuzione),prossima_manutenzione=VALUES(prossima_manutenzione),stato_calendario="programmato",fk_attivita=NULL,note=NULL,utente_modifica=VALUES(utente_modifica),stato="attivo"',
       [nuevoId(), macchinaId, recambio.pezzoId, manutencionId, meses, fecha, proxima, usuarioId, usuarioId]
     );
     programados.push({ pezzoId: recambio.pezzoId, prossimaManutenzione: proxima, frequenzaMesi: meses });

@@ -26,3 +26,10 @@
 @keyframes skeleton-shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
 @media(prefers-reduced-motion:reduce){.skeleton{animation:none;background:var(--line)}}
 @media(min-width:721px){.skeleton-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}.skeleton-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Los bloques de métricas son accesos directos, no tarjetas muertas. */
+.metrics .metric-card{min-height:124px;padding:14px;border:1px solid var(--line);border-radius:13px;background:var(--surface);display:grid;align-content:start;gap:7px;text-align:left;color:var(--ink);cursor:pointer}
+.metrics .metric-card:hover{border-color:var(--blue);background:var(--pale)}
+.metrics .metric-card svg{color:var(--blue);background:var(--pale);padding:8px;width:35px;height:35px;border-radius:9px}
+.metrics .metric-card span{color:var(--muted);font-size:10px}
+.metrics .metric-card b{font:800 21px Manrope;letter-spacing:-.05em}

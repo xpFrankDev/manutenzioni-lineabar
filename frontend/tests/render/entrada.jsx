@@ -10,6 +10,7 @@ import { HojaTrabajo } from '../../src/funcionalidades/interventos/HojaTrabajo.j
 import { DetalleMaquina } from '../../src/funcionalidades/maquinas/DetalleMaquina.jsx';
 import { ListaMaquinas } from '../../src/funcionalidades/maquinas/ListaMaquinas.jsx';
 import { PantallaError } from '../../src/funcionalidades/errores/PantallaError.jsx';
+import { Programmazione } from '../../src/funcionalidades/programmazione/Programmazione.jsx';
 import { Reportes } from '../../src/funcionalidades/reportes/Reportes.jsx';
 
 const idioma = 'es';
@@ -35,6 +36,7 @@ export function renderizarPantallas() {
     maquina: conAvisos(
       <DetalleMaquina id="11111111-1111-4111-8111-000000000001" c={c} idioma={idioma} usuario={usuario} alVolver={nada} />
     ),
+    programmazione: conAvisos(<Programmazione c={c} idioma={idioma} usuario={usuario} />),
     error403: conAvisos(<PantallaError tipo="403" c={c} alVolver={nada} />),
     estados: conAvisos(
       <div>

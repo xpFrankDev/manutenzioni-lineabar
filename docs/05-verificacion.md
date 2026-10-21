@@ -1,6 +1,6 @@
 # 05 — Verificación
 
-> **Estado: EVIDENCIA `[V]` de la sesión del 2026-10-19.** Registra comandos y
+> **Estado: EVIDENCIA `[V]` de la sesión del 2026-10-21.** Registra comandos y
 > resultados **reales**. Lo no ejecutado se declara como `[NV]`; no se presenta
 > como aprobado.
 
@@ -8,10 +8,11 @@
 
 | Comando | Resultado real |
 | --- | --- |
-| `cd backend && npm run test:unidad` | **OK — 11/11** pruebas (código 0). |
-| `cd backend && npm run verificar` | **OK** — sintaxis correcta en **38** archivos (código 0). |
+| `cd backend && npm run test:unidad` | **OK — 13/13** pruebas (código 0), incluidas coordenadas Google Maps y estimación de viaje. |
+| `cd backend && npm run verificar` | **OK** — sintaxis correcta en **48** archivos (código 0). |
 | `cd frontend && npm test` | **OK — 7/7** pruebas (código 0). |
-| `cd frontend && npm run build` | **OK** — build de producción Vite (código 0). |
+| `cd frontend && npm run build` | **OK** — build de producción Vite (código 0); incluye la pantalla de programación y el catálogo de modelos. |
+| `cd backend && npm run test:integracion` | **`[NV]` en local**: no hay MariaDB en `127.0.0.1:3308`; la suite se ejecuta en el job de CI con MariaDB y contra la copia del VPS antes del despliegue. |
 | `cd backend && npm audit --omit=dev` | **OK — 0 vulnerabilidades** tras `npm audit fix`. |
 | `cd frontend && npm audit --omit=dev` | **OK — 0 vulnerabilidades** tras `npm audit fix`. |
 | Migración UUID sobre copia de la base de producción | **OK** — `0010_uuid_identificadores.js` aplicada sobre `lineabar_uuid_test` (copia de `lineabar`): conteos preservados (`clienti` 3, `macchine` 3, `manutenzioni` 7, `boletas` 4, `utenti` 1, `calendario` 3), `id` en `char(36)`, 35 claves foráneas y los 3 índices dependientes recreados. |
@@ -130,6 +131,18 @@ por esta comprobación técnica.
 | Ruta inexistente | Pantalla **404** de marca. |
 | Suite de integración sobre copia fresca | **15/15**, incluida ficha, fotos, accesos, 403/404 y rotación atómica del refresh. |
 | GitHub Actions | **Verde** en `main`. |
+
+## 3quinquies. Programación, catálogo y NFC (2026-10-21)
+
+| Comprobación | Resultado |
+| --- | --- |
+| Migraciones nuevas | `0018_programmazione_giornaliera.sql` y `0019_modelli_macchina.sql` escritas; pendientes de ejecutar en CI/VPS al cierre de esta entrada. |
+| Planificador local | Pruebas unitarias de distancia y agrupación por ciudad; la generación HTTP queda cubierta por la prueba de integración nueva. |
+| Catálogo | 27 modelos con imagen y scheda; Cimbali/Hausbrandt/Winterhalter/Scotsman. |
+| Datos Abruzzo | 15 clientes, 15 máquinas y 15 mantenimientos candidatos; solo con `LINEABAR_CARGAR_ABRUZZO=1`. |
+| NFC | Android + `NDEFReader`: escritura NDEF URL; iOS/otros: copia del enlace y aviso; sin tokens en la etiqueta. |
+| IA | Endpoint/clave solo en entorno; sin clave se usa fallback y se registra `origine=fallback`. |
+| Visual | **`[NV]`** hasta revisar la aplicación renderizada tras el despliegue; no se declara aprobada por pruebas de servidor. |
 
 ## 4. Suites existentes
 

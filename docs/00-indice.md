@@ -1,6 +1,6 @@
 # 00 — Índice documental de Linea Bar
 
-> **Estado: NORMATIVO DE NAVEGACIÓN (revisión 2026-10-19).** Documento de entrada.
+> **Estado: NORMATIVO DE NAVEGACIÓN (revisión 2026-10-21).** Documento de entrada.
 > No sustituye a ningún otro documento: indica qué leer, con qué confianza y qué
 > evidencia lo respalda. Si este documento contradice al código, manda el código.
 

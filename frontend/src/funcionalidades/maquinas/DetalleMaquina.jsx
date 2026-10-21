@@ -10,6 +10,7 @@ import {
   Copy,
   ImagePlus,
   MapPin,
+  Navigation,
   X,
   ShieldCheck,
   Trash2,
@@ -53,9 +54,13 @@ export function DetalleMaquina({ id, c, idioma, usuario, alVolver, alAbrirBoleta
   const [accesos, setAccesos] = useState(null);
   const [guardandoAccesos, setGuardandoAccesos] = useState(false);
   const [fotoAbierta, setFotoAbierta] = useState(false);
+  const [escribiendoNfc, setEscribiendoNfc] = useState(false);
   const entradaFoto = useRef(null);
   useBloquearScroll(fotoAbierta);
   const esAdministrador = usuario?.ruolo === 'amministratore';
+  const esAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
+  const esIOS = typeof navigator !== 'undefined' && (/iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+  const webNfcDisponible = typeof window !== 'undefined' && 'NDEFReader' in window;
 
   const cargar = useCallback(async (seleccionarId = null) => {
     try {
@@ -166,10 +171,34 @@ export function DetalleMaquina({ id, c, idioma, usuario, alVolver, alAbrirBoleta
     try {
       await navigator.clipboard.writeText(urlNfc);
       setMensaje(c.linkCopied);
+      notificar(c.linkCopied);
     } catch {
       setMensaje(urlNfc);
     }
   }
+
+  async function accionNfc() {
+    if (esAndroid && webNfcDisponible) {
+      setEscribiendoNfc(true);
+      try {
+        const ndef = new NDEFReader();
+        await ndef.write({ records: [{ recordType: 'url', data: urlNfc }] });
+        notificar(c.nfcWritten);
+      } catch (e) {
+        notificar(`${c.nfcError} ${e.message || ''}`.trim(), 'error');
+      } finally {
+        setEscribiendoNfc(false);
+      }
+      return;
+    }
+    await copiarEnlace();
+  }
+
+  const etiquetaNfc = esAndroid && webNfcDisponible
+    ? (escribiendoNfc ? c.nfcWriting : c.writeNfc)
+    : esIOS
+      ? c.copyForNfcApp
+      : c.copyLink;
 
   async function guardarAccesos() {
     setGuardandoAccesos(true);
@@ -300,6 +329,11 @@ export function DetalleMaquina({ id, c, idioma, usuario, alVolver, alAbrirBoleta
           <p>
             <MapPin size={14} /> {datos.cliente_indirizzo}, {datos.cliente_citta}
           </p>
+          {datos.cliente_url_mappe && (
+            <a className="maps-link" href={datos.cliente_url_mappe} target="_blank" rel="noreferrer">
+              <Navigation size={14} /> {c.openMaps}
+            </a>
+          )}
         </article>
 
         <article className="machine-card-block">
@@ -383,11 +417,13 @@ export function DetalleMaquina({ id, c, idioma, usuario, alVolver, alAbrirBoleta
           </header>
           <div className="nfc-row">
             <input readOnly value={urlNfc} aria-label={c.nfcLink} onFocus={(e) => e.target.select()} />
-            <button className="primary" onClick={copiarEnlace}>
-              <Copy size={16} /> {c.copyLink}
+            <button className="primary" onClick={accionNfc} disabled={escribiendoNfc}>
+              <Copy size={16} /> {etiquetaNfc}
             </button>
           </div>
           <small>{c.accessHelp}</small>
+          {esIOS && <small>{c.nfcIosHint}</small>}
+          {esAndroid && !webNfcDisponible && <small>{c.nfcAndroidHint}</small>}
         </section>
       )}
 

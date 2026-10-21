@@ -24,6 +24,7 @@ import { DetalleMaquina } from '../funcionalidades/maquinas/DetalleMaquina.jsx';
 import { ListaMaquinas } from '../funcionalidades/maquinas/ListaMaquinas.jsx';
 import { Navegacion } from '../funcionalidades/navegacion/Navegacion.jsx';
 import { PantallaError } from '../funcionalidades/errores/PantallaError.jsx';
+import { Programmazione } from '../funcionalidades/programmazione/Programmazione.jsx';
 import { SkeletonLogin } from '../compartido/componentes/Skeleton.jsx';
 import { Reportes } from '../funcionalidades/reportes/Reportes.jsx';
 import { Tablero } from '../funcionalidades/tablero/Tablero.jsx';
@@ -129,6 +130,7 @@ export function App() {
     mantenimientos: 'mantenimientos',
     macchine: 'macchine',
     maquina: 'macchine',
+    programmazione: 'programmazione',
     tareas: 'tareas',
     calendario: 'calendario',
     reportes: 'reportes',
@@ -142,6 +144,7 @@ export function App() {
       usuario={usuario}
       alAbrirDetalle={(id) => setDetalle(id)}
       alIrCalendario={() => ir('calendario')}
+      alIr={ir}
     />
   );
 
@@ -165,6 +168,8 @@ export function App() {
         alAbrirBoleta={(id) => setDetalleBoleta(id)}
         alAbrirIntervento={(id) => setDetalle(id)}
       />
+    ) : pagina === 'programmazione' ? (
+      <Programmazione c={c} idioma={idioma} usuario={usuario} />
     ) : pagina === 'calendario' ? (
       <Calendario c={c} idioma={idioma} usuario={usuario} />
     ) : pagina === 'reportes' ? (

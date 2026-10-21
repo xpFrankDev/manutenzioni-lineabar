@@ -1,6 +1,6 @@
 # 07 — Decisiones abiertas
 
-> **Estado: REGISTRO `[D]` (revisión 2026-10-19).** Ninguna decisión se cierra por
+> **Estado: REGISTRO `[D]` (revisión 2026-10-21).** Ninguna decisión se cierra por
 > silencio. Cada fila indica el motivo por el que no se ejecuta y el criterio para
 > cerrarla. El agente **no** las toma por el propietario.
 
@@ -29,6 +29,8 @@
 | **D-14** | Inventario/stock de ricambi. | `pezzi` es catálogo, no existencias; falta el modelo de movimientos. | Modelo de stock aprobado, migración y pantalla de existencias. |
 | **D-15** | Adopción de TypeScript y/o NestJS en el backend. | El backend actual funciona, está probado y desplegado; migrar añade riesgo. | Decisión explícita; si se aprueba, plan incremental con pruebas por módulo. |
 | **D-16** | Identificadores UUID en todas las tablas. | **Resuelta (instrucción del propietario, 2026-10-19).** Migración `0010_uuid_identificadores.js`; claves primarias y foráneas UUID. | Cumplida en esquema y código; validar la migración sobre una copia de la base real antes del despliegue. |
+| **D-17** | Proveedor de IA para la programación y tratamiento de datos de clientes. | La integración acepta un endpoint compatible con Chat Completions y mantiene la clave en `.env`; falta decidir proveedor, coste y garantías de tratamiento. | Proveedor aprobado, clave en el servidor, aviso de privacidad y prueba con datos reales minimizados. |
+| **D-18** | App compañera iOS para escribir NFC desde Linea Bar. | Safari/WebKit no expone Web NFC; hoy iOS copia el enlace para NFC Tools. | Decisión entre depender de NFC Tools o publicar una app con Core NFC y Universal Link. |
 
 ## Cómo se cierra una decisión
 

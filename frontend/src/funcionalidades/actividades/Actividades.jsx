@@ -12,6 +12,7 @@ import { FormularioActividad } from './FormularioActividad.jsx';
 function estadoDeActividad(actividad) {
   if (actividad.stato_attivita === 'completata') return 'completata';
   if (actividad.stato_attivita === 'in_corso') return 'in_corso';
+  if (actividad.stato_attivita === 'in_viaggio') return 'in_viaggio';
   return actividad.priorita === 'alta' ? 'vencido' : 'aperta';
 }
 

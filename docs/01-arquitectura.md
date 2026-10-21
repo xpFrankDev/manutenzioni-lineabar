@@ -38,7 +38,9 @@ esquemas Zod y servicios:
 - `parametros`: tarifa, días de aviso y horizontes configurables.
 - `actividades`: tareas programadas, asignación multi-técnico y cierre.
 - `maquinas`: ficha de máquina, fotos, historial, enlace NFC y accesos por usuario.
-- `configuracion`: CRUD genérico de maestros con lista blanca de tablas/columnas.
+- `programmaciones`: lotes diarios por técnico, orden de tappe, estimación de viaje por coordenadas y estados de ejecución.
+- `configuracion`: CRUD genérico de maestros con lista blanca de tablas/columnas, incluido el catálogo de modelos.
+- `backend/src/ai/programmazione/`: instrucciones, contrato JSON y cliente de un endpoint compatible con Chat Completions; la clave solo vive en el entorno del servidor.
 
 Infraestructura transversal:
 

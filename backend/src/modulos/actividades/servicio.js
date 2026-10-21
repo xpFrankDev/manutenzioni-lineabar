@@ -21,7 +21,7 @@ export async function listarActividades(req) {
   return consultar(
     'SELECT a.id,a.titolo,a.osservazione,a.richiede_appuntamento,a.scadenza,a.priorita,a.stato_attivita,a.descrizione_chiusura,a.fk_manutenzione_chiusura,c.nome cliente,c.indirizzo,m.codice_unico,m.modello,COALESCE(f.nome,ma.nome) marca,GROUP_CONCAT(DISTINCT u.nome ORDER BY u.nome SEPARATOR ", ") tecnici FROM attivita a' +
       filtro +
-      ' LEFT JOIN clienti c ON c.id=a.fk_cliente LEFT JOIN macchine m ON m.id=a.fk_macchina LEFT JOIN fornitori f ON f.id=m.fk_fornitore LEFT JOIN marche ma ON ma.id=m.fk_marca LEFT JOIN attivita_tecnici at ON at.fk_attivita=a.id AND at.stato="attivo" LEFT JOIN utenti u ON u.id=at.fk_tecnico WHERE a.stato="attivo" GROUP BY a.id ORDER BY FIELD(a.stato_attivita,"in_corso","aperta","completata"),a.scadenza,a.priorita',
+      ' LEFT JOIN clienti c ON c.id=a.fk_cliente LEFT JOIN macchine m ON m.id=a.fk_macchina LEFT JOIN fornitori f ON f.id=m.fk_fornitore LEFT JOIN marche ma ON ma.id=m.fk_marca LEFT JOIN attivita_tecnici at ON at.fk_attivita=a.id AND at.stato="attivo" LEFT JOIN utenti u ON u.id=at.fk_tecnico WHERE a.stato="attivo" GROUP BY a.id ORDER BY FIELD(a.stato_attivita,"in_viaggio","in_corso","aperta","completata"),a.scadenza,a.priorita',
     tecnico ? [req.utente.sub] : []
   );
 }
@@ -54,12 +54,15 @@ export async function obtenerActividad(id) {
 export async function crearActividad(conexion, datos, usuarioId) {
   const id = nuevoId();
   await conexion.execute(
-    'INSERT INTO attivita (id,fk_cliente,fk_macchina,fk_assegnato,titolo,osservazione,richiede_appuntamento,scadenza,priorita,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+    'INSERT INTO attivita (id,fk_cliente,fk_macchina,fk_assegnato,fk_programmazione,ordine_tappa,minuti_da_precedente,titolo,osservazione,richiede_appuntamento,scadenza,priorita,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
     [
       id,
       datos.clienteId,
       datos.macchinaId,
       datos.tecnici[0],
+      datos.fkProgrammazione ?? null,
+      datos.ordineTappa ?? null,
+      datos.minutiDaPrecedente ?? null,
       'Manutenzione programmata',
       datos.osservazione,
       datos.richiedeAppuntamento ? 1 : 0,
@@ -130,6 +133,12 @@ export async function cerrarActividad(conexion, actividad, datos, usuarioId) {
   await conexion.execute(
     'UPDATE attivita SET stato_attivita="completata",descrizione_chiusura=?,fk_manutenzione_chiusura=?,utente_modifica=? WHERE id=?',
     [datos.descrizione, intervento.id, usuarioId, actividad.id]
+  );
+  // La voce di calendario che ha originato la tappa si chiude solo se non è
+  // stata già riprogrammata dal ricambio usato nell'intervento.
+  await conexion.execute(
+    'UPDATE calendario_manutenzioni_macchine SET stato_calendario="eseguito",fk_attivita=NULL,utente_modifica=? WHERE fk_attivita=? AND (fk_manutenzione_origine IS NULL OR fk_manutenzione_origine<>?)',
+    [usuarioId, actividad.id, intervento.id]
   );
   return intervento.id;
 }

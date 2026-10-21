@@ -2,6 +2,7 @@ import {
   BarChart3,
   Boxes,
   CalendarClock,
+  CalendarRange,
   ClipboardList,
   LayoutDashboard,
   LogOut,
@@ -22,6 +23,7 @@ const ENLACES = [
   ['calendario', CalendarClock, 'calendar', 'siempre'],
   ['tareas', ClipboardList, 'tasks', 'siempre'],
   ['macchine', Boxes, 'machines', 'siempre'],
+  ['programmazione', CalendarRange, 'programming', 'siempre'],
   ['reportes', BarChart3, 'reports', 'administrador'],
   ['configuracion', Settings, 'settings', 'administrador']
 ];

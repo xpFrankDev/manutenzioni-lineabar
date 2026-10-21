@@ -9,14 +9,32 @@ export const esquemaCliente = z.object({
   tipo_cliente: z.enum(['privato', 'fornitore']).default('privato'),
   fk_fornitore: z.string().uuid().nullable().optional(),
   codice: z.string().trim().min(5).max(45).nullable().optional(),
+  url_mappe: z.preprocess((valor) => (valor === '' ? null : valor), z.string().trim().url().max(500).nullable().optional()),
+  latitudine: z.preprocess((valor) => (valor === '' ? null : valor), z.coerce.number().min(-90).max(90).nullable().optional()),
+  longitudine: z.preprocess((valor) => (valor === '' ? null : valor), z.coerce.number().min(-180).max(180).nullable().optional()),
   stato: z.enum(['attivo', 'inattivo']).default('attivo')
 });
 
+/** Estrae le coordinate da un link Google Maps quando non sono inserite a mano. */
+export function coordenadasDesdeMapa(url) {
+  if (!url) return { latitudine: null, longitudine: null };
+  const coincidencia =
+    String(url).match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/) ||
+    String(url).match(/[?&](?:query|q)=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+  return coincidencia
+    ? { latitudine: Number(coincidencia[1]), longitudine: Number(coincidencia[2]) }
+    : { latitudine: null, longitudine: null };
+}
+
 export function normalizarCliente(datos) {
   const cliente = esquemaCliente.parse(datos ?? {});
+  const coordenadas = coordenadasDesdeMapa(cliente.url_mappe);
   return {
     ...cliente,
     codice: cliente.codice ? cliente.codice.toUpperCase() : null,
+    url_mappe: cliente.url_mappe || null,
+    latitudine: cliente.latitudine ?? coordenadas.latitudine,
+    longitudine: cliente.longitudine ?? coordenadas.longitudine,
     fk_fornitore: cliente.tipo_cliente === 'fornitore' ? (cliente.fk_fornitore ?? null) : null
   };
 }
@@ -55,7 +73,7 @@ export async function crearCliente(conexion, datos, usuarioId, intentos = 5) {
     const id = nuevoId();
     try {
       await conexion.execute(
-        'INSERT INTO clienti (id,fk_fornitore,tipo_cliente,codice,nome,indirizzo,citta,stato,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,?,?,?)',
+        'INSERT INTO clienti (id,fk_fornitore,tipo_cliente,codice,nome,indirizzo,url_mappe,latitudine,longitudine,citta,stato,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
         [
           id,
           cliente.fk_fornitore,
@@ -63,6 +81,9 @@ export async function crearCliente(conexion, datos, usuarioId, intentos = 5) {
           codigo,
           cliente.nome,
           cliente.indirizzo,
+          cliente.url_mappe,
+          cliente.latitudine,
+          cliente.longitudine,
           cliente.citta,
           cliente.stato,
           usuarioId,

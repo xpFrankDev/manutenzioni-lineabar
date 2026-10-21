@@ -16,6 +16,7 @@ import { rutasConfiguracion } from './modulos/configuracion/rutas.js';
 import { rutasInterventos } from './modulos/interventos/rutas.js';
 import { rutasMaquinas } from './modulos/maquinas/rutas.js';
 import { rutasParametros } from './modulos/parametros/rutas.js';
+import { rutasProgrammaciones } from './modulos/programmaciones/rutas.js';
 import { rutasReportes } from './modulos/reportes/rutas.js';
 import { rutasScontrini } from './modulos/scontrini/rutas.js';
 import { rutasTablero } from './modulos/tablero/rutas.js';
@@ -49,6 +50,7 @@ export function crearApp() {
   app.use('/api/attivita', exigirSesion, exigirPermiso('tareas'));
   app.use('/api/reportes', exigirSesion, exigirPermiso('reportes'));
   app.use('/api/configurazione', exigirSesion, exigirPermiso('configuracion', 'editar'));
+  app.use('/api/programmazioni', exigirSesion, exigirPermiso('programmazione'));
 
   app.use('/api', rutasTablero);
   app.use('/api', rutasCatalogos);
@@ -60,6 +62,7 @@ export function crearApp() {
   app.use('/api', rutasReportes);
   app.use('/api', rutasParametros);
   app.use('/api', rutasActividades);
+  app.use('/api', rutasProgrammaciones);
   app.use('/api', rutasConfiguracion);
 
   app.use(manejadorErrores);

@@ -11,6 +11,7 @@ export const RUTAS = {
   boletas: '/lineabar/boletas',
   mantenimientos: '/lineabar/mantenimientos',
   macchine: '/lineabar/macchine',
+  programmazione: '/lineabar/programmazione',
   tareas: '/lineabar/tareas',
   calendario: '/lineabar/calendario',
   reportes: '/lineabar/reportes',

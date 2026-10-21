@@ -34,7 +34,7 @@ export const catalogoConfigurable = {
     tabla: 'clienti',
     propio: true,
     listado:
-      'SELECT c.id,c.codice,c.nome,c.tipo_cliente,c.indirizzo,c.citta,c.fk_fornitore,c.ultimo_manutenzione,c.stato,f.nome fornitore FROM clienti c LEFT JOIN fornitori f ON f.id=c.fk_fornitore ORDER BY c.stato DESC,c.nome',
+      'SELECT c.id,c.codice,c.nome,c.tipo_cliente,c.indirizzo,c.url_mappe,c.latitudine,c.longitudine,c.citta,c.fk_fornitore,c.ultimo_manutenzione,c.stato,f.nome fornitore FROM clienti c LEFT JOIN fornitori f ON f.id=c.fk_fornitore ORDER BY c.stato DESC,c.nome',
     validar: (datos) => normalizarCliente(datos)
   },
   macchine: {
@@ -95,6 +95,21 @@ export const catalogoConfigurable = {
       email: z.string().trim().email().max(190).parse(datos.email),
       ruolo: z.enum(ROLES_USUARIO).parse(datos.ruolo ?? 'tecnico'),
       password: datos.password ? z.string().min(8).max(128).parse(datos.password) : null,
+      stato: datos.stato === 'inattivo' ? 'inattivo' : 'attivo'
+    })
+  },
+  modelli: {
+    tabla: 'modelli_macchina',
+    columnas: ['fk_marca', 'nome', 'tipo_macchina', 'immagine_url', 'scheda_url', 'note', 'stato'],
+    listado:
+      'SELECT m.id,m.fk_marca,m.nome,m.tipo_macchina,m.immagine_url,m.scheda_url,m.note,m.stato,ma.nome marca FROM modelli_macchina m JOIN marche ma ON ma.id=m.fk_marca ORDER BY m.stato DESC,ma.nome,m.nome',
+    validar: (datos) => ({
+      fk_marca: z.string().uuid().parse(datos.fk_marca),
+      nome: z.string().trim().min(2).max(120).parse(datos.nome),
+      tipo_macchina: z.enum(TIPOS_MAQUINA).parse(datos.tipo_macchina),
+      immagine_url: z.string().trim().max(1000).optional().nullable().parse(datos.immagine_url || null),
+      scheda_url: z.string().trim().max(1000).optional().nullable().parse(datos.scheda_url || null),
+      note: z.string().trim().max(255).optional().nullable().parse(datos.note || null),
       stato: datos.stato === 'inattivo' ? 'inattivo' : 'attivo'
     })
   },
@@ -217,13 +232,16 @@ export async function crearRegistro(recurso, catalogo, registro, usuarioId) {
 export async function actualizarRegistro(recurso, catalogo, id, registro, usuarioId) {
   if (recurso === 'clienti') {
     await pool.execute(
-      'UPDATE clienti SET fk_fornitore=?,tipo_cliente=?,codice=COALESCE(?,codice),nome=?,indirizzo=?,citta=?,stato=?,utente_modifica=? WHERE id=?',
+      'UPDATE clienti SET fk_fornitore=?,tipo_cliente=?,codice=COALESCE(?,codice),nome=?,indirizzo=?,url_mappe=?,latitudine=?,longitudine=?,citta=?,stato=?,utente_modifica=? WHERE id=?',
       [
         registro.fk_fornitore,
         registro.tipo_cliente,
         registro.codice,
         registro.nome,
         registro.indirizzo,
+        registro.url_mappe,
+        registro.latitudine,
+        registro.longitudine,
         registro.citta,
         registro.stato,
         usuarioId,

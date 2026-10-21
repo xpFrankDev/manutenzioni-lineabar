@@ -5,7 +5,7 @@ import { Estado } from '../../compartido/componentes/Estado.jsx';
 import { SkeletonDashboard } from '../../compartido/componentes/Skeleton.jsx';
 import { formatearFecha, formatearMoneda } from '../../compartido/utilidades/formato.js';
 
-export function Tablero({ c, idioma, usuario, alAbrirDetalle, alIrCalendario }) {
+export function Tablero({ c, idioma, usuario, alAbrirDetalle, alIrCalendario, alIr }) {
   const [datos, setDatos] = useState(null);
   const [error, setError] = useState('');
 
@@ -25,11 +25,11 @@ export function Tablero({ c, idioma, usuario, alAbrirDetalle, alIrCalendario }) 
   if (!datos) return <SkeletonDashboard />;
 
   const metricas = [
-    [Wrench, c.done, datos.metriche.interventi],
-    [Euro, c.income, formatearMoneda(datos.metriche.ricavi, idioma)],
-    [ClipboardList, c.pending, datos.metriche.attivitaPendenti],
-    [CalendarClock, c.nextMaintenance, datos.metriche.manutenzioniProgrammate],
-    [Check, c.success, `${datos.metriche.esito}%`]
+    [Wrench, c.done, datos.metriche.interventi, 'mantenimientos'],
+    [Euro, c.income, formatearMoneda(datos.metriche.ricavi, idioma), 'boletas'],
+    [ClipboardList, c.pending, datos.metriche.attivitaPendenti, 'tareas'],
+    [CalendarClock, c.nextMaintenance, datos.metriche.manutenzioniProgrammate, 'calendario'],
+    [Check, c.success, `${datos.metriche.esito}%`, 'mantenimientos']
   ];
   const scadenze = datos.scadenze ?? { vencidos: 0, proximas: [] };
 
@@ -59,12 +59,12 @@ export function Tablero({ c, idioma, usuario, alAbrirDetalle, alIrCalendario }) 
       )}
 
       <section className="metrics">
-        {metricas.map(([Icono, etiqueta, valor]) => (
-          <article key={etiqueta}>
+        {metricas.map(([Icono, etiqueta, valor, destino]) => (
+          <button key={etiqueta} type="button" className="metric-card" onClick={() => alIr?.(destino)}>
             <Icono size={19} />
             <span>{etiqueta}</span>
             <b>{valor}</b>
-          </article>
+          </button>
         ))}
       </section>
 

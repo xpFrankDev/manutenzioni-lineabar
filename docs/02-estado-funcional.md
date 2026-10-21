@@ -1,6 +1,6 @@
 # 02 — Estado funcional y cumplimiento del roadmap
 
-> **Estado: AUDITORÍA `[V]` (revisión 2026-10-19).** Contrasta cada objetivo de
+> **Estado: AUDITORÍA `[V]` (revisión 2026-10-21).** Contrasta cada objetivo de
 > `ROADMAP.md` y `PRODUCT.md` con el código real y con `05-verificacion.md`.
 > No sustituye al roadmap: lo audita.
 
@@ -65,6 +65,24 @@ Esto último se corrige con `docs/00`–`09`; lo no resuelto queda en `07`.
   sin `confirm()`/`alert()` nativos, con bloqueo de scroll del fondo en modales.
 - **Carga visible** `[V]`: skeletons en panel, listas, calendario, reportes,
   configuración, fichas y modales para evitar saltos y pantallas vacías.
+- **Programmazione giornaliera** `[V]`: `/lineabar/programmazione` agrupa
+  manutenciones pendientes en un lote diario con 3–6 tappe, tiempos de viaje
+  estimados y toma/estado por parte del técnico. Usa Google Maps/coordenadas de
+  cliente y un planificador local; si hay endpoint y clave de IA configurados,
+  usa la respuesta validada de la IA. Evidencia: `modulos/programmaciones/`,
+  `ai/programmazione/`, migración `0018`.
+- **Catálogo de modelos** `[V]`: 27 modelos comerciales de Cimbali, Hausbrandt,
+  Winterhalter y Scotsman con imagen, tipo y scheda oficial; se gestionan en
+  `Impostazioni → Modelli macchina`. Evidencia: migración `0019` y
+  `datos-base.sql`.
+- **Clientes de Abruzzo** `[P]`: 15 bares demostrativos con Google Maps y
+  coordenadas para probar rutas; se cargan solo con `LINEABAR_CARGAR_ABRUZZO=1`.
+  No son clientes reales.
+- **NFC** `[V]`: en Android con Web NFC el administrador escribe el NDEF URL de
+  la ficha; en iOS el botón copia el enlace para una app NFC. La etiqueta no
+  contiene tokens ni datos de negocio.
+- **Accesos del panel** `[V]`: las métricas del panel navegan a Interventi,
+  Ricevute, Attività y Calendario.
 - **Actividades** `[V]`: pulsar una tarea abre su ficha completa con acciones de
   tomar o cerrar.
 
@@ -80,6 +98,11 @@ Esto último se corrige con `docs/00`–`09`; lo no resuelto queda en `07`.
 7. **Modo sin conexión** `[NV]`.
 8. **Retención de imágenes de scontrini** `[NV]`.
 9. **Copia de seguridad y restauración probadas** `[NV]`.
+10. **Calidad del planificador IA** `[NV]`: sin clave de IA en el entorno, la
+    generación se valida con el planificador local; falta medir rutas reales y
+    tiempos de conducción.
+11. **Escritura NFC en iOS** `[NV]`: requiere una app nativa con Core NFC;
+    desde la web solo se copia el enlace para NFC Tools o una app compañera.
 
 ## 5. Documentación post-roadmap
 

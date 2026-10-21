@@ -1,6 +1,6 @@
 # 04 — Seguridad
 
-> **Estado: NORMATIVO DE SEGURIDAD (revisión 2026-10-19).** Documenta el estado
+> **Estado: NORMATIVO DE SEGURIDAD (revisión 2026-10-21).** Documenta el estado
 > **real** de los controles, los hallazgos con severidad y el plan de remediación.
 > No autoriza despliegue ni cambios en el VPS. Si contradice al código, manda el
 > código. Referencia de método: `proyecto-trading-saas/docs/26`.
@@ -43,6 +43,8 @@ borde (`D-02`). Las dependencias con vulnerabilidad conocida se corrigieron el
 | Confirmaciones y avisos propios sin diálogos nativos | `frontend/src/compartido/componentes/Avisos.jsx` |
 | Fotos de máquina validadas por MIME/base64/tamaño y servidas con sesión | `maquinas/servicio.js`, `utilidades/imagenes.js`, `macchine_foto` |
 | Tema inicial sin script inline (CSP estricta de script) | `frontend/public/theme-init.js` |
+| Clave de IA solo en entorno; nunca en respuesta, log ni NFC | `backend/src/ai/programmazione/servicio.js`, `.env.example` |
+| Programación con autorización de administrador y propiedad del técnico | `backend/src/modulos/programmaciones/rutas.js` |
 
 ### 2.2 Frontend
 
@@ -86,12 +88,12 @@ borde (`D-02`). Las dependencias con vulnerabilidad conocida se corrigieron el
 | Robo de sesión por XSS | Sin HTML dinámico; datos como texto | Tokens en `localStorage` sin `HttpOnly` (S-01) y sin CSP hasta ahora (S-04) |
 | Fuerza bruta en acceso | Límite por IP corregido; comparación en tiempo constante | Sin bloqueo por cuenta (S-10) |
 | Cruce entre técnicos | Alcance por propiedad en cada consulta y detalle; ficha de máquina restringida por `macchine_utenti` | El catálogo `GET /maquinas` sigue siendo global (S-08); la ficha y las fotos no |
-| Acceso anónimo por NFC/URL | Redirección al login con `next` seguro; API 401 sin sesión y 403 sin autorización | La URL del SPA es pública como shell; los datos no se sirven sin sesión |
+| Acceso anónimo por NFC/URL | Redirección al login con `next` seguro; API 401 sin sesión y 403 sin autorización | La URL del SPA es pública como shell; los datos no se sirven sin sesión. La etiqueta NFC solo contiene la URL de la ficha, sin tokens. |
 | Inyección SQL | Parámetros `?`; lista blanca de tablas | Ninguno declarado |
 | Inyección en CSV | Neutralización de fórmulas | Ninguno declarado |
 | Denegación por abuso de OCR | Límite específico + cola + tiempo límite | Consumo de CPU por petición (S-07) |
 | Suplantación de IP en proxies | `trust proxy` configurable y dependencia corregida | Verificación en VPS `[NV]` |
-| Fuga de secretos al repositorio | `.env` ignorado; plantillas sin valores reales; validación de plantillas en producción | Sin gestor de secretos ni rotación (`D-03`) |
+| Fuga de secretos al repositorio | `.env` ignorado; plantillas sin valores reales; validación de plantillas en producción; clave de IA solo en el servidor | Sin gestor de secretos ni rotación (`D-03`); proveedor de IA pendiente (`D-17`) |
 | Interceptación en tránsito | TLS en el Nginx del host; HSTS añadido en el contenedor | Sin verificación de TLS en esta sesión `[NV]` |
 | Fuga por copia de seguridad | Volumen local | Sin cifrado ni restauración probada (S-17/S-18) |
 

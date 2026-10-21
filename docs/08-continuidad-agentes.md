@@ -1,6 +1,6 @@
 # 08 — Protocolo de continuidad de agentes
 
-> **Estado: NORMATIVO DE TRABAJO (revisión 2026-10-19).** Se aplica a cualquier
+> **Estado: NORMATIVO DE TRABAJO (revisión 2026-10-21).** Se aplica a cualquier
 > agente que trabaje en `manutenzioni-lineabar`, con independencia de la sesión.
 > Adapta el protocolo de `proyecto-trading-saas/docs/governance/agent-continuity.md`.
 > Regula **cuándo continuar** y **cuándo detenerse**, no qué está autorizado.

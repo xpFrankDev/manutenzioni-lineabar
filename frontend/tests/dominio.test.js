@@ -5,6 +5,7 @@ import { importeManoDeObra, TARIFA_MANO_DE_OBRA_HORA } from '../src/compartido/d
 import { fechaDeHoy, formatearFecha, formatearMoneda } from '../src/compartido/utilidades/formato.js';
 import { es } from '../src/compartido/i18n/es.js';
 import { it } from '../src/compartido/i18n/it.js';
+import { paginaDesdeRuta, RUTAS } from '../src/compartido/constantes.js';
 
 test('sumarMeses no desborda el fin de mes', () => {
   assert.equal(sumarMeses('2026-01-31', 1), '2026-02-28');
@@ -46,4 +47,10 @@ test('fechaDeHoy devuelve el formato ISO que espera la API', () => {
 test('el catálogo español cubre todas las claves italianas', () => {
   const faltantes = Object.keys(it).filter((clave) => !(clave in es));
   assert.deepEqual(faltantes, []);
+});
+
+test('la ruta y el catálogo incluyen la programación diaria', () => {
+  assert.equal(RUTAS.programmazione, '/lineabar/programmazione');
+  assert.equal(paginaDesdeRuta('/lineabar/programmazione'), 'programmazione');
+  assert.equal(it.programming, 'Programmazione');
 });

@@ -30,7 +30,7 @@ export function FormularioRegistro({ recurso, registro, proveedores, clientes, c
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (recurso !== 'pezzi' && recurso !== 'macchine') return;
+    if (recurso !== 'pezzi' && recurso !== 'macchine' && recurso !== 'modelli') return;
     llamarApi('/marche')
       .then(setMarcas)
       .catch(() => {});
@@ -98,6 +98,9 @@ export function FormularioRegistro({ recurso, registro, proveedores, clientes, c
               {campo('nome', c.name, 'Nome attività')}
               {campo('indirizzo', c.address, 'Via e numero civico')}
               {campo('citta', c.city, 'Città italiana')}
+              {campo('url_mappe', c.mapsUrl, 'https://www.google.com/maps/...')}
+              {campo('latitudine', c.latitude, '42.350000', 'number')}
+              {campo('longitudine', c.longitude, '13.398000', 'number')}
               <Campo label={c.clientType}>
                 <select value={formulario.tipo_cliente || 'privato'} onChange={(e) => establecer('tipo_cliente', e.target.value)}>
                   <option value="privato">{c.private}</option>
@@ -121,6 +124,28 @@ export function FormularioRegistro({ recurso, registro, proveedores, clientes, c
                 </Campo>
               )}
               {campo('codice', c.clientCode, 'Automatico se vuoto')}
+            </>
+          )}
+
+          {recurso === 'modelli' && (
+            <>
+              <Campo label={c.brand}>
+                <select required value={formulario.fk_marca || ''} onChange={(e) => establecer('fk_marca', e.target.value)}>
+                  <option value="">{c.select}</option>
+                  {marcas.map((marca) => (
+                    <option key={marca.id} value={marca.id}>{marca.nome}</option>
+                  ))}
+                </select>
+              </Campo>
+              {campo('nome', c.model, 'M200')}
+              <Campo label={c.machineType}>
+                <select value={formulario.tipo_macchina || 'macchina_caffe'} onChange={(e) => establecer('tipo_macchina', e.target.value)}>
+                  {TIPOS_MAQUINA.map((tipo) => <option key={tipo} value={tipo}>{nombreTipoMaquina(tipo, c)}</option>)}
+                </select>
+              </Campo>
+              {campo('immagine_url', c.imageUrl, 'https://...')}
+              {campo('scheda_url', c.productSheet, 'https://...')}
+              {campo('note', c.notes, '')}
             </>
           )}
 
