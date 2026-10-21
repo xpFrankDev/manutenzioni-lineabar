@@ -159,7 +159,7 @@ por esta comprobación técnica.
 | API autenticada | Login 200; sesión 200; `GET /programmazioni/candidati?data=2026-10-21` → 200 con **15** candidatos; `GET /programmazioni` → 200; `GET /auth/sessione` confirma rol administrador y menú de programación. |
 | IA | El endpoint por defecto es OpenCode Go (`/inference/openai/v1/chat/completions`); `LINEABAR_AI_API_KEY` no está definida en el `.env` del VPS, así que el sistema usa el fallback local. Añadir la clave allí habilita el proveedor sin tocar el repositorio. |
 | Contenedores | `backend`, `frontend` y `mariadb` sanos. |
-| Revisión visual | **`[NV]`**: pendiente abrir la app renderizada en móvil/escritorio; esta entrada no declara aprobación visual. |
+| Revisión visual | **`[V]` parcial**: SPA construida renderizada a 390×844 con API simulada; la pantalla de programación muestra formulario, candidatos, tarjeta y navegación sin desbordes en tema oscuro. Falta repetir con sesión real, tema claro y iPhone físico `[NV]`. |
 
 ## 4. Suites existentes
 
