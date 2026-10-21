@@ -10,9 +10,9 @@
 | --- | --- |
 | `cd backend && npm run test:unidad` | **OK — 13/13** pruebas (código 0), incluidas coordenadas Google Maps y estimación de viaje. |
 | `cd backend && npm run verificar` | **OK** — sintaxis correcta en **48** archivos (código 0). |
-| `cd frontend && npm test` | **OK — 7/7** pruebas (código 0). |
+| `cd frontend && npm test` | **OK — 8/8** pruebas (código 0). |
 | `cd frontend && npm run build` | **OK** — build de producción Vite (código 0); incluye la pantalla de programación y el catálogo de modelos. |
-| `cd backend && npm run test:integracion` | **`[NV]` en local**: no hay MariaDB en `127.0.0.1:3308`; la suite se ejecuta en el job de CI con MariaDB y contra la copia del VPS antes del despliegue. |
+| `cd backend && npm run test:integracion` | **`[NV]` en local**: no hay MariaDB en `127.0.0.1:3308`. **CI GitHub Actions:** job `Integración con MariaDB` **verde** en `main` para `6866f00`; 17/17 pruebas, incluidas programación, catálogo y transición `in_viaggio`. |
 | `cd backend && npm audit --omit=dev` | **OK — 0 vulnerabilidades** tras `npm audit fix`. |
 | `cd frontend && npm audit --omit=dev` | **OK — 0 vulnerabilidades** tras `npm audit fix`. |
 | Migración UUID sobre copia de la base de producción | **OK** — `0010_uuid_identificadores.js` aplicada sobre `lineabar_uuid_test` (copia de `lineabar`): conteos preservados (`clienti` 3, `macchine` 3, `manutenzioni` 7, `boletas` 4, `utenti` 1, `calendario` 3), `id` en `char(36)`, 35 claves foráneas y los 3 índices dependientes recreados. |
@@ -136,7 +136,7 @@ por esta comprobación técnica.
 
 | Comprobación | Resultado |
 | --- | --- |
-| Migraciones nuevas | `0018_programmazione_giornaliera.sql` y `0019_modelli_macchina.sql` escritas; pendientes de ejecutar en CI/VPS al cierre de esta entrada. |
+| Migraciones nuevas | `0018` y `0019` aplicadas con éxito en la base `lineabar_test` del job de CI; pendientes de ejecutar en el VPS al desplegar. |
 | Planificador local | Pruebas unitarias de distancia y agrupación por ciudad; la generación HTTP queda cubierta por la prueba de integración nueva. |
 | Catálogo | 27 modelos con imagen y scheda; Cimbali/Hausbrandt/Winterhalter/Scotsman. |
 | Datos Abruzzo | 15 clientes, 15 máquinas y 15 mantenimientos candidatos; solo con `LINEABAR_CARGAR_ABRUZZO=1`. |
