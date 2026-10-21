@@ -38,7 +38,15 @@ rutasProgrammaciones.post('/programmazioni/genera', exigirSesion, autorizar('amm
     .safeParse(req.body);
   if (!entrada.success) return res.status(422).json({ errore: 'Parametri di programmazione non validi', dettagli: entrada.error.flatten() });
   try {
-    const resultado = await generarProgramacion({ ...entrada.data, usuarioId: req.utente.sub });
+    const { data, tecnicoId, maxTappe, minutiMin, minutiMax } = entrada.data;
+    const resultado = await generarProgramacion({
+      data,
+      tecnicoId,
+      maxTappe,
+      minutosMin: minutiMin,
+      minutosMax: minutiMax,
+      usuarioId: req.utente.sub
+    });
     return res.status(201).json(resultado);
   } catch (error) {
     if (process.env.NODE_ENV !== 'production') console.error('Errore programmazione:', error);
