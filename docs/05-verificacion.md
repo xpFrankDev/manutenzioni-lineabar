@@ -149,7 +149,7 @@ por esta comprobación técnica.
 | Comprobación | Resultado |
 | --- | --- |
 | Copia previa | `backups/lineabar-pre-programmazione-20261021-093138.sql.gz`, modo `600`. |
-| Commit desplegado | `f7a4b87` (migraciones `0018` y `0019` incluidas). |
+| Commit desplegado | `e1d5f9a` (migraciones `0018` y `0019` incluidas). |
 | SPA | `https://vps-5586828-x.dattaweb.com/lineabar/` → **200** con TLS verificado. |
 | CSP | Incluye los dominios de imagen de Cimbali, Hausbrandt, Winterhalter y Scotsman. |
 | Migraciones | `0018` y `0019` aplicadas; `inicializacion` terminó con código 0. |
@@ -157,7 +157,7 @@ por esta comprobación técnica.
 | Catálogo | **27** modelos con imagen y scheda; `GET /configurazione/modelli` → 200. |
 | Menú | `programmazione` presente y visible para el rol técnico. |
 | API autenticada | Login 200; sesión 200; `GET /programmazioni/candidati?data=2026-10-21` → 200 con **15** candidatos; `GET /programmazioni` → 200; `GET /auth/sessione` confirma rol administrador y menú de programación. |
-| IA | `LINEABAR_AI_ENDPOINT`/`LINEABAR_AI_API_KEY` no están definidos en el `.env` del VPS; el sistema usa el fallback local. Configurarlos allí habilita el provedor sin tocar el repositorio. |
+| IA | El endpoint por defecto es OpenCode Go (`/inference/openai/v1/chat/completions`); `LINEABAR_AI_API_KEY` no está definida en el `.env` del VPS, así que el sistema usa el fallback local. Añadir la clave allí habilita el proveedor sin tocar el repositorio. |
 | Contenedores | `backend`, `frontend` y `mariadb` sanos. |
 | Revisión visual | **`[NV]`**: pendiente abrir la app renderizada en móvil/escritorio; esta entrada no declara aprobación visual. |
 
