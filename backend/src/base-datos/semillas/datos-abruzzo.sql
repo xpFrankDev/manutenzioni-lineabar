@@ -44,21 +44,36 @@ INSERT IGNORE INTO macchine (id, fk_cliente, fk_marca, fk_fornitore, codice_unic
   ('ffffffff-ffff-4fff-8fff-000000000014', 'eeeeeeee-eeee-4eee-8eee-000000000014', @marca_cimbali, @fornitore_cimbali, 'ABR-MC-014', 'MAT-ABR-0014', 'macchina_caffe', 'S15'),
   ('ffffffff-ffff-4fff-8fff-000000000015', 'eeeeeeee-eeee-4eee-8eee-000000000015', @marca_bwt, NULL, 'ABR-MC-015', 'MAT-ABR-0015', 'filtro', 'Bestmax Premium');
 
+SET @pezzo_01 := (SELECT id FROM pezzi WHERE codice_unico='PZ-CIM-GUAR-001');
+SET @pezzo_02 := (SELECT id FROM pezzi WHERE codice_unico='PZ-CIM-ELV-002');
+SET @pezzo_03 := (SELECT id FROM pezzi WHERE codice_unico='PZ-BWT-FLT-001');
+SET @pezzo_04 := (SELECT id FROM pezzi WHERE codice_unico='PZ-WIN-GUAR-001');
+SET @pezzo_05 := (SELECT id FROM pezzi WHERE codice_unico='PZ-TUB-90-001');
+SET @pezzo_06 := (SELECT id FROM pezzi WHERE codice_unico='PZ-SCO-SEN-001');
+SET @pezzo_07 := (SELECT id FROM pezzi WHERE codice_unico='PZ-SCO-PMP-001');
+SET @pezzo_08 := (SELECT id FROM pezzi WHERE codice_unico='PZ-BWT-ADD-001');
+SET @pezzo_09 := (SELECT id FROM pezzi WHERE codice_unico='FS22I10A00');
+SET @pezzo_10 := (SELECT id FROM pezzi WHERE codice_unico='FS00Z20A00');
+SET @pezzo_11 := (SELECT id FROM pezzi WHERE codice_unico='A39126-021');
+SET @pezzo_12 := (SELECT id FROM pezzi WHERE codice_unico='12-3060-22');
+SET @pezzo_13 := (SELECT id FROM pezzi WHERE codice_unico='12-2919-22');
+SET @pezzo_14 := (SELECT id FROM pezzi WHERE codice_unico='PZ-WIN-FLT-UC-001');
+
 INSERT IGNORE INTO calendario_manutenzioni_macchine
   (id, fk_macchina, fk_pezzo, fk_manutenzione_origine, frequenza_mesi, ultima_esecuzione, prossima_manutenzione, stato_calendario)
 VALUES
-  ('abababab-abab-4bab-8bab-000000000001', 'ffffffff-ffff-4fff-8fff-000000000001', '55555555-5555-4555-8555-000000000001', NULL, 5, '2026-05-20', '2026-10-22', 'programmato'),
-  ('abababab-abab-4bab-8bab-000000000002', 'ffffffff-ffff-4fff-8fff-000000000002', '55555555-5555-4555-8555-000000000002', NULL, 24, '2026-02-10', '2026-10-23', 'programmato'),
-  ('abababab-abab-4bab-8bab-000000000003', 'ffffffff-ffff-4fff-8fff-000000000003', '55555555-5555-4555-8555-000000000003', NULL, 12, '2025-10-24', '2026-10-24', 'programmato'),
-  ('abababab-abab-4bab-8bab-000000000004', 'ffffffff-ffff-4fff-8fff-000000000004', '55555555-5555-4555-8555-000000000004', NULL, 12, '2025-10-26', '2026-10-26', 'programmato'),
-  ('abababab-abab-4bab-8bab-000000000005', 'ffffffff-ffff-4fff-8fff-000000000005', '55555555-5555-4555-8555-000000000005', NULL, 24, '2024-10-27', '2026-10-27', 'programmato'),
-  ('abababab-abab-4bab-8bab-000000000006', 'ffffffff-ffff-4fff-8fff-000000000006', '55555555-5555-4555-8555-000000000006', NULL, 18, '2025-10-28', '2026-10-28', 'programmato'),
-  ('abababab-abab-4bab-8bab-000000000007', 'ffffffff-ffff-4fff-8fff-000000000007', '55555555-5555-4555-8555-000000000007', NULL, 24, '2024-10-29', '2026-10-29', 'programmato'),
-  ('abababab-abab-4bab-8bab-000000000008', 'ffffffff-ffff-4fff-8fff-000000000008', '55555555-5555-4555-8555-000000000008', NULL, 12, '2025-10-30', '2026-10-30', 'programmato'),
-  ('abababab-abab-4bab-8bab-000000000009', 'ffffffff-ffff-4fff-8fff-000000000009', '55555555-5555-4555-8555-000000000009', NULL, 12, '2025-11-02', '2026-11-02', 'programmato'),
-  ('abababab-abab-4bab-8bab-000000000010', 'ffffffff-ffff-4fff-8fff-000000000010', '55555555-5555-4555-8555-000000000010', NULL, 24, '2024-11-03', '2026-11-03', 'programmato'),
-  ('abababab-abab-4bab-8bab-000000000011', 'ffffffff-ffff-4fff-8fff-000000000011', '55555555-5555-4555-8555-000000000011', NULL, 18, '2025-11-04', '2026-11-04', 'programmato'),
-  ('abababab-abab-4bab-8bab-000000000012', 'ffffffff-ffff-4fff-8fff-000000000012', '55555555-5555-4555-8555-000000000012', NULL, 24, '2024-11-05', '2026-11-05', 'programmato'),
-  ('abababab-abab-4bab-8bab-000000000013', 'ffffffff-ffff-4fff-8fff-000000000013', '55555555-5555-4555-8555-000000000013', NULL, 24, '2024-11-06', '2026-11-06', 'programmato'),
-  ('abababab-abab-4bab-8bab-000000000014', 'ffffffff-ffff-4fff-8fff-000000000014', '55555555-5555-4555-8555-000000000014', NULL, 12, '2025-11-09', '2026-11-09', 'programmato'),
-  ('abababab-abab-4bab-8bab-000000000015', 'ffffffff-ffff-4fff-8fff-000000000015', '55555555-5555-4555-8555-000000000014', NULL, 12, '2025-11-10', '2026-11-10', 'programmato');
+  ('abababab-abab-4bab-8bab-000000000001', 'ffffffff-ffff-4fff-8fff-000000000001', @pezzo_01, NULL, 5, '2026-05-20', '2026-10-22', 'programmato'),
+  ('abababab-abab-4bab-8bab-000000000002', 'ffffffff-ffff-4fff-8fff-000000000002', @pezzo_02, NULL, 24, '2026-02-10', '2026-10-23', 'programmato'),
+  ('abababab-abab-4bab-8bab-000000000003', 'ffffffff-ffff-4fff-8fff-000000000003', @pezzo_03, NULL, 12, '2025-10-24', '2026-10-24', 'programmato'),
+  ('abababab-abab-4bab-8bab-000000000004', 'ffffffff-ffff-4fff-8fff-000000000004', @pezzo_04, NULL, 12, '2025-10-26', '2026-10-26', 'programmato'),
+  ('abababab-abab-4bab-8bab-000000000005', 'ffffffff-ffff-4fff-8fff-000000000005', @pezzo_05, NULL, 24, '2024-10-27', '2026-10-27', 'programmato'),
+  ('abababab-abab-4bab-8bab-000000000006', 'ffffffff-ffff-4fff-8fff-000000000006', @pezzo_06, NULL, 18, '2025-10-28', '2026-10-28', 'programmato'),
+  ('abababab-abab-4bab-8bab-000000000007', 'ffffffff-ffff-4fff-8fff-000000000007', @pezzo_07, NULL, 24, '2024-10-29', '2026-10-29', 'programmato'),
+  ('abababab-abab-4bab-8bab-000000000008', 'ffffffff-ffff-4fff-8fff-000000000008', @pezzo_08, NULL, 12, '2025-10-30', '2026-10-30', 'programmato'),
+  ('abababab-abab-4bab-8bab-000000000009', 'ffffffff-ffff-4fff-8fff-000000000009', @pezzo_09, NULL, 12, '2025-11-02', '2026-11-02', 'programmato'),
+  ('abababab-abab-4bab-8bab-000000000010', 'ffffffff-ffff-4fff-8fff-000000000010', @pezzo_10, NULL, 24, '2024-11-03', '2026-11-03', 'programmato'),
+  ('abababab-abab-4bab-8bab-000000000011', 'ffffffff-ffff-4fff-8fff-000000000011', @pezzo_11, NULL, 18, '2025-11-04', '2026-11-04', 'programmato'),
+  ('abababab-abab-4bab-8bab-000000000012', 'ffffffff-ffff-4fff-8fff-000000000012', @pezzo_12, NULL, 24, '2024-11-05', '2026-11-05', 'programmato'),
+  ('abababab-abab-4bab-8bab-000000000013', 'ffffffff-ffff-4fff-8fff-000000000013', @pezzo_13, NULL, 24, '2024-11-06', '2026-11-06', 'programmato'),
+  ('abababab-abab-4bab-8bab-000000000014', 'ffffffff-ffff-4fff-8fff-000000000014', @pezzo_14, NULL, 12, '2025-11-09', '2026-11-09', 'programmato'),
+  ('abababab-abab-4bab-8bab-000000000015', 'ffffffff-ffff-4fff-8fff-000000000015', @pezzo_14, NULL, 12, '2025-11-10', '2026-11-10', 'programmato');
