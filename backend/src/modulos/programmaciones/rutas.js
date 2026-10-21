@@ -40,7 +40,8 @@ rutasProgrammaciones.post('/programmazioni/genera', exigirSesion, autorizar('amm
   try {
     const resultado = await generarProgramacion({ ...entrada.data, usuarioId: req.utente.sub });
     return res.status(201).json(resultado);
-  } catch {
+  } catch (error) {
+    if (process.env.NODE_ENV !== 'production') console.error('Errore programmazione:', error);
     return res.status(400).json({ errore: 'Impossibile generare la programmazione' });
   }
 });
