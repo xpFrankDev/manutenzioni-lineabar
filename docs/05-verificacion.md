@@ -141,7 +141,7 @@ por esta comprobación técnica.
 | Catálogo | 27 modelos con imagen y scheda; Cimbali/Hausbrandt/Winterhalter/Scotsman. |
 | Datos Abruzzo | 15 clientes, 15 máquinas y 15 mantenimientos candidatos; solo con `LINEABAR_CARGAR_ABRUZZO=1`. |
 | NFC | Android + `NDEFReader`: escritura NDEF URL; iOS/otros: copia del enlace y aviso; sin tokens en la etiqueta. |
-| IA | Endpoint/clave solo en entorno; sin clave se usa fallback y se registra `origine=fallback`. |
+| IA | Endpoint por defecto OpenCode Go y clave solo en entorno; sin clave se usa fallback y se registra `origine=fallback`. |
 | Visual | **`[NV]`** hasta revisar la aplicación renderizada tras el despliegue; no se declara aprobada por pruebas de servidor. |
 
 ## 3sexies. Despliegue de programación, catálogo y Abruzzo (2026-10-21)

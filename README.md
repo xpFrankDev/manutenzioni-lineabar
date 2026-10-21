@@ -170,10 +170,11 @@ coordinate dei clienti per stimare gli spostamenti. Il tecnico vede solo i giri
 assegnati o ancora liberi, può prendere il lotto, segnare una tappa «in viaggio»
 e chiuderla; il lotto passa a «completata» quando tutte le tappe sono chiuse.
 
-La generazione può usare un modello compatibile con Chat Completions. La chiave
-resta esclusivamente nel `.env` del server (`LINEABAR_AI_API_KEY`) e non viene
-mai restituita al browser; senza chiave o endpoint il pianificatore locale
-deterministico produce comunque un giro valido e lo marca come `fallback`.
+La generazione può usare un modello compatibile con Chat Completions (per
+default OpenCode Go). La chiave resta esclusivamente nel `.env` del server
+(`LINEABAR_AI_API_KEY`) e non viene mai restituita al browser; senza chiave il
+pianificatore locale deterministico produce comunque un giro valido e lo marca
+come `fallback`.
 Le istruzioni e il contratto JSON vivono in `backend/src/ai/programmazione/`.
 
 ## Catalogo modelli
