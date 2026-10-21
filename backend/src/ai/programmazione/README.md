@@ -15,7 +15,7 @@ compatibile con Chat Completions e valida la risposta con Zod.
 Le variabili si leggono solo dall'ambiente del server (`.env` sul VPS, mai nel
 repository):
 
-- `LINEABAR_AI_ENDPOINT`: URL completo dell'endpoint.
+- `LINEABAR_AI_ENDPOINT`: URL completo dell'endpoint (predefinito OpenCode Go).
 - `LINEABAR_AI_API_KEY`: chiave segreta; non viene registrata né restituita.
 - `LINEABAR_AI_MODELO`: modello da usare.
 - `LINEABAR_AI_TIEMPO_LIMITE_MS`: timeout della chiamata.
