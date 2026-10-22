@@ -110,7 +110,8 @@ function DetallePrograma({ id, c, idioma, usuario, alCerrar, alActualizar }) {
         <main>
           <div className="detail-line">
             <b>{programa.tecnico || c.unassigned}</b>
-            <small>{c.programOrigin}: {etiquetaOrigen(programa, c)} · {programa.tappe?.length ?? 0} {c.stops}</small>
+            <small>{c.programOrigin}: {etiquetaOrigen(programa, c)} · {programa.tappe?.length ?? 0} {c.stops} · {c.startTime}: {programa.ora_partenza?.slice?.(0, 5) ?? '—'}</small>
+            {programa.minuti_totali && <small>{c.estimatedDuration}: {Math.floor(programa.minuti_totali / 60)}h {programa.minuti_totali % 60}min</small>}
             {programa.riepilogo && <small>{programa.riepilogo}</small>}
           </div>
 
@@ -181,11 +182,16 @@ export function Programmazione({ c, idioma, usuario }) {
   const [programas, setProgramas] = useState(null);
   const [seleccion, setSeleccion] = useState(null);
   const [tecnicos, setTecnicos] = useState([]);
+  const [parametros, setParametros] = useState({ furgoni: [], tipiLavoro: [], azienda: null });
   const [candidatos, setCandidatos] = useState(null);
   const [generando, setGenerando] = useState(false);
   const [formulario, setFormulario] = useState({
     data: fechaDeHoy(),
     tecnicoId: '',
+    furgoneId: '',
+    tipoLavoroId: '',
+    numeroTecnici: 1,
+    oraPartenza: '',
     maxTappe: 6,
     minutiMin: 10,
     minutiMax: 30
@@ -200,10 +206,17 @@ export function Programmazione({ c, idioma, usuario }) {
   useEffect(() => {
     cargar();
     if (esAdministrador) {
-      llamarApi('/tecnici')
-        .then((lista) => {
+      Promise.all([llamarApi('/tecnici'), llamarApi('/programmazioni/parametri')])
+        .then(([lista, configuracion]) => {
           setTecnicos(lista);
-          setFormulario((actual) => ({ ...actual, tecnicoId: actual.tecnicoId || lista[0]?.id || '' }));
+          setParametros(configuracion);
+          setFormulario((actual) => ({
+            ...actual,
+            tecnicoId: actual.tecnicoId || lista[0]?.id || '',
+            furgoneId: actual.furgoneId || configuracion.furgoni?.[0]?.id || '',
+            tipoLavoroId: actual.tipoLavoroId || configuracion.tipiLavoro?.[0]?.id || '',
+            oraPartenza: actual.oraPartenza || (configuracion.azienda?.ora_partenza ?? '08:00').slice(0, 5)
+          }));
         })
         .catch((e) => notificar(e.message, 'error'));
     }
@@ -251,6 +264,28 @@ export function Programmazione({ c, idioma, usuario }) {
               <option value="">{c.select}</option>
               {tecnicos.map((tecnico) => <option key={tecnico.id} value={tecnico.id}>{tecnico.nome}</option>)}
             </select>
+          </label>
+          <label>
+            {c.vehicle}
+            <select value={formulario.furgoneId} onChange={(e) => setFormulario({ ...formulario, furgoneId: e.target.value })}>
+              <option value="">{c.select}</option>
+              {parametros.furgoni.map((furgone) => <option key={furgone.id} value={furgone.id}>{furgone.nome} · {furgone.capacita_tecnici} {c.people}</option>)}
+            </select>
+          </label>
+          <label>
+            {c.workType}
+            <select value={formulario.tipoLavoroId} onChange={(e) => setFormulario({ ...formulario, tipoLavoroId: e.target.value })}>
+              <option value="">{c.select}</option>
+              {parametros.tipiLavoro.map((tipo) => <option key={tipo.id} value={tipo.id}>{tipo.nome} · {tipo.durata_minuti} min</option>)}
+            </select>
+          </label>
+          <label>
+            {c.startTime}
+            <input type="time" value={formulario.oraPartenza} onChange={(e) => setFormulario({ ...formulario, oraPartenza: e.target.value })} />
+          </label>
+          <label>
+            {c.people}
+            <input type="number" min="1" max="20" value={formulario.numeroTecnici} onChange={(e) => setFormulario({ ...formulario, numeroTecnici: Number(e.target.value) })} />
           </label>
           <label>
             {c.maxStops}

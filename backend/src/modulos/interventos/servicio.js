@@ -2,6 +2,7 @@ import { consultarUno } from '../../base-datos/pool.js';
 import { nuevoId } from '../../utilidades/identificadores.js';
 import { programarCalendario } from '../calendario/servicio.js';
 import { otorgarAccesoMaquina } from '../maquinas/servicio.js';
+import { empresaActual } from '../../intermedios/contexto-empresa.js';
 
 /** Agrupa líneas repetidas del mismo ricambio antes de consultar precios. */
 export function agruparRecambios(recambios = []) {
@@ -20,8 +21,8 @@ export async function calcularRecambios(conexion, recambios) {
   const identificadores = lineas.map((linea) => linea.pezzoId);
   const marcadores = identificadores.map(() => '?').join(',');
   const [piezas] = await conexion.query(
-    `SELECT id,prezzo,intervallo_mesi FROM pezzi WHERE stato="attivo" AND id IN (${marcadores})`,
-    identificadores
+    `SELECT id,prezzo,intervallo_mesi FROM pezzi WHERE fk_azienda=? AND stato="attivo" AND id IN (${marcadores})`,
+    [empresaActual(), ...identificadores]
   );
   if (piezas.length !== identificadores.length) {
     throw new Error('Uno o più ricambi non sono disponibili');
@@ -40,14 +41,14 @@ export async function calcularRecambios(conexion, recambios) {
 }
 
 export async function validarDestino(conexion, entrada) {
-  const maquina = await consultarUno('SELECT id,fk_cliente,tipo_macchina,stato FROM macchine WHERE id=?', [entrada.macchinaId], conexion);
+  const maquina = await consultarUno('SELECT id,fk_cliente,tipo_macchina,stato FROM macchine WHERE id=? AND fk_azienda=?', [entrada.macchinaId, empresaActual()], conexion);
   if (!maquina || maquina.stato !== 'attivo') throw new Error('Macchina non disponibile');
 
   const clienteId = entrada.clienteId ?? maquina.fk_cliente;
   if (String(clienteId) !== String(maquina.fk_cliente)) {
     throw new Error('La macchina non appartiene al cliente selezionato');
   }
-  const cliente = await consultarUno('SELECT id,stato FROM clienti WHERE id=?', [clienteId], conexion);
+  const cliente = await consultarUno('SELECT id,stato FROM clienti WHERE id=? AND fk_azienda=?', [clienteId, empresaActual()], conexion);
   if (!cliente || cliente.stato !== 'attivo') throw new Error('Cliente non disponibile');
 
   return { maquina, clienteId };
@@ -59,9 +60,10 @@ export async function crearIntervento(conexion, entrada, tecnicoId) {
 
   const manutencionId = nuevoId();
   await conexion.execute(
-    'INSERT INTO manutenzioni (id,fk_cliente,fk_tecnico,data,ora,ubicazione,note,esito,ore,persone,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
+    'INSERT INTO manutenzioni (id,fk_azienda,fk_cliente,fk_tecnico,data,ora,ubicazione,note,esito,ore,persone,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
     [
       manutencionId,
+      empresaActual(),
       clienteId,
       tecnicoId,
       entrada.data,
@@ -96,8 +98,8 @@ export async function crearIntervento(conexion, entrada, tecnicoId) {
   });
 
   await conexion.execute(
-    'UPDATE clienti SET ultimo_manutenzione=GREATEST(COALESCE(ultimo_manutenzione,?),?),utente_modifica=? WHERE id=?',
-    [entrada.data, entrada.data, tecnicoId, clienteId]
+    'UPDATE clienti SET ultimo_manutenzione=GREATEST(COALESCE(ultimo_manutenzione,?),?),utente_modifica=? WHERE id=? AND fk_azienda=?',
+    [entrada.data, entrada.data, tecnicoId, clienteId, empresaActual()]
   );
 
   return { id: manutencionId, clienteId, recambios, programados };
@@ -106,6 +108,6 @@ export async function crearIntervento(conexion, entrada, tecnicoId) {
 /** Un técnico solo accede a los interventos que registró él mismo. */
 export async function puedeAccederIntervento(req, id) {
   if (req.utente.ruolo !== 'tecnico') return true;
-  const fila = await consultarUno('SELECT id FROM manutenzioni WHERE id=? AND fk_tecnico=?', [id, req.utente.sub]);
+  const fila = await consultarUno('SELECT id FROM manutenzioni WHERE id=? AND fk_tecnico=? AND fk_azienda=?', [id, req.utente.sub, empresaActual()]);
   return Boolean(fila);
 }

@@ -9,6 +9,7 @@ import {
   actualizarRegistro,
   crearRegistro,
   desactivarRegistro,
+  consultaListado,
   obtenerCatalogo,
   prepararRegistro
 } from './servicio.js';
@@ -65,7 +66,7 @@ rutasConfiguracion.put('/configurazione/roles/:id', async (req, res) => {
 rutasConfiguracion.get('/configurazione/:risorsa', async (req, res) => {
   const catalogo = obtenerCatalogo(req.params.risorsa);
   if (!catalogo) return res.status(404).json({ errore: 'Risorsa non configurabile' });
-  return res.json(await consultar(catalogo.listado));
+  return res.json(await consultar(consultaListado(catalogo), [req.empresaId]));
 });
 
 rutasConfiguracion.post('/configurazione/:risorsa', async (req, res) => {

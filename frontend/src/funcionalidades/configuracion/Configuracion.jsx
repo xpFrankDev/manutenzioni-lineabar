@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Ban, ChevronLeft, ChevronRight, Pencil, Plus, Search } from 'lucide-react';
+import { Ban, Building2, ChevronLeft, ChevronRight, Pencil, Plus, Search } from 'lucide-react';
 import { llamarApi } from '../../compartido/api/cliente.js';
 import { useAvisos } from '../../compartido/componentes/Avisos.jsx';
+import { FormularioEmpresa } from './FormularioEmpresa.jsx';
 import { FormularioRegistro } from './FormularioRegistro.jsx';
 import { PermisosRoles } from './PermisosRoles.jsx';
 import { SkeletonList } from '../../compartido/componentes/Skeleton.jsx';
@@ -19,7 +20,7 @@ export function Configuracion({ c }) {
   const [cargando, setCargando] = useState(false);
 
   const cargar = async () => {
-    if (!recurso || recurso === 'roles') return;
+    if (!recurso || recurso === 'roles' || recurso === 'azienda') return;
     setCargando(true);
     try {
       const [listado, listaProveedores, listaClientes] = await Promise.all([
@@ -71,6 +72,11 @@ export function Configuracion({ c }) {
           </div>
         </header>
         <section className="settings-grid">
+          <button onClick={() => setRecurso('azienda')}>
+            <i><Building2 size={21} /></i>
+            <span><b>{c.company}</b><small>{c.companyHelp}</small></span>
+            <ChevronRight size={18} />
+          </button>
           {RECURSOS_CONFIGURABLES.map(([clave, Icono, etiqueta]) => (
             <button key={clave} onClick={() => setRecurso(clave)}>
               <i>
@@ -90,6 +96,9 @@ export function Configuracion({ c }) {
 
   if (recurso === 'roles') {
     return <PermisosRoles c={c} alVolver={() => setRecurso(null)} />;
+  }
+  if (recurso === 'azienda') {
+    return <FormularioEmpresa c={c} alVolver={() => setRecurso(null)} />;
   }
 
   const { Icono, etiqueta } = metadatosDeRecurso(recurso);

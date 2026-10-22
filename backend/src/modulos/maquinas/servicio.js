@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { consultar, consultarUno, ejecutar } from '../../base-datos/pool.js';
 import { nuevoId } from '../../utilidades/identificadores.js';
 import { analizarImagenEntrada } from '../../utilidades/imagenes.js';
+import { empresaActual } from '../../intermedios/contexto-empresa.js';
 
 export const TIPOS_MAQUINA = ['macchina_caffe', 'produttore_ghiaccio', 'lavastoviglie', 'filtro', 'addolcitore'];
 
@@ -39,32 +40,35 @@ export function normalizarMaquina(datos) {
  */
 export async function resolverMarca(maquina, conexion) {
   if (maquina.fk_marca) {
-    const marca = await consultarUno('SELECT id FROM marche WHERE id=? AND stato="attivo"', [maquina.fk_marca], conexion);
+    const marca = await consultarUno('SELECT id FROM marche WHERE id=? AND fk_azienda=? AND stato="attivo"', [maquina.fk_marca, empresaActual()], conexion);
     if (!marca) throw new Error('Marca non trovata');
     return marca.id;
   }
 
   if (maquina.fk_fornitore) {
-    const fornitore = await consultarUno('SELECT nome FROM fornitori WHERE id=? AND stato="attivo"', [maquina.fk_fornitore], conexion);
+    const fornitore = await consultarUno('SELECT nome FROM fornitori WHERE id=? AND fk_azienda=? AND stato="attivo"', [maquina.fk_fornitore, empresaActual()], conexion);
     if (!fornitore) throw new Error('Fornitore non trovato');
-    await conexion.execute('INSERT IGNORE INTO marche (id,nome) VALUES (?,?)', [nuevoId(), fornitore.nome]);
-    const marca = await consultarUno('SELECT id FROM marche WHERE nome=?', [fornitore.nome], conexion);
+    await conexion.execute('INSERT IGNORE INTO marche (id,fk_azienda,nome) VALUES (?,?,?)', [nuevoId(), empresaActual(), fornitore.nome]);
+    const marca = await consultarUno('SELECT id FROM marche WHERE nome=? AND fk_azienda=?', [fornitore.nome, empresaActual()], conexion);
     return marca.id;
   }
 
-  const marca = await consultarUno('SELECT id FROM marche WHERE stato="attivo" ORDER BY id LIMIT 1', [], conexion);
+  const marca = await consultarUno('SELECT id FROM marche WHERE fk_azienda=? AND stato="attivo" ORDER BY id LIMIT 1', [empresaActual()], conexion);
   if (!marca) throw new Error('Configura almeno una marca');
   return marca.id;
 }
 
 export async function crearMaquina(conexion, datos, usuarioId) {
   const maquina = normalizarMaquina(datos);
+  const cliente = await consultarUno('SELECT id FROM clienti WHERE id=? AND fk_azienda=? AND stato="attivo"', [maquina.fk_cliente, empresaActual()], conexion);
+  if (!cliente) throw new Error('Cliente non disponibile');
   const marcaId = await resolverMarca(maquina, conexion);
   const id = nuevoId();
   await conexion.execute(
-    'INSERT INTO macchine (id,fk_cliente,fk_marca,fk_fornitore,codice_unico,matricola,tipo_macchina,modello,stato,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+    'INSERT INTO macchine (id,fk_azienda,fk_cliente,fk_marca,fk_fornitore,codice_unico,matricola,tipo_macchina,modello,stato,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
     [
       id,
+      empresaActual(),
       maquina.fk_cliente,
       marcaId,
       maquina.fk_fornitore,
@@ -83,9 +87,11 @@ export async function crearMaquina(conexion, datos, usuarioId) {
 
 export async function actualizarMaquina(conexion, id, datos, usuarioId) {
   const maquina = normalizarMaquina(datos);
+  const cliente = await consultarUno('SELECT id FROM clienti WHERE id=? AND fk_azienda=? AND stato="attivo"', [maquina.fk_cliente, empresaActual()], conexion);
+  if (!cliente) throw new Error('Cliente non disponibile');
   const marcaId = await resolverMarca(maquina, conexion);
   await conexion.execute(
-    'UPDATE macchine SET fk_cliente=?,fk_marca=?,fk_fornitore=?,codice_unico=?,matricola=?,tipo_macchina=?,modello=?,stato=?,utente_modifica=? WHERE id=?',
+    'UPDATE macchine SET fk_cliente=?,fk_marca=?,fk_fornitore=?,codice_unico=?,matricola=?,tipo_macchina=?,modello=?,stato=?,utente_modifica=? WHERE id=? AND fk_azienda=?',
     [
       maquina.fk_cliente,
       marcaId,
@@ -96,7 +102,8 @@ export async function actualizarMaquina(conexion, id, datos, usuarioId) {
       maquina.modello,
       maquina.stato,
       usuarioId,
-      id
+      id,
+      empresaActual()
     ]
   );
   return { id, marcaId };
@@ -113,6 +120,11 @@ export async function otorgarAccesoMaquina(conexion, maquinaId, usuarioId) {
 /** Un administrador ve todas las máquinas; un técnico solo las autorizadas. */
 export async function puedeAccederMaquina(usuario, maquinaId) {
   if (!usuario) return false;
+  const maquina = await consultarUno('SELECT 1 ok FROM macchine WHERE id=? AND fk_azienda=? AND stato="attivo"', [
+    maquinaId,
+    empresaActual()
+  ]);
+  if (!maquina) return false;
   if (usuario.ruolo !== 'tecnico') return true;
   const fila = await consultarUno(
     'SELECT 1 ok FROM macchine_utenti WHERE fk_macchina=? AND fk_utente=? AND stato="attivo"',
@@ -134,13 +146,22 @@ export async function listarAccesosMaquina(maquinaId) {
        FROM utenti u
        JOIN ruoli r ON r.id=u.fk_ruolo
        LEFT JOIN macchine_utenti mu ON mu.fk_macchina=? AND mu.fk_utente=u.id AND mu.stato="attivo"
-      WHERE r.codice="tecnico" AND u.stato="attivo"
+      WHERE r.codice="tecnico" AND u.stato="attivo" AND u.fk_azienda=?
       ORDER BY u.nome`,
-    [maquinaId]
+    [maquinaId, empresaActual()]
   );
 }
 
 export async function sincronizarAccesosMaquina(conexion, maquinaId, usuarios, actorId) {
+  if (usuarios.length) {
+    const marcadores = usuarios.map(() => '?').join(',');
+    const permitidos = await consultar(
+      `SELECT id FROM utenti WHERE fk_azienda=? AND stato="attivo" AND id IN (${marcadores})`,
+      [empresaActual(), ...usuarios],
+      conexion
+    );
+    if (permitidos.length !== usuarios.length) throw new Error('Usuarios no válidos para esta empresa');
+  }
   await conexion.execute('UPDATE macchine_utenti SET stato="inattivo",utente_modifica=? WHERE fk_macchina=?', [
     actorId,
     maquinaId
@@ -166,8 +187,8 @@ export async function obtenerDetalleMaquina(maquinaId) {
        LEFT JOIN fornitori cf ON cf.id=c.fk_fornitore
        LEFT JOIN fornitori f ON f.id=m.fk_fornitore
        LEFT JOIN marche ma ON ma.id=m.fk_marca
-      WHERE m.id=?`,
-    [maquinaId]
+      WHERE m.id=? AND m.fk_azienda=?`,
+    [maquinaId, empresaActual()]
   );
   if (!maquina) return null;
 
@@ -180,9 +201,9 @@ export async function obtenerDetalleMaquina(maquinaId) {
        JOIN utenti u ON u.id=m.fk_tecnico
        LEFT JOIN boletas_manutenzioni bm ON bm.fk_manutenzione=m.id AND bm.stato="attivo"
        LEFT JOIN boletas b ON b.id=bm.fk_boleta AND b.stato<>"annullata"
-      WHERE mm.fk_macchina=? AND m.stato="attivo"
+      WHERE mm.fk_macchina=? AND m.fk_azienda=? AND m.stato="attivo"
       ORDER BY m.data DESC,m.id DESC`,
-    [maquinaId]
+    [maquinaId, empresaActual()]
   );
 
   if (manutenzioni.length) {
@@ -206,9 +227,9 @@ export async function obtenerDetalleMaquina(maquinaId) {
     `SELECT c.id,c.prossima_manutenzione,c.frequenza_mesi,c.stato_calendario,p.nome pezzo
        FROM calendario_manutenzioni_macchine c
        LEFT JOIN pezzi p ON p.id=c.fk_pezzo
-      WHERE c.fk_macchina=? AND c.stato="attivo"
+      WHERE c.fk_macchina=? AND c.fk_azienda=? AND c.stato="attivo"
       ORDER BY c.prossima_manutenzione`,
-    [maquinaId]
+    [maquinaId, empresaActual()]
   );
 
   return { ...maquina, foto, manutenzioni, prossime };

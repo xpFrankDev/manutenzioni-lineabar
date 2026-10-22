@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { entorno } from '../configuracion/entorno.js';
 import { compararSeguro, esMetodoSeguro } from './cookies.js';
+import { contextoEmpresa } from './contexto-empresa.js';
 
 export const ROLES_ADMINISTRADOR = ['amministratore'];
 
@@ -42,7 +43,10 @@ export function exigirSesion(req, res, siguiente) {
     }
   }
 
-  return siguiente();
+  const empresaId = req.utente.empresaId;
+  if (!empresaId) return res.status(401).json({ errore: 'Sessione da rinnovare' });
+  req.empresaId = empresaId;
+  return contextoEmpresa.run({ empresaId, usuarioId: req.utente.sub }, siguiente);
 }
 
 export function autorizar(...ruoli) {

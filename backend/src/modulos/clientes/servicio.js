@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { consultarUno } from '../../base-datos/pool.js';
 import { nuevoId } from '../../utilidades/identificadores.js';
+import { empresaActual } from '../../intermedios/contexto-empresa.js';
 
 export const esquemaCliente = z.object({
   nome: z.string().trim().min(2).max(160),
@@ -43,7 +44,7 @@ async function prefijoCliente(cliente, conexion) {
   if (cliente.codice) return null;
   if (cliente.tipo_cliente === 'privato') return 'PRIV';
   if (!cliente.fk_fornitore) throw new Error('Seleziona un fornitore per il cliente collegato');
-  const fornitore = await consultarUno('SELECT codice FROM fornitori WHERE id=? AND stato="attivo"', [cliente.fk_fornitore], conexion);
+  const fornitore = await consultarUno('SELECT codice FROM fornitori WHERE id=? AND fk_azienda=? AND stato="attivo"', [cliente.fk_fornitore, empresaActual()], conexion);
   if (!fornitore) throw new Error('Fornitore non trovato');
   return fornitore.codice;
 }
@@ -52,8 +53,8 @@ export async function siguienteCodigoCliente(cliente, conexion) {
   if (cliente.codice) return cliente.codice;
   const prefijo = await prefijoCliente(cliente, conexion);
   const fila = await consultarUno(
-    'SELECT COALESCE(MAX(CAST(SUBSTRING(codice, ?) AS UNSIGNED)),0) ultimo FROM clienti WHERE codice LIKE ?',
-    [prefijo.length + 2, `${prefijo}-%`],
+    'SELECT COALESCE(MAX(CAST(SUBSTRING(codice, ?) AS UNSIGNED)),0) ultimo FROM clienti WHERE fk_azienda=? AND codice LIKE ?',
+    [prefijo.length + 2, empresaActual(), `${prefijo}-%`],
     conexion
   );
   return `${prefijo}-${String(Number(fila?.ultimo ?? 0) + 1).padStart(4, '0')}`;
@@ -73,9 +74,10 @@ export async function crearCliente(conexion, datos, usuarioId, intentos = 5) {
     const id = nuevoId();
     try {
       await conexion.execute(
-        'INSERT INTO clienti (id,fk_fornitore,tipo_cliente,codice,nome,indirizzo,url_mappe,latitudine,longitudine,citta,stato,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
+        'INSERT INTO clienti (id,fk_azienda,fk_fornitore,tipo_cliente,codice,nome,indirizzo,url_mappe,latitudine,longitudine,citta,stato,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
         [
           id,
+          empresaActual(),
           cliente.fk_fornitore,
           cliente.tipo_cliente,
           codigo,

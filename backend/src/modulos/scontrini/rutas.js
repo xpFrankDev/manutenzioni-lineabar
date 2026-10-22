@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { enTransaccion } from '../../base-datos/pool.js';
 import { limiteOcr } from '../../intermedios/limite.js';
 import { exigirSesion } from '../../intermedios/sesion.js';
@@ -17,7 +18,7 @@ rutasScontrini.post('/scontrini/analisi', limiteOcr, exigirSesion, async (req, r
     const resultado = await analizarScontrino({
       imagen: req.body?.immagine,
       usuarioId: req.utente.sub,
-      clienteId: req.body?.clienteId ? Number(req.body.clienteId) : null
+      clienteId: z.string().uuid().nullable().optional().parse(req.body?.clienteId ?? null)
     });
     return res.status(201).json(resultado);
   } catch (error) {

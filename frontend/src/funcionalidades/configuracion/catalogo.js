@@ -1,4 +1,4 @@
-import { Boxes, Building2, Coffee, Factory, Package, Palette, Settings, ShieldCheck, SlidersHorizontal, Users } from 'lucide-react';
+import { Boxes, Building2, Clock3, Coffee, Factory, Package, Palette, Settings, ShieldCheck, SlidersHorizontal, Truck, Users } from 'lucide-react';
 
 export const RECURSOS_CONFIGURABLES = [
   ['fornitori', Factory, 'suppliers'],
@@ -7,6 +7,8 @@ export const RECURSOS_CONFIGURABLES = [
   ['marche', Palette, 'brands'],
   ['pezzi', Package, 'pieces'],
   ['modelli', Boxes, 'models'],
+  ['furgoni', Truck, 'vehicles'],
+  ['tipi_lavoro', Clock3, 'workTypes'],
   ['caratteristiche', Settings, 'characteristics'],
   ['utenti', Users, 'users'],
   ['parametri', SlidersHorizontal, 'parameters'],

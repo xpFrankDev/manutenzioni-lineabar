@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { consultar, consultarUno, enTransaccion } from '../../base-datos/pool.js';
 import { alcanceTecnico, exigirSesion } from '../../intermedios/sesion.js';
+import { empresaActual } from '../../intermedios/contexto-empresa.js';
 import { nuevoId } from '../../utilidades/identificadores.js';
 import { crearIntervento } from '../interventos/servicio.js';
 import { obtenerParametros } from '../parametros/servicio.js';
@@ -10,9 +11,10 @@ import { calcularTotales, proximoCodigoBoleta } from './servicio.js';
 export const rutasBoletas = Router();
 
 async function puedeAccederBoleta(req, id) {
+  const boleta = await consultarUno('SELECT id,fk_tecnico FROM boletas WHERE id=? AND fk_azienda=?', [id, empresaActual()]);
+  if (!boleta) return false;
   if (req.utente.ruolo !== 'tecnico') return true;
-  const fila = await consultarUno('SELECT id FROM boletas WHERE id=? AND fk_tecnico=?', [id, req.utente.sub]);
-  return Boolean(fila);
+  return String(boleta.fk_tecnico) === String(req.utente.sub);
 }
 
 rutasBoletas.get('/boletas', exigirSesion, async (req, res) => {
@@ -20,8 +22,8 @@ rutasBoletas.get('/boletas', exigirSesion, async (req, res) => {
   const filas = await consultar(
     'SELECT b.id,b.codice_boleta,b.data,b.prezzo_totale,b.stato,c.nome cliente,c.indirizzo,u.nome tecnico,mq.codice_unico,mq.modello,COALESCE(f.nome,ma.nome) marca,m.esito FROM boletas b JOIN clienti c ON c.id=b.fk_cliente JOIN utenti u ON u.id=b.fk_tecnico JOIN boletas_manutenzioni bm ON bm.fk_boleta=b.id AND bm.stato="attivo" JOIN manutenzioni m ON m.id=bm.fk_manutenzione JOIN boletas_macchine bmq ON bmq.fk_boleta=b.id AND bmq.stato="attivo" JOIN macchine mq ON mq.id=bmq.fk_macchina LEFT JOIN fornitori f ON f.id=mq.fk_fornitore LEFT JOIN marche ma ON ma.id=mq.fk_marca WHERE b.stato<>"annullata"' +
       alcance.sql +
-      ' ORDER BY b.data DESC,b.id DESC',
-    alcance.valores
+      ' AND b.fk_azienda=? ORDER BY b.data DESC,b.id DESC',
+    [...alcance.valores, empresaActual()]
   );
   res.json(filas);
 });
@@ -31,8 +33,8 @@ rutasBoletas.get('/boletas/:id', exigirSesion, async (req, res) => {
     return res.status(403).json({ errore: 'Boleta non assegnata' });
   }
   const boleta = (await consultar(
-    'SELECT b.id,b.codice_boleta,b.data,b.prezzo_totale,b.stato,b.fk_scontrino,c.id cliente_id,c.nome cliente,c.indirizzo,u.nome tecnico,m.id manutenzione_id,m.ubicazione,m.note,m.esito,m.ore,m.ora,m.persone,mq.id macchina_id,mq.codice_unico,mq.modello,COALESCE(f.nome,ma.nome) marca FROM boletas b JOIN clienti c ON c.id=b.fk_cliente JOIN utenti u ON u.id=b.fk_tecnico JOIN boletas_manutenzioni bm ON bm.fk_boleta=b.id AND bm.stato="attivo" JOIN manutenzioni m ON m.id=bm.fk_manutenzione JOIN boletas_macchine bmq ON bmq.fk_boleta=b.id AND bmq.stato="attivo" JOIN macchine mq ON mq.id=bmq.fk_macchina LEFT JOIN fornitori f ON f.id=mq.fk_fornitore LEFT JOIN marche ma ON ma.id=mq.fk_marca WHERE b.id=?',
-    [req.params.id]
+    'SELECT b.id,b.codice_boleta,b.data,b.prezzo_totale,b.stato,b.fk_scontrino,c.id cliente_id,c.nome cliente,c.indirizzo,u.nome tecnico,m.id manutenzione_id,m.ubicazione,m.note,m.esito,m.ore,m.ora,m.persone,mq.id macchina_id,mq.codice_unico,mq.modello,COALESCE(f.nome,ma.nome) marca FROM boletas b JOIN clienti c ON c.id=b.fk_cliente JOIN utenti u ON u.id=b.fk_tecnico JOIN boletas_manutenzioni bm ON bm.fk_boleta=b.id AND bm.stato="attivo" JOIN manutenzioni m ON m.id=bm.fk_manutenzione JOIN boletas_macchine bmq ON bmq.fk_boleta=b.id AND bmq.stato="attivo" JOIN macchine mq ON mq.id=bmq.fk_macchina LEFT JOIN fornitori f ON f.id=mq.fk_fornitore LEFT JOIN marche ma ON ma.id=mq.fk_marca WHERE b.id=? AND b.fk_azienda=?',
+    [req.params.id, empresaActual()]
   ))[0];
   if (!boleta) return res.status(404).json({ errore: 'Boleta non trovata' });
 
@@ -72,9 +74,10 @@ rutasBoletas.post('/boletas', exigirSesion, async (req, res) => {
       );
       const boletaId = nuevoId();
       await conexion.execute(
-        'INSERT INTO boletas (id,fk_cliente,fk_tecnico,fk_scontrino,codice_boleta,data,prezzo_totale,utente_crea,utente_modifica,stato) VALUES (?,?,?,?,?,?,?,?,?,"emessa")',
+        'INSERT INTO boletas (id,fk_azienda,fk_cliente,fk_tecnico,fk_scontrino,codice_boleta,data,prezzo_totale,utente_crea,utente_modifica,stato) VALUES (?,?,?,?,?,?,?,?,?,?,"emessa")',
         [
           boletaId,
+          empresaActual(),
           intervento.clienteId,
           req.utente.sub,
           entrada.data.scontrinoId ?? null,
@@ -99,8 +102,8 @@ rutasBoletas.post('/boletas', exigirSesion, async (req, res) => {
       );
       if (entrada.data.scontrinoId) {
         await conexion.execute(
-          'UPDATE scontrini SET fk_cliente=?,stato_analisi="confermato",utente_modifica=? WHERE id=?',
-          [intervento.clienteId, req.utente.sub, entrada.data.scontrinoId]
+          'UPDATE scontrini SET fk_cliente=?,stato_analisi="confermato",utente_modifica=? WHERE id=? AND fk_azienda=?',
+          [intervento.clienteId, req.utente.sub, entrada.data.scontrinoId, empresaActual()]
         );
       }
       return {
@@ -124,9 +127,9 @@ rutasBoletas.put('/boletas/:id', exigirSesion, async (req, res) => {
     return res.status(403).json({ errore: 'Boleta non assegnata' });
   }
 
-  const boleta = await consultarUno('SELECT id FROM boletas WHERE id=?', [req.params.id]);
+  const boleta = await consultarUno('SELECT id FROM boletas WHERE id=? AND fk_azienda=?', [req.params.id, empresaActual()]);
   if (!boleta) return res.status(404).json({ errore: 'Boleta non trovata' });
 
-  await consultar('UPDATE boletas SET stato=?,utente_modifica=? WHERE id=?', [estado.data, req.utente.sub, req.params.id]);
+  await consultar('UPDATE boletas SET stato=?,utente_modifica=? WHERE id=? AND fk_azienda=?', [estado.data, req.utente.sub, req.params.id, empresaActual()]);
   return res.json({ id: req.params.id, stato: estado.data });
 });

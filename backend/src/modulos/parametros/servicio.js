@@ -1,4 +1,5 @@
 import { consultar, pool } from '../../base-datos/pool.js';
+import { empresaActual } from '../../intermedios/contexto-empresa.js';
 
 export const PARAMETROS_POR_DEFECTO = {
   tariffa_manodopera_ora: 65,
@@ -8,7 +9,7 @@ export const PARAMETROS_POR_DEFECTO = {
 };
 
 export async function obtenerParametros(conexion = pool) {
-  const filas = await consultar('SELECT chiave,valore FROM parametros WHERE stato="attivo"', [], conexion);
+  const filas = await consultar('SELECT chiave,valore FROM parametros WHERE fk_azienda=? AND stato="attivo"', [empresaActual()], conexion);
   const parametros = { ...PARAMETROS_POR_DEFECTO };
   for (const fila of filas) {
     const numero = Number(fila.valore);
@@ -20,8 +21,8 @@ export async function obtenerParametros(conexion = pool) {
 export async function actualizarParametros(entradas, usuarioId, conexion = pool) {
   for (const entrada of entradas) {
     await conexion.execute(
-      'UPDATE parametros SET valore=?,utente_modifica=? WHERE chiave=? AND stato="attivo"',
-      [String(entrada.valore), usuarioId, entrada.chiave]
+      'UPDATE parametros SET valore=?,utente_modifica=? WHERE fk_azienda=? AND chiave=? AND stato="attivo"',
+      [String(entrada.valore), usuarioId, empresaActual(), entrada.chiave]
     );
   }
 }

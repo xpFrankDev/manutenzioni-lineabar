@@ -4,6 +4,7 @@ import { consultarUno, pool } from '../../base-datos/pool.js';
 import { nuevoId } from '../../utilidades/identificadores.js';
 import { crearCliente, normalizarCliente } from '../clientes/servicio.js';
 import { actualizarMaquina, crearMaquina, normalizarMaquina, TIPOS_MAQUINA } from '../maquinas/servicio.js';
+import { empresaActual } from '../../intermedios/contexto-empresa.js';
 
 const ROLES_USUARIO = ['amministratore', 'tecnico'];
 
@@ -22,6 +23,7 @@ const esquemaCaracteristicas = z
 export const catalogoConfigurable = {
   fornitori: {
     tabla: 'fornitori',
+    filtro: 'fk_azienda',
     columnas: ['codice', 'nome', 'stato'],
     listado: 'SELECT id,codice,nome,stato FROM fornitori ORDER BY stato DESC,nome',
     validar: (datos) => ({
@@ -32,6 +34,7 @@ export const catalogoConfigurable = {
   },
   clienti: {
     tabla: 'clienti',
+    filtro: 'c.fk_azienda',
     propio: true,
     listado:
       'SELECT c.id,c.codice,c.nome,c.tipo_cliente,c.indirizzo,c.url_mappe,c.latitudine,c.longitudine,c.citta,c.fk_fornitore,c.ultimo_manutenzione,c.stato,f.nome fornitore FROM clienti c LEFT JOIN fornitori f ON f.id=c.fk_fornitore ORDER BY c.stato DESC,c.nome',
@@ -39,6 +42,7 @@ export const catalogoConfigurable = {
   },
   macchine: {
     tabla: 'macchine',
+    filtro: 'm.fk_azienda',
     propio: true,
     listado:
       'SELECT m.id,m.codice_unico,m.matricola,m.tipo_macchina,m.modello,m.fk_cliente,m.fk_fornitore,m.fk_marca,m.stato,c.nome cliente,c.indirizzo,c.tipo_cliente,cf.nome cliente_fornitore,COALESCE(f.nome,ma.nome) fornitore FROM macchine m JOIN clienti c ON c.id=m.fk_cliente LEFT JOIN fornitori cf ON cf.id=c.fk_fornitore LEFT JOIN fornitori f ON f.id=m.fk_fornitore LEFT JOIN marche ma ON ma.id=m.fk_marca ORDER BY m.stato DESC,c.nome,m.modello',
@@ -46,6 +50,7 @@ export const catalogoConfigurable = {
   },
   marche: {
     tabla: 'marche',
+    filtro: 'fk_azienda',
     columnas: ['nome', 'stato'],
     listado: 'SELECT id,nome,stato FROM marche ORDER BY stato DESC,nome',
     validar: (datos) => ({
@@ -55,6 +60,7 @@ export const catalogoConfigurable = {
   },
   pezzi: {
     tabla: 'pezzi',
+    filtro: 'p.fk_azienda',
     columnas: ['fk_marca', 'nome', 'codice_unico', 'tipo_macchina', 'prezzo', 'intervallo_mesi', 'stato'],
     listado:
       'SELECT p.id,p.nome,p.codice_unico,p.tipo_macchina,CAST(p.prezzo AS DECIMAL(10,2)) prezzo,p.intervallo_mesi,p.fk_marca,p.stato,ma.nome marca,(SELECT GROUP_CONCAT(CONCAT(ptc.fk_tipo_caratteristica,":",CAST(ptc.quantita AS DOUBLE)) SEPARATOR ";") FROM pezzi_tipi_caratteristiche ptc WHERE ptc.fk_pezzo=p.id AND ptc.stato="attivo") caratteristiche,(SELECT GROUP_CONCAT(CONCAT(t.nome," ",CAST(ptc.quantita AS DOUBLE),COALESCE(CONCAT(" ",t.unita_misura),"")) SEPARATOR ", ") FROM pezzi_tipi_caratteristiche ptc JOIN tipi_caratteristiche t ON t.id=ptc.fk_tipo_caratteristica WHERE ptc.fk_pezzo=p.id AND ptc.stato="attivo") caratteristiche_label FROM pezzi p LEFT JOIN marche ma ON ma.id=p.fk_marca ORDER BY p.stato DESC,p.nome',
@@ -74,6 +80,7 @@ export const catalogoConfigurable = {
   },
   caratteristiche: {
     tabla: 'tipi_caratteristiche',
+    filtro: 'fk_azienda',
     columnas: ['codice_unico', 'nome', 'unita_misura', 'stato'],
     listado: 'SELECT id,codice_unico,nome,unita_misura,stato FROM tipi_caratteristiche ORDER BY stato DESC,nome',
     validar: (datos) => ({
@@ -85,6 +92,7 @@ export const catalogoConfigurable = {
   },
   utenti: {
     tabla: 'utenti',
+    filtro: 'u.fk_azienda',
     propio: true,
     protegido: true,
     listado:
@@ -100,6 +108,7 @@ export const catalogoConfigurable = {
   },
   modelli: {
     tabla: 'modelli_macchina',
+    filtro: 'm.fk_azienda',
     columnas: ['fk_marca', 'nome', 'tipo_macchina', 'immagine_url', 'scheda_url', 'note', 'stato'],
     listado:
       'SELECT m.id,m.fk_marca,m.nome,m.tipo_macchina,m.immagine_url,m.scheda_url,m.note,m.stato,ma.nome marca FROM modelli_macchina m JOIN marche ma ON ma.id=m.fk_marca ORDER BY m.stato DESC,ma.nome,m.nome',
@@ -113,8 +122,36 @@ export const catalogoConfigurable = {
       stato: datos.stato === 'inattivo' ? 'inattivo' : 'attivo'
     })
   },
+  furgoni: {
+    tabla: 'furgoni',
+    filtro: 'fk_azienda',
+    columnas: ['nome', 'targa', 'capacita_tecnici', 'note', 'stato'],
+    listado: 'SELECT id,nome,targa,capacita_tecnici,note,stato FROM furgoni ORDER BY stato DESC,nome',
+    validar: (datos) => ({
+      nome: z.string().trim().min(2).max(100).parse(datos.nome),
+      targa: z.string().trim().max(30).optional().nullable().parse(datos.targa || null),
+      capacita_tecnici: z.coerce.number().int().min(1).max(20).parse(datos.capacita_tecnici ?? 1),
+      note: z.string().trim().max(255).optional().nullable().parse(datos.note || null),
+      stato: datos.stato === 'inattivo' ? 'inattivo' : 'attivo'
+    })
+  },
+  tipi_lavoro: {
+    tabla: 'tipi_lavoro',
+    filtro: 'fk_azienda',
+    columnas: ['codice', 'nome', 'durata_minuti', 'tipo_macchina', 'note', 'stato'],
+    listado: 'SELECT id,codice,nome,durata_minuti,tipo_macchina,note,stato FROM tipi_lavoro ORDER BY stato DESC,nome',
+    validar: (datos) => ({
+      codice: z.string().trim().min(2).max(40).parse(datos.codice).toUpperCase(),
+      nome: z.string().trim().min(2).max(120).parse(datos.nome),
+      durata_minuti: z.coerce.number().int().min(5).max(1440).parse(datos.durata_minuti ?? 90),
+      tipo_macchina: datos.tipo_macchina ? z.enum(TIPOS_MAQUINA).parse(datos.tipo_macchina) : null,
+      note: z.string().trim().max(255).optional().nullable().parse(datos.note || null),
+      stato: datos.stato === 'inattivo' ? 'inattivo' : 'attivo'
+    })
+  },
   parametri: {
     tabla: 'parametros',
+    filtro: 'fk_azienda',
     columnas: ['chiave', 'valore', 'descrizione', 'stato'],
     listado: 'SELECT id,chiave,valore,descrizione,stato FROM parametros ORDER BY chiave',
     validar: (datos) => ({
@@ -128,6 +165,11 @@ export const catalogoConfigurable = {
 
 export function obtenerCatalogo(recurso) {
   return catalogoConfigurable[recurso] ?? null;
+}
+
+/** Añade el filtro de empresa a cualquier listado con ORDER BY. */
+export function consultaListado(catalogo) {
+  return catalogo.listado.replace(/\s+ORDER BY/i, ` WHERE ${catalogo.filtro ?? 'fk_azienda'}=? ORDER BY`);
 }
 
 export async function prepararRegistro(recurso, catalogo, datos, opciones = {}) {
@@ -149,9 +191,10 @@ async function crearUsuario(conexion, registro, usuarioId) {
   const id = nuevoId();
   try {
     await conexion.execute(
-      'INSERT INTO utenti (id,fk_ruolo,codice_usuario,nome,email,password_hash,stato,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,?,?)',
+      'INSERT INTO utenti (id,fk_azienda,fk_ruolo,codice_usuario,nome,email,password_hash,stato,utente_crea,utente_modifica) VALUES (?,?,?,?,?,?,?,?,?,?)',
       [
         id,
+        empresaActual(),
         await idRol(registro.ruolo, conexion),
         registro.codice_usuario,
         registro.nome,
@@ -173,7 +216,7 @@ async function actualizarUsuario(conexion, id, registro, usuarioId) {
   const hash = registro.password ? await bcrypt.hash(registro.password, 12) : null;
   try {
     await conexion.execute(
-      'UPDATE utenti SET fk_ruolo=?,codice_usuario=?,nome=?,email=?,password_hash=COALESCE(?,password_hash),stato=?,utente_modifica=? WHERE id=?',
+      'UPDATE utenti SET fk_ruolo=?,codice_usuario=?,nome=?,email=?,password_hash=COALESCE(?,password_hash),stato=?,utente_modifica=? WHERE id=? AND fk_azienda=?',
       [
         await idRol(registro.ruolo, conexion),
         registro.codice_usuario,
@@ -182,7 +225,8 @@ async function actualizarUsuario(conexion, id, registro, usuarioId) {
         hash,
         registro.stato,
         usuarioId,
-        id
+        id,
+        empresaActual()
       ]
     );
   } catch (error) {
@@ -218,10 +262,10 @@ export async function crearRegistro(recurso, catalogo, registro, usuarioId) {
   }
 
   const id = nuevoId();
-  const columnas = ['id', ...catalogo.columnas, 'utente_crea', 'utente_modifica'];
+  const columnas = ['id', 'fk_azienda', ...catalogo.columnas, 'utente_crea', 'utente_modifica'];
   await pool.execute(
     `INSERT INTO ${catalogo.tabla} (${columnas.join(',')}) VALUES (${columnas.map(() => '?').join(',')})`,
-    [id, ...catalogo.columnas.map((columna) => registro[columna]), usuarioId, usuarioId]
+    [id, empresaActual(), ...catalogo.columnas.map((columna) => registro[columna]), usuarioId, usuarioId]
   );
   if (recurso === 'pezzi') {
     await sincronizarCaracteristicas(pool, id, registro.caratteristiche, usuarioId);
@@ -232,7 +276,7 @@ export async function crearRegistro(recurso, catalogo, registro, usuarioId) {
 export async function actualizarRegistro(recurso, catalogo, id, registro, usuarioId) {
   if (recurso === 'clienti') {
     await pool.execute(
-      'UPDATE clienti SET fk_fornitore=?,tipo_cliente=?,codice=COALESCE(?,codice),nome=?,indirizzo=?,url_mappe=?,latitudine=?,longitudine=?,citta=?,stato=?,utente_modifica=? WHERE id=?',
+      'UPDATE clienti SET fk_fornitore=?,tipo_cliente=?,codice=COALESCE(?,codice),nome=?,indirizzo=?,url_mappe=?,latitudine=?,longitudine=?,citta=?,stato=?,utente_modifica=? WHERE id=? AND fk_azienda=?',
       [
         registro.fk_fornitore,
         registro.tipo_cliente,
@@ -245,7 +289,8 @@ export async function actualizarRegistro(recurso, catalogo, id, registro, usuari
         registro.citta,
         registro.stato,
         usuarioId,
-        id
+        id,
+        empresaActual()
       ]
     );
     return;
@@ -260,8 +305,8 @@ export async function actualizarRegistro(recurso, catalogo, id, registro, usuari
   }
 
   await pool.execute(
-    `UPDATE ${catalogo.tabla} SET ${catalogo.columnas.map((columna) => `${columna}=?`).join(',')},utente_modifica=? WHERE id=?`,
-    [...catalogo.columnas.map((columna) => registro[columna]), usuarioId, id]
+    `UPDATE ${catalogo.tabla} SET ${catalogo.columnas.map((columna) => `${columna}=?`).join(',')},utente_modifica=? WHERE id=? AND fk_azienda=?`,
+    [...catalogo.columnas.map((columna) => registro[columna]), usuarioId, id, empresaActual()]
   );
   if (recurso === 'pezzi') {
     await sincronizarCaracteristicas(pool, id, registro.caratteristiche, usuarioId);
@@ -272,5 +317,5 @@ export async function desactivarRegistro(recurso, catalogo, id, usuarioId) {
   if (catalogo.protegido && String(id) === String(usuarioId)) {
     throw new Error('Non puoi disattivare il tuo stesso utente');
   }
-  await pool.execute(`UPDATE ${catalogo.tabla} SET stato="inattivo",utente_modifica=? WHERE id=?`, [usuarioId, id]);
+  await pool.execute(`UPDATE ${catalogo.tabla} SET stato="inattivo",utente_modifica=? WHERE id=? AND fk_azienda=?`, [usuarioId, id, empresaActual()]);
 }

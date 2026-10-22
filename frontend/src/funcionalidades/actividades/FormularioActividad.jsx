@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Save, X } from 'lucide-react';
+import { Mic, Save, Square, X } from 'lucide-react';
 import { llamarApi } from '../../compartido/api/cliente.js';
 import { useAvisos } from '../../compartido/componentes/Avisos.jsx';
 import { SkeletonSheet } from '../../compartido/componentes/Skeleton.jsx';
 import { useBloquearScroll } from '../../compartido/utilidades/scroll.js';
+import { fechaDeHoy } from '../../compartido/utilidades/formato.js';
 
 function maquinasDelCliente(maquinas, clienteId) {
   return clienteId ? maquinas.filter((maquina) => String(maquina.cliente_id) === String(clienteId)) : maquinas;
@@ -20,12 +21,29 @@ export function FormularioActividad({ c, alCerrar, alGuardar }) {
     macchinaId: '',
     tecnici: [],
     osservazione: '',
-    scadenza: '',
+    scadenza: fechaDeHoy(),
     priorita: 'normale',
     richiedeAppuntamento: false
   });
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(true);
+  const [vozDisponible, setVozDisponible] = useState(false);
+  const [escuchando, setEscuchando] = useState(false);
+  const [avisoVoz, setAvisoVoz] = useState('');
+  const [reconocimiento, setReconocimiento] = useState(null);
+
+  useEffect(() => {
+    const Reconocimiento = typeof window !== 'undefined' ? window.SpeechRecognition || window.webkitSpeechRecognition : null;
+    setVozDisponible(Boolean(Reconocimiento));
+    if (Reconocimiento) {
+      const instancia = new Reconocimiento();
+      instancia.lang = 'it-IT';
+      instancia.continuous = false;
+      instancia.interimResults = false;
+      instancia.maxAlternatives = 1;
+      setReconocimiento(instancia);
+    }
+  }, []);
 
   useEffect(() => {
     Promise.all([llamarApi('/clienti'), llamarApi('/maquinas'), llamarApi('/tecnici')])
@@ -44,6 +62,44 @@ export function FormularioActividad({ c, alCerrar, alGuardar }) {
       'tecnici',
       formulario.tecnici.includes(id) ? formulario.tecnici.filter((tecnico) => tecnico !== id) : [...formulario.tecnici, id]
     );
+
+  async function dictar() {
+    if (!reconocimiento || escuchando) return;
+    setAvisoVoz('');
+    setEscuchando(true);
+    reconocimiento.onresult = async (evento) => {
+      const texto = evento.results?.[0]?.[0]?.transcript?.trim();
+      if (!texto) return;
+      establecer('osservazione', texto);
+      try {
+        const sugerencia = await llamarApi('/attivita/interpreta', {
+          method: 'POST',
+          body: JSON.stringify({ testo: texto })
+        });
+        if (sugerencia.clienteId) establecer('clienteId', sugerencia.clienteId);
+        if (sugerencia.macchinaId) establecer('macchinaId', sugerencia.macchinaId);
+        if (sugerencia.priorita) establecer('priorita', sugerencia.priorita);
+        setAvisoVoz(c.voiceRecognized);
+      } catch {
+        setAvisoVoz(c.voiceRecognized);
+      }
+    };
+    reconocimiento.onerror = () => {
+      setAvisoVoz(c.voiceError);
+      setEscuchando(false);
+    };
+    reconocimiento.onend = () => setEscuchando(false);
+    try {
+      reconocimiento.start();
+    } catch {
+      setEscuchando(false);
+    }
+  }
+
+  function detenerDictado() {
+    reconocimiento?.stop?.();
+    setEscuchando(false);
+  }
 
   async function guardar(evento) {
     evento.preventDefault();
@@ -131,6 +187,18 @@ export function FormularioActividad({ c, alCerrar, alGuardar }) {
               placeholder={c.problemPlaceholder}
             />
           </label>
+          <div className="voice-box">
+            {vozDisponible ? (
+              <button type="button" className={escuchando ? 'voice-button listening' : 'voice-button'} onClick={escuchando ? detenerDictado : dictar}>
+                {escuchando ? <Square size={15} /> : <Mic size={15} />}
+                {escuchando ? c.listening : c.dictateProblem}
+              </button>
+            ) : (
+              <small>{c.voiceNotAvailable}</small>
+            )}
+            <small>{c.voiceDisclosure}</small>
+            {avisoVoz && <small className="voice-note">{avisoVoz}</small>}
+          </div>
           <label>
             {c.estimatedDate}
             <input required type="date" value={formulario.scadenza} onChange={(e) => establecer('scadenza', e.target.value)} />

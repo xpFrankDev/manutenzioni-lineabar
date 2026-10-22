@@ -54,8 +54,8 @@ rutasCalendario.post('/calendario/:id/programar', exigirSesion, exigirPermiso('c
         req.utente.sub
       );
       await conexion.execute(
-        'UPDATE calendario_manutenzioni_macchine SET fk_attivita=?,stato_calendario="programmato",utente_modifica=? WHERE id=?',
-        [actividadId, req.utente.sub, req.params.id]
+        'UPDATE calendario_manutenzioni_macchine SET fk_attivita=?,stato_calendario="programmato",utente_modifica=? WHERE id=? AND fk_azienda=?',
+        [actividadId, req.utente.sub, req.params.id, req.empresaId]
       );
       return actividadId;
     });

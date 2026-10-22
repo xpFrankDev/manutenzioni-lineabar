@@ -79,6 +79,7 @@ export function Actividades({ c, idioma, usuario }) {
                     {actividad.cliente} · {formatearFecha(actividad.scadenza, idioma)}
                   </small>
                   <small>{actividad.osservazione}</small>
+                  {actividad.motivo_priorita && <small className="priority-reason">{actividad.motivo_priorita}</small>}
                 </span>
               </button>
               <div className="operation-foot">

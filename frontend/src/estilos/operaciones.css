@@ -178,3 +178,13 @@ html[data-theme=dark] .photo-delete{background:#40201f;border-color:#6b3431;colo
 
 .maps-link{display:inline-flex;align-items:center;gap:5px;margin-top:4px;color:var(--blue);font:800 12px Manrope;text-decoration:none}
 .maps-link:hover{text-decoration:underline}
+
+.company-form{display:grid;gap:12px;max-width:720px;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+.company-form .primary{width:max-content}
+
+.voice-box{display:grid;gap:5px;padding:10px;border:1px dashed var(--line);border-radius:10px}
+.voice-button{width:max-content;min-height:38px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--blue);font:800 12px Manrope;display:inline-flex;align-items:center;gap:6px;padding:0 10px}
+.voice-button.listening{border-color:#d94141;color:#d94141}
+.voice-box small{color:var(--muted);font-size:10px;line-height:1.4}
+.voice-note{color:var(--blue)!important}
+.priority-reason{color:#d97706!important;font-weight:700}

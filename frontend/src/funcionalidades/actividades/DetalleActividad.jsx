@@ -6,6 +6,7 @@ import { formatearFecha } from '../../compartido/utilidades/formato.js';
 function estadoDeActividad(actividad) {
   if (actividad.stato_attivita === 'completata') return 'completata';
   if (actividad.stato_attivita === 'in_corso') return 'in_corso';
+  if (actividad.stato_attivita === 'in_viaggio') return 'in_viaggio';
   return actividad.priorita === 'alta' ? 'vencido' : 'aperta';
 }
 
@@ -55,6 +56,10 @@ export function DetalleActividad({ actividad, c, idioma, alCerrar, alTomar, alCe
             </span>
             <Estado value={estadoDeActividad(actividad)} c={c} />
           </div>
+
+          {actividad.motivo_priorita && (
+            <p className="priority-reason detail-note">{actividad.motivo_priorita}</p>
+          )}
 
           <h3>{c.problem}</h3>
           <p className="detail-note">{actividad.osservazione || '—'}</p>

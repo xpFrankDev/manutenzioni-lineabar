@@ -127,6 +127,30 @@ export function FormularioRegistro({ recurso, registro, proveedores, clientes, c
             </>
           )}
 
+          {recurso === 'furgoni' && (
+            <>
+              {campo('nome', c.vehicle, 'Furgone 1')}
+              {campo('targa', c.plate, 'AB123CD')}
+              {campo('capacita_tecnici', c.capacity, '2', 'number')}
+              {campo('note', c.notes, '')}
+            </>
+          )}
+
+          {recurso === 'tipi_lavoro' && (
+            <>
+              {campo('codice', c.supplierCode, 'MANUTENZIONE')}
+              {campo('nome', c.workType, 'Manutenzione ordinaria')}
+              {campo('durata_minuti', c.durationMinutes, '90', 'number')}
+              <Campo label={c.machineType}>
+                <select value={formulario.tipo_macchina || ''} onChange={(e) => establecer('tipo_macchina', e.target.value)}>
+                  <option value="">{c.all}</option>
+                  {TIPOS_MAQUINA.map((tipo) => <option key={tipo} value={tipo}>{nombreTipoMaquina(tipo, c)}</option>)}
+                </select>
+              </Campo>
+              {campo('note', c.notes, '')}
+            </>
+          )}
+
           {recurso === 'modelli' && (
             <>
               <Campo label={c.brand}>

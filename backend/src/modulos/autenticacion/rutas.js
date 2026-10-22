@@ -6,8 +6,10 @@ import { exigirSesion } from '../../intermedios/sesion.js';
 import { esquemaAcceso } from './esquemas.js';
 import { permisosDeRol } from '../permisos/servicio.js';
 import { cerrarSesion, iniciarSesion, renovarSesion } from './servicio.js';
+import { rutasGoogle } from './google.js';
 
 export const rutasAutenticacion = Router();
+rutasAutenticacion.use(rutasGoogle);
 
 function datosDelCliente(req) {
   return { agente: req.headers['user-agent'], ip: req.ip };
@@ -17,6 +19,7 @@ function responderSesion(res, sesion) {
   establecerCookiesSesion(res, { token: sesion.token, refresco: sesion.refresco });
   return res.json({
     utente: sesion.utente,
+    empresa: sesion.empresa,
     scadeInMinuti: sesion.scadeInMinuti,
     scadeInGiorni: sesion.scadeInGiorni,
     csrf: sesion.csrf,
@@ -58,5 +61,19 @@ rutasAutenticacion.post('/auth/logout', async (req, res) => {
 
 rutasAutenticacion.get('/auth/sessione', exigirSesion, async (req, res) => {
   const menus = await permisosDeRol(req.utente.ruolo);
-  return res.json({ utente: req.utente, csrf: req.utente.csrf ?? null, menus });
+  return res.json({
+    utente: {
+      id: req.utente.sub,
+      nome: req.utente.nome,
+      ruolo: req.utente.ruolo,
+      empresa_id: req.utente.empresaId
+    },
+    empresa: {
+      id: req.utente.empresaId,
+      nome: req.utente.empresaNome,
+      logo_url: req.utente.empresaLogo
+    },
+    csrf: req.utente.csrf ?? null,
+    menus
+  });
 });

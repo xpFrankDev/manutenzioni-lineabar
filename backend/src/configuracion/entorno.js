@@ -78,6 +78,17 @@ const contrasenaBaseDatos = secreto('LINEABAR_DB_PASSWORD', process.env.LINEABAR
   min: produccion ? 1 : 0,
   obligatorio: produccion
 });
+const googleClientId = texto('GOOGLE_CLIENT_ID', process.env.GOOGLE_CLIENT_ID, { max: 300 });
+const googleClientSecret = texto('GOOGLE_CLIENT_SECRET', process.env.GOOGLE_CLIENT_SECRET, { max: 500 });
+if (Boolean(googleClientId) !== Boolean(googleClientSecret)) {
+  throw new Error('GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET deben configurarse juntos.');
+}
+const googleRedirectUri = texto('GOOGLE_REDIRECT_URI', process.env.GOOGLE_REDIRECT_URI, {
+  defecto: origenesPermitidos(process.env.CORS_ORIGIN)[0]
+    ? `${origenesPermitidos(process.env.CORS_ORIGIN)[0]}/lineabar/api/auth/google/callback`
+    : '',
+  max: 1000
+});
 const nombreBaseDatos = texto('MARIADB_DATABASE', process.env.MARIADB_DATABASE, {
   min: produccion ? 1 : 0,
   max: 64,
@@ -99,6 +110,11 @@ export const entorno = {
     max: 5
   }),
   origenesPermitidos: origenesPermitidos(process.env.CORS_ORIGIN),
+  google: {
+    clientId: googleClientId,
+    clientSecret: googleClientSecret,
+    redirectUri: googleRedirectUri
+  },
   cookies: {
     nombreSesion: 'lineabar_sesion',
     nombreRefresco: 'lineabar_refresco',

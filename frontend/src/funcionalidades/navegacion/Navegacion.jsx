@@ -43,7 +43,7 @@ async function salir(establecerAbierto) {
   location.assign(RUTA_ACCESO);
 }
 
-export function Navegacion({ pagina, ir, abierto, establecerAbierto, c, tareasPendientes = 0, avisosCalendario = 0, usuario }) {
+export function Navegacion({ pagina, ir, abierto, establecerAbierto, c, tareasPendientes = 0, avisosCalendario = 0, usuario, empresa }) {
   const esAdministrador = usuario?.ruolo !== 'tecnico';
   const enlaces = ENLACES.filter(([id]) => puedeVer(usuario, id));
   const etiquetaRol = usuario?.ruolo === 'tecnico' ? c.technician : c.administrator;
@@ -55,10 +55,10 @@ export function Navegacion({ pagina, ir, abierto, establecerAbierto, c, tareasPe
       <div className={`scrim ${abierto ? 'show' : ''}`} onClick={() => establecerAbierto(false)} />
       <aside className={`side ${abierto ? 'open' : ''}`}>
         <div className="side-brand">
-          <i>LB</i>
+          {empresa?.logo_url ? <img className="side-logo" src={empresa.logo_url} alt="" /> : <i>LB</i>}
           <span>
-            <b>Linea Bar</b>
-            <small>di Gianluca Testa</small>
+            <b>{empresa?.nome ?? 'Linea Bar'}</b>
+            <small>{usuario?.nome ?? ''}</small>
           </span>
           <button onClick={() => establecerAbierto(false)}>
             <X />

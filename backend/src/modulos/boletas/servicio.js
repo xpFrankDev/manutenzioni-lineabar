@@ -1,4 +1,5 @@
 import { consultarUno } from '../../base-datos/pool.js';
+import { empresaActual } from '../../intermedios/contexto-empresa.js';
 
 export const TARIFA_MANO_DE_OBRA_HORA = 65;
 
@@ -12,8 +13,8 @@ export function formatearCodigoBoleta(fecha, progresivo) {
 
 export async function proximoCodigoBoleta(conexion, fecha) {
   const fila = await consultarUno(
-    'SELECT COUNT(*) totale FROM boletas WHERE codice_boleta LIKE ?',
-    [`${prefijoCodigo(fecha)}%`],
+    'SELECT COUNT(*) totale FROM boletas WHERE fk_azienda=? AND codice_boleta LIKE ?',
+    [empresaActual(), `${prefijoCodigo(fecha)}%`],
     conexion
   );
   return formatearCodigoBoleta(fecha, Number(fila?.totale ?? 0) + 1);

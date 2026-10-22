@@ -23,7 +23,15 @@ function hashRefresco(token) {
 
 function firmarAcceso(usuario, csrf) {
   return jwt.sign(
-    { sub: usuario.id, nome: usuario.nome, ruolo: usuario.ruolo, csrf },
+    {
+      sub: usuario.id,
+      nome: usuario.nome,
+      ruolo: usuario.ruolo,
+      empresaId: usuario.empresa_id,
+      empresaNome: usuario.empresa_nome,
+      empresaLogo: usuario.empresa_logo,
+      csrf
+    },
     entorno.sesion.secreto,
     { expiresIn: `${entorno.sesion.minutosVigencia}m`, issuer: entorno.sesion.emisor, algorithm: 'HS256' }
   );
@@ -64,20 +72,45 @@ async function crearRefresco(usuarioId, meta = {}) {
   return token;
 }
 
-export async function iniciarSesion(codigoUsuario, contrasena, meta = {}) {
-  const usuario = await consultarUno(
-    'SELECT u.id,u.nome,u.codice_usuario,u.password_hash,r.codice ruolo FROM utenti u JOIN ruoli r ON r.id=u.fk_ruolo WHERE u.codice_usuario=? AND u.stato="attivo"',
-    [codigoUsuario]
-  );
-  const coincide = await bcrypt.compare(contrasena, usuario?.password_hash ?? HASH_FICTICIO);
-  if (!usuario || !coincide) return null;
-
+async function sesionDeUsuario(usuario, meta = {}) {
   await pool.execute('DELETE FROM sesiones_refresco WHERE expira_at < DATE_SUB(NOW(), INTERVAL 30 DAY)');
   const csrf = generarCsrf();
   const token = firmarAcceso(usuario, csrf);
   const refresco = await crearRefresco(usuario.id, meta);
   const menus = await permisosDeRol(usuario.ruolo);
   return respuestaSesion(usuario, token, refresco, csrf, menus);
+}
+
+export async function iniciarSesion(codigoUsuario, contrasena, meta = {}) {
+  const usuario = await consultarUno(
+    'SELECT u.id,u.nome,u.codice_usuario,u.password_hash,u.fk_azienda empresa_id,a.nome empresa_nome,a.logo_url empresa_logo,r.codice ruolo FROM utenti u JOIN ruoli r ON r.id=u.fk_ruolo JOIN aziende a ON a.id=u.fk_azienda AND a.stato="attivo" WHERE u.codice_usuario=? AND u.stato="attivo"',
+    [codigoUsuario]
+  );
+  const coincide = await bcrypt.compare(contrasena, usuario?.password_hash ?? HASH_FICTICIO);
+  if (!usuario || !coincide) return null;
+  return sesionDeUsuario(usuario, meta);
+}
+
+/**
+ * Vincula una cuenta Google solo a un usuario previamente autorizado por email.
+ * No crea usuarios: el alta sigue siendo una acción administrativa.
+ */
+export async function iniciarSesionGoogle(email, googleSub, meta = {}) {
+  const usuario = await consultarUno(
+    'SELECT u.id,u.nome,u.codice_usuario,u.google_sub,u.fk_azienda empresa_id,a.nome empresa_nome,a.logo_url empresa_logo,r.codice ruolo FROM utenti u JOIN ruoli r ON r.id=u.fk_ruolo JOIN aziende a ON a.id=u.fk_azienda AND a.stato="attivo" WHERE u.email=? AND u.stato="attivo"',
+    [email]
+  );
+  if (!usuario) return null;
+  if (usuario.google_sub && usuario.google_sub !== googleSub) return null;
+  if (!usuario.google_sub) {
+    await pool.execute('UPDATE utenti SET google_sub=?,utente_modifica=? WHERE id=? AND google_sub IS NULL', [
+      googleSub,
+      usuario.id,
+      usuario.id
+    ]);
+    usuario.google_sub = googleSub;
+  }
+  return sesionDeUsuario(usuario, meta);
 }
 
 /**
@@ -112,7 +145,7 @@ export async function renovarSesion(refresco, meta = {}) {
   if (!Number(sesion.vigente)) return null;
 
   const usuario = await consultarUno(
-    'SELECT u.id,u.nome,u.codice_usuario,r.codice ruolo FROM utenti u JOIN ruoli r ON r.id=u.fk_ruolo WHERE u.id=? AND u.stato="attivo"',
+    'SELECT u.id,u.nome,u.codice_usuario,u.fk_azienda empresa_id,a.nome empresa_nome,a.logo_url empresa_logo,r.codice ruolo FROM utenti u JOIN ruoli r ON r.id=u.fk_ruolo JOIN aziende a ON a.id=u.fk_azienda AND a.stato="attivo" WHERE u.id=? AND u.stato="attivo"',
     [sesion.fk_utente]
   );
   if (!usuario) return null;

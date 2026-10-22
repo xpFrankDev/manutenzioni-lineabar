@@ -42,6 +42,7 @@ export function App() {
   const [tareasPendientes, setTareasPendientes] = useState(0);
   const [avisosCalendario, setAvisosCalendario] = useState(0);
   const [usuario, setUsuario] = useState(null);
+  const [empresa, setEmpresa] = useState(null);
   const [sesion, setSesion] = useState(location.pathname === RUTA_ACCESO ? 'skip' : 'check');
 
   useEffect(() => {
@@ -57,6 +58,7 @@ export function App() {
       .then((datos) => {
         guardarSesion(datos);
         setUsuario({ ...datos.utente, menus: datos.menus ?? [] });
+        setEmpresa(datos.empresa ?? null);
         setSesion('ok');
       })
       .catch(() => {});
@@ -189,7 +191,8 @@ export function App() {
           <Menu />
         </button>
         <button className="brand-home" onClick={() => ir('dashboard')}>
-          Linea Bar
+          {empresa?.logo_url && <img className="brand-logo" src={empresa.logo_url} alt="" />}
+          {empresa?.nome ?? 'Linea Bar'}
         </button>
         <Toggle idioma={idioma} cambiarIdioma={setIdioma} tema={tema} cambiarTema={setTema} />
       </header>
@@ -202,6 +205,7 @@ export function App() {
         tareasPendientes={tareasPendientes}
         avisosCalendario={avisosCalendario}
         usuario={usuario}
+        empresa={empresa}
       />
       {contenido}
       {(puedeVer(usuario, 'mantenimientos') || puedeVer(usuario, 'boletas')) && (

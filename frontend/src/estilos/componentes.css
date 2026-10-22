@@ -56,3 +56,13 @@ html[data-theme=dark] .aviso-toast.error{background:#40201f;border-color:#6b3431
 @media(max-width:420px){.permission-row{grid-template-columns:1fr 1fr;gap:6px 12px}.permission-row b{grid-column:1/-1}.permission-row .check-line:last-child{grid-column:2}}
 
 .config-records article>.status{flex:0 0 auto;margin-left:auto}
+
+.login-divider{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:11px}
+.login-divider::before,.login-divider::after{content:'';height:1px;background:var(--line);flex:1}
+.google-login{min-height:46px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font-weight:800;display:flex;align-items:center;justify-content:center;gap:7px;text-decoration:none}
+.google-login:hover{border-color:var(--blue);color:var(--blue)}
+
+.brand-logo{width:25px;height:25px;object-fit:contain;border-radius:6px;vertical-align:middle;margin-right:7px}
+.side-logo{width:35px;height:35px;object-fit:contain;border-radius:9px;background:var(--pale);padding:3px}
+
+.login-logo{width:58px;height:58px;margin:auto;display:block;border-radius:14px}

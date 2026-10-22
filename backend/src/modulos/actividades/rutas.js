@@ -9,6 +9,7 @@ import {
   contarPendientes,
   crearActividad,
   iniciarActividad,
+  interpretarActividad,
   listarActividades,
   obtenerActividad,
   puedeAccederActividad
@@ -17,6 +18,14 @@ import {
 export const rutasActividades = Router();
 
 rutasActividades.get('/attivita', exigirSesion, async (req, res) => res.json(await listarActividades(req)));
+
+rutasActividades.post('/attivita/interpreta', exigirSesion, exigirPermiso('tareas'), async (req, res) => {
+  try {
+    return res.json(await interpretarActividad(req.body?.testo));
+  } catch (error) {
+    return res.status(422).json({ errore: error.message || 'Testo non interpretabile' });
+  }
+});
 
 rutasActividades.get('/attivita/contatore', exigirSesion, async (req, res) =>
   res.json({ pendenti: await contarPendientes(req) })
@@ -70,8 +79,9 @@ rutasActividades.post('/attivita/:id/chiudi', exigirSesion, async (req, res) => 
     return res.status(403).json({ errore: 'Attività non assegnata' });
   }
 
-  const actividad = await consultarUno('SELECT fk_cliente,fk_macchina FROM attivita WHERE id=? AND stato_attivita<>"completata"', [
-    req.params.id
+  const actividad = await consultarUno('SELECT fk_cliente,fk_macchina FROM attivita WHERE id=? AND fk_azienda=? AND stato_attivita<>"completata"', [
+    req.params.id,
+    req.empresaId
   ]);
   if (!actividad) return res.status(409).json({ errore: 'Attività non disponibile' });
 
@@ -86,6 +96,6 @@ rutasActividades.post('/attivita/:id/chiudi', exigirSesion, async (req, res) => 
 });
 
 rutasActividades.delete('/attivita/:id', exigirSesion, exigirPermiso('tareas', 'editar'), async (req, res) => {
-  await consultarUno('UPDATE attivita SET stato="inattivo",utente_modifica=? WHERE id=?', [req.utente.sub, req.params.id]);
+  await consultarUno('UPDATE attivita SET stato="inattivo",utente_modifica=? WHERE id=? AND fk_azienda=?', [req.utente.sub, req.params.id, req.empresaId]);
   res.status(204).end();
 });

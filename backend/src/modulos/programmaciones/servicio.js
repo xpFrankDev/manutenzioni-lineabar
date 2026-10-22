@@ -2,6 +2,7 @@ import { consultar, consultarUno, enTransaccion } from '../../base-datos/pool.js
 import { nuevoId } from '../../utilidades/identificadores.js';
 import { generarProgramaConIa } from '../../ai/programmazione/servicio.js';
 import { crearActividad } from '../actividades/servicio.js';
+import { empresaActual } from '../../intermedios/contexto-empresa.js';
 
 const RADIO_TIERRA_KM = 6371;
 const PRIORIDAD = { alta: 0, normale: 1, bassa: 2 };
@@ -39,6 +40,7 @@ export async function listarCandidatos({ fecha, conexion = undefined }) {
        JOIN clienti cl ON cl.id=m.fk_cliente
        LEFT JOIN pezzi p ON p.id=c.fk_pezzo
       WHERE c.stato='attivo'
+        AND c.fk_azienda=?
         AND c.stato_calendario='programmato'
         AND cl.latitudine IS NOT NULL AND cl.longitudine IS NOT NULL
         AND c.prossima_manutenzione<=DATE_ADD(?, INTERVAL 90 DAY)
@@ -47,7 +49,7 @@ export async function listarCandidatos({ fecha, conexion = undefined }) {
            WHERE a.id=c.fk_attivita AND a.stato='attivo' AND a.stato_attivita<>'completata'
         ))
       ORDER BY c.prossima_manutenzione ASC,cl.nome ASC`,
-    [fecha],
+    [empresaActual(), fecha],
     conexion
   );
 }
@@ -147,8 +149,20 @@ function normalizarPlan(plan, candidatos, maxTappe, minutosMin, minutosMax) {
   };
 }
 
-export async function generarProgramacion({ data, tecnicoId, maxTappe, minutosMin, minutosMax, usuarioId }) {
+export async function generarProgramacion({ data, tecnicoId, maxTappe, minutosMin, minutosMax, furgoneId = null, tipoLavoroId = null, numeroTecnici = 1, oraPartenza = null, usuarioId }) {
   return enTransaccion(async (conexion) => {
+    const tecnico = await consultarUno('SELECT id FROM utenti WHERE id=? AND fk_azienda=? AND stato="attivo"', [tecnicoId, empresaActual()], conexion);
+    if (!tecnico) throw new Error('Tecnico non disponibile');
+    const furgone = furgoneId
+      ? await consultarUno('SELECT id,capacita_tecnici FROM furgoni WHERE id=? AND fk_azienda=? AND stato="attivo"', [furgoneId, empresaActual()], conexion)
+      : null;
+    if (furgoneId && !furgone) throw new Error('Furgone non disponibile');
+    if (furgone && Number(numeroTecnici) > Number(furgone.capacita_tecnici)) throw new Error('Il furgone non ha abbastanza posti');
+    const tipoLavoro = tipoLavoroId
+      ? await consultarUno('SELECT id,durata_minuti FROM tipi_lavoro WHERE id=? AND fk_azienda=? AND stato="attivo"', [tipoLavoroId, empresaActual()], conexion)
+      : null;
+    if (tipoLavoroId && !tipoLavoro) throw new Error('Tipo di lavoro non disponibile');
+    const azienda = await consultarUno('SELECT latitudine,longitudine,citta,ora_partenza FROM aziende WHERE id=?', [empresaActual()], conexion);
     const candidatos = await listarCandidatos({ fecha: data, conexion });
     if (!candidatos.length) throw new Error('Non ci sono manutenzioni da programmare per questa data');
 
@@ -183,12 +197,19 @@ export async function generarProgramacion({ data, tecnicoId, maxTappe, minutosMi
     const id = nuevoId();
     await conexion.execute(
       `INSERT INTO programmazioni
-        (id,data,fk_tecnico,stato,max_tappe,minuti_min,minuti_max,origine,riepilogo,payload_ia,utente_crea,utente_modifica)
-       VALUES (?,?,?,'pianificata',?,?,?,?,?,?,?,?)`,
+        (id,fk_azienda,data,fk_tecnico,fk_furgone,fk_tipo_lavoro,numero_tecnici,ora_partenza,durata_stimata_minuti,minuti_totali,stato,max_tappe,minuti_min,minuti_max,origine,riepilogo,payload_ia,utente_crea,utente_modifica)
+       VALUES (?,?,?,?,?,?,?,?,?,?,'pianificata',?,?,?,?,?,?,?,?)`,
       [
         id,
+        empresaActual(),
         data,
         tecnicoId,
+        furgoneId,
+        tipoLavoroId,
+        numeroTecnici,
+        oraPartenza || azienda?.ora_partenza || '08:00:00',
+        tipoLavoro?.durata_minuti ?? null,
+        null,
         maxTappe,
         minutosMin,
         minutosMax,
@@ -215,44 +236,57 @@ export async function generarProgramacion({ data, tecnicoId, maxTappe, minutosMi
           richiedeAppuntamento: true,
           fkProgrammazione: id,
           ordineTappa: tappa.ordine,
-          minutiDaPrecedente: tappa.minutiDaPrecedente
+          minutiDaPrecedente: tappa.minutiDaPrecedente,
+          fkTipoLavoro: tipoLavoroId,
+          durataStimataMinuti: tipoLavoro?.durata_minuti ?? null
         },
         usuarioId
       );
       await conexion.execute(
-        'UPDATE calendario_manutenzioni_macchine SET fk_attivita=?,stato_calendario="programmato",utente_modifica=? WHERE id=?',
-        [actividadId, usuarioId, candidato.candidatoId]
+        'UPDATE calendario_manutenzioni_macchine SET fk_attivita=?,stato_calendario="programmato",utente_modifica=? WHERE id=? AND fk_azienda=?',
+        [actividadId, usuarioId, candidato.candidatoId, empresaActual()]
       );
     }
 
-    return { id, origine: origen, tappe: plan.tappe.length, riepilogo: plan.riepilogo };
+    const durata = Number(tipoLavoro?.durata_minuti ?? 0);
+    const primerCandidato = candidatos.find((fila) => fila.candidatoId === plan.tappe[0]?.attivitaId);
+    const sede = {
+      clienteId: 'sede',
+      citta: azienda?.citta ?? '',
+      latitudine: azienda?.latitudine ?? null,
+      longitudine: azienda?.longitudine ?? null
+    };
+    const minutosSede = primerCandidato ? minutosViaje(sede, primerCandidato) ?? 0 : 0;
+    const total = minutosSede + plan.tappe.reduce((suma, tappa) => suma + Number(tappa.minutiDaPrecedente ?? 0) + durata, 0);
+    await conexion.execute('UPDATE programmazioni SET minuti_totali=? WHERE id=? AND fk_azienda=?', [total, id, empresaActual()]);
+    return { id, origine: origen, tappe: plan.tappe.length, riepilogo: plan.riepilogo, minutiTotali: total };
   });
 }
 
 export async function listarProgramaciones(usuario) {
   const esTecnico = usuario.ruolo === 'tecnico';
   return consultar(
-    `SELECT p.id,p.data,p.fk_tecnico,p.stato,p.max_tappe,p.minuti_min,p.minuti_max,p.origine,p.riepilogo,
+    `SELECT p.id,p.data,p.fk_tecnico,p.fk_furgone,p.fk_tipo_lavoro,p.numero_tecnici,p.ora_partenza,p.durata_stimata_minuti,p.minuti_totali,p.stato,p.max_tappe,p.minuti_min,p.minuti_max,p.origine,p.riepilogo,
             MAX(u.nome) tecnico,
             COUNT(a.id) tappe,
             COALESCE(SUM(a.stato_attivita='completata'),0) completate
        FROM programmazioni p
        LEFT JOIN utenti u ON u.id=p.fk_tecnico
        LEFT JOIN attivita a ON a.fk_programmazione=p.id AND a.stato='attivo'
-      WHERE p.stato_registro='attivo'${esTecnico ? ' AND (p.fk_tecnico=? OR p.fk_tecnico IS NULL)' : ''}
+      WHERE p.stato_registro='attivo' AND p.fk_azienda=?${esTecnico ? ' AND (p.fk_tecnico=? OR p.fk_tecnico IS NULL)' : ''}
       GROUP BY p.id
       ORDER BY p.data DESC,p.creato_at DESC`,
-    esTecnico ? [usuario.sub] : []
+    esTecnico ? [empresaActual(), usuario.sub] : [empresaActual()]
   );
 }
 
 export async function obtenerProgramacion(id, usuario) {
   const esTecnico = usuario.ruolo === 'tecnico';
   const programacion = await consultarUno(
-    `SELECT p.id,p.data,p.fk_tecnico,p.stato,p.max_tappe,p.minuti_min,p.minuti_max,p.origine,p.riepilogo,p.creato_at,p.modificato_at,u.nome tecnico
+    `SELECT p.id,p.data,p.fk_tecnico,p.fk_furgone,p.fk_tipo_lavoro,p.numero_tecnici,p.ora_partenza,p.durata_stimata_minuti,p.minuti_totali,p.stato,p.max_tappe,p.minuti_min,p.minuti_max,p.origine,p.riepilogo,p.creato_at,p.modificato_at,u.nome tecnico
        FROM programmazioni p LEFT JOIN utenti u ON u.id=p.fk_tecnico
-      WHERE p.id=? AND p.stato_registro='attivo'${esTecnico ? ' AND (p.fk_tecnico=? OR p.fk_tecnico IS NULL)' : ''}`,
-    esTecnico ? [id, usuario.sub] : [id]
+      WHERE p.id=? AND p.stato_registro='attivo' AND p.fk_azienda=?${esTecnico ? ' AND (p.fk_tecnico=? OR p.fk_tecnico IS NULL)' : ''}`,
+    esTecnico ? [id, empresaActual(), usuario.sub] : [id, empresaActual()]
   );
   if (!programacion) return null;
   const tappe = await consultar(
@@ -262,42 +296,43 @@ export async function obtenerProgramacion(id, usuario) {
        FROM attivita a
        JOIN clienti c ON c.id=a.fk_cliente
        LEFT JOIN macchine m ON m.id=a.fk_macchina
-      WHERE a.fk_programmazione=? AND a.stato='attivo'
+      WHERE a.fk_programmazione=? AND a.fk_azienda=? AND a.stato='attivo'
       ORDER BY a.ordine_tappa,a.id`,
-    [id]
+    [id, empresaActual()]
   );
   return { ...programacion, tappe };
 }
 
 export async function tomarProgramacion(id, usuario) {
   const programacion = await consultarUno(
-    "SELECT id,fk_tecnico,stato FROM programmazioni WHERE id=? AND stato_registro='attivo'",
-    [id]
+    "SELECT id,fk_tecnico,stato FROM programmazioni WHERE id=? AND fk_azienda=? AND stato_registro='attivo'",
+    [id, empresaActual()]
   );
   if (!programacion) return { estado: 'no_encontrada' };
   if (programacion.fk_tecnico && programacion.fk_tecnico !== usuario.sub && usuario.ruolo === 'tecnico') {
     return { estado: 'ajena' };
   }
   if (usuario.ruolo === 'tecnico' && !programacion.fk_tecnico) {
-    await consultar("UPDATE programmazioni SET fk_tecnico=?,stato='in_corso',utente_modifica=? WHERE id=?", [
+    await consultar("UPDATE programmazioni SET fk_tecnico=?,stato='in_corso',utente_modifica=? WHERE id=? AND fk_azienda=?", [
       usuario.sub,
       usuario.sub,
-      id
+      id,
+      empresaActual()
     ]);
   } else if (programacion.stato === 'pianificata') {
-    await consultar("UPDATE programmazioni SET stato='in_corso',utente_modifica=? WHERE id=?", [usuario.sub, id]);
+    await consultar("UPDATE programmazioni SET stato='in_corso',utente_modifica=? WHERE id=? AND fk_azienda=?", [usuario.sub, id, empresaActual()]);
   }
   return { estado: 'ok' };
 }
 
 export async function actualizarEstadoProgramacion(id, estado, usuario) {
   const programacion = await consultarUno(
-    "SELECT id,fk_tecnico FROM programmazioni WHERE id=? AND stato_registro='attivo'",
-    [id]
+    "SELECT id,fk_tecnico FROM programmazioni WHERE id=? AND fk_azienda=? AND stato_registro='attivo'",
+    [id, empresaActual()]
   );
   if (!programacion) return false;
   if (usuario.ruolo === 'tecnico' && programacion.fk_tecnico && programacion.fk_tecnico !== usuario.sub) return false;
-  await consultar('UPDATE programmazioni SET stato=?,utente_modifica=? WHERE id=?', [estado, usuario.sub, id]);
+  await consultar('UPDATE programmazioni SET stato=?,utente_modifica=? WHERE id=? AND fk_azienda=?', [estado, usuario.sub, id, empresaActual()]);
   return true;
 }
 
@@ -305,8 +340,8 @@ export async function actualizarEstadoActividad(id, estado, usuario) {
   const actividad = await consultarUno(
     `SELECT a.id,a.fk_assegnato,a.fk_programmazione,a.stato,
             EXISTS(SELECT 1 FROM attivita_tecnici at WHERE at.fk_attivita=a.id AND at.fk_tecnico=? AND at.stato='attivo') asignado
-       FROM attivita a WHERE a.id=? AND a.stato='attivo'`,
-    [usuario.sub, id]
+       FROM attivita a WHERE a.id=? AND a.fk_azienda=? AND a.stato='attivo'`,
+    [usuario.sub, id, empresaActual()]
   );
   if (!actividad) return { estado: 'no_encontrada' };
   if (
@@ -316,23 +351,24 @@ export async function actualizarEstadoActividad(id, estado, usuario) {
   ) {
     return { estado: 'ajena' };
   }
-  await consultar('UPDATE attivita SET stato_attivita=?,utente_modifica=? WHERE id=?', [estado, usuario.sub, id]);
+  await consultar('UPDATE attivita SET stato_attivita=?,utente_modifica=? WHERE id=? AND fk_azienda=?', [estado, usuario.sub, id, empresaActual()]);
   if (estado === 'completata') {
     await consultar(
-      'UPDATE calendario_manutenzioni_macchine SET stato_calendario="eseguito",fk_attivita=NULL,utente_modifica=? WHERE fk_attivita=?',
-      [usuario.sub, id]
+      'UPDATE calendario_manutenzioni_macchine SET stato_calendario="eseguito",fk_attivita=NULL,utente_modifica=? WHERE fk_attivita=? AND fk_azienda=?',
+      [usuario.sub, id, empresaActual()]
     );
   }
 
   if (actividad.fk_programmazione) {
     const pendientes = await consultarUno(
-      "SELECT COUNT(*) total FROM attivita WHERE fk_programmazione=? AND stato='attivo' AND stato_attivita<>'completata'",
-      [actividad.fk_programmazione]
+      "SELECT COUNT(*) total FROM attivita WHERE fk_programmazione=? AND fk_azienda=? AND stato='attivo' AND stato_attivita<>'completata'",
+      [actividad.fk_programmazione, empresaActual()]
     );
     if (Number(pendientes?.total ?? 0) === 0) {
-      await consultar("UPDATE programmazioni SET stato='completata',utente_modifica=? WHERE id=?", [
+      await consultar("UPDATE programmazioni SET stato='completata',utente_modifica=? WHERE id=? AND fk_azienda=?", [
         usuario.sub,
-        actividad.fk_programmazione
+        actividad.fk_programmazione,
+        empresaActual()
       ]);
     }
   }

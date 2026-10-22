@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { consultar, enTransaccion } from '../../base-datos/pool.js';
 import { alcanceTecnico, exigirSesion } from '../../intermedios/sesion.js';
+import { empresaActual } from '../../intermedios/contexto-empresa.js';
 import { esquemaIntervento } from './esquemas.js';
 import { crearIntervento, puedeAccederIntervento } from './servicio.js';
 
@@ -11,8 +12,8 @@ rutasInterventos.get('/interventi', exigirSesion, async (req, res) => {
   const filas = await consultar(
     'SELECT m.id,m.data,m.ubicazione,m.note,m.esito,m.stato,c.nome cliente,c.indirizzo,u.nome tecnico,mq.codice_unico,mq.modello,COALESCE(f.nome,ma.nome) marca,b.id boleta_id,b.codice_boleta FROM manutenzioni m LEFT JOIN clienti c ON c.id=m.fk_cliente JOIN utenti u ON u.id=m.fk_tecnico JOIN macchine_manutenzioni mm ON mm.fk_manutenzione=m.id AND mm.stato="attivo" JOIN macchine mq ON mq.id=mm.fk_macchina LEFT JOIN fornitori f ON f.id=mq.fk_fornitore LEFT JOIN marche ma ON ma.id=mq.fk_marca LEFT JOIN boletas_manutenzioni bm ON bm.fk_manutenzione=m.id AND bm.stato="attivo" LEFT JOIN boletas b ON b.id=bm.fk_boleta AND b.stato<>"annullata" WHERE m.stato="attivo"' +
       alcance.sql +
-      ' ORDER BY m.data DESC,m.id DESC',
-    alcance.valores
+      ' AND m.fk_azienda=? ORDER BY m.data DESC,m.id DESC',
+    [...alcance.valores, empresaActual()]
   );
   res.json(filas);
 });
@@ -22,8 +23,8 @@ rutasInterventos.get('/interventi/:id', exigirSesion, async (req, res) => {
     return res.status(403).json({ errore: 'Intervento non assegnato' });
   }
   const intervento = (await consultar(
-    'SELECT m.*,c.nome cliente,c.indirizzo,mq.codice_unico,mq.modello,COALESCE(f.nome,ma.nome) marca FROM manutenzioni m LEFT JOIN clienti c ON c.id=m.fk_cliente JOIN macchine_manutenzioni mm ON mm.fk_manutenzione=m.id AND mm.stato="attivo" JOIN macchine mq ON mq.id=mm.fk_macchina LEFT JOIN fornitori f ON f.id=mq.fk_fornitore LEFT JOIN marche ma ON ma.id=mq.fk_marca WHERE m.id=?',
-    [req.params.id]
+    'SELECT m.*,c.nome cliente,c.indirizzo,mq.codice_unico,mq.modello,COALESCE(f.nome,ma.nome) marca FROM manutenzioni m LEFT JOIN clienti c ON c.id=m.fk_cliente JOIN macchine_manutenzioni mm ON mm.fk_manutenzione=m.id AND mm.stato="attivo" JOIN macchine mq ON mq.id=mm.fk_macchina LEFT JOIN fornitori f ON f.id=mq.fk_fornitore LEFT JOIN marche ma ON ma.id=mq.fk_marca WHERE m.id=? AND m.fk_azienda=?',
+    [req.params.id, empresaActual()]
   ))[0];
   if (!intervento) return res.status(404).json({ errore: 'Intervento non trovato' });
 
@@ -32,8 +33,8 @@ rutasInterventos.get('/interventi/:id', exigirSesion, async (req, res) => {
     [req.params.id]
   );
   const prossime = await consultar(
-    'SELECT c.prossima_manutenzione,c.frequenza_mesi,p.nome pezzo FROM calendario_manutenzioni_macchine c LEFT JOIN pezzi p ON p.id=c.fk_pezzo WHERE c.fk_macchina=(SELECT fk_macchina FROM macchine_manutenzioni WHERE fk_manutenzione=? AND stato="attivo" LIMIT 1) AND c.stato="attivo" AND c.stato_calendario<>"sospeso" ORDER BY c.prossima_manutenzione',
-    [req.params.id]
+    'SELECT c.prossima_manutenzione,c.frequenza_mesi,p.nome pezzo FROM calendario_manutenzioni_macchine c LEFT JOIN pezzi p ON p.id=c.fk_pezzo WHERE c.fk_azienda=? AND c.fk_macchina=(SELECT fk_macchina FROM macchine_manutenzioni WHERE fk_manutenzione=? AND stato="attivo" LIMIT 1) AND c.stato="attivo" AND c.stato_calendario<>"sospeso" ORDER BY c.prossima_manutenzione',
+    [empresaActual(), req.params.id]
   );
   return res.json({ ...intervento, ricambi, prossime });
 });
@@ -61,7 +62,7 @@ rutasInterventos.put('/interventi/:id', exigirSesion, async (req, res) => {
 
   const dati = entrada.data;
   await consultar(
-    'UPDATE manutenzioni SET data=COALESCE(?,data),ora=COALESCE(?,ora),ubicazione=COALESCE(?,ubicazione),note=COALESCE(?,note),esito=COALESCE(?,esito),ore=COALESCE(?,ore),persone=COALESCE(?,persone),utente_modifica=? WHERE id=? AND stato="attivo"',
+    'UPDATE manutenzioni SET data=COALESCE(?,data),ora=COALESCE(?,ora),ubicazione=COALESCE(?,ubicazione),note=COALESCE(?,note),esito=COALESCE(?,esito),ore=COALESCE(?,ore),persone=COALESCE(?,persone),utente_modifica=? WHERE id=? AND fk_azienda=? AND stato="attivo"',
     [
       dati.data ?? null,
       dati.ora ?? null,
@@ -71,7 +72,8 @@ rutasInterventos.put('/interventi/:id', exigirSesion, async (req, res) => {
       dati.ore ?? null,
       dati.persone ?? null,
       req.utente.sub,
-      req.params.id
+      req.params.id,
+      empresaActual()
     ]
   );
   res.json({ id: req.params.id });
@@ -81,6 +83,6 @@ rutasInterventos.delete('/interventi/:id', exigirSesion, async (req, res) => {
   if (!(await puedeAccederIntervento(req, req.params.id))) {
     return res.status(403).json({ errore: 'Intervento non assegnato' });
   }
-  await consultar('UPDATE manutenzioni SET stato="inattivo",utente_modifica=? WHERE id=?', [req.utente.sub, req.params.id]);
+  await consultar('UPDATE manutenzioni SET stato="inattivo",utente_modifica=? WHERE id=? AND fk_azienda=?', [req.utente.sub, req.params.id, empresaActual()]);
   res.status(204).end();
 });
