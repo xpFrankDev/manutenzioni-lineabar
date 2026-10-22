@@ -742,6 +742,67 @@ test('flujo completo de Linea Bar', async (t) => {
     assert.ok(listadoAdmin.datos.some((fila) => fila.id === generado.datos.id && fila.stato === 'completata'));
   });
 
+
+  await t.test('prioridad automática, audio y aislamiento entre empresas', async () => {
+    const pasado = new Date(Date.now() - 45 * 86400000).toISOString().slice(0, 10);
+    const creada = await pedir(base, '/attivita', {
+      metodo: 'POST',
+      token: admin.token,
+      cuerpo: {
+        clienteId: clienteCampoId,
+        macchinaId: maquinaId,
+        osservazione: 'Guasto segnalato da oltre un mese senza intervento',
+        tecnici: [tecnico.utente.id],
+        scadenza: pasado,
+        priorita: 'normale',
+        richiedeAppuntamento: false
+      }
+    });
+    assert.equal(creada.estado, 201);
+    const tareas = await pedir(base, '/attivita', { token: admin.token });
+    const vencida = tareas.datos.find((fila) => fila.id === creada.datos.id);
+    assert.equal(vencida.priorita, 'alta');
+    assert.match(vencida.motivo_priorita, /oltre 30|45 giorni/);
+
+    const interpretada = await pedir(base, '/attivita/interpreta', {
+      metodo: 'POST',
+      token: admin.token,
+      cuerpo: { testo: `Il cliente Bar Campo ${SELLO} segnala un problema sulla macchina MC-PRUEBA-${SELLO}, perde acqua` }
+    });
+    assert.equal(interpretada.estado, 200);
+    assert.equal(interpretada.datos.clienteId, clienteCampoId);
+    assert.equal(interpretada.datos.macchinaId, maquinaId);
+    assert.equal(interpretada.datos.priorita, 'alta');
+
+    const empresa = await pedir(base, '/azienda', { token: admin.token });
+    assert.equal(empresa.estado, 200);
+    assert.equal(empresa.datos.codice, 'LINEABAR');
+    assert.equal(empresa.datos.logo_url, '/lineabar/logo-linea-bar.svg');
+
+    const otraEmpresaId = crypto.randomUUID();
+    const [rol] = await pool.execute("SELECT id FROM ruoli WHERE codice='amministratore'");
+    const [hash] = await pool.execute("SELECT password_hash FROM utenti WHERE codice_usuario=?", [ADMIN.codigo_usuario]);
+    const codigoOtra = `otra${SELLO}`.toLowerCase().slice(0, 40);
+    await pool.execute(
+      'INSERT INTO aziende (id,codice,nome,stato) VALUES (?,?,?,"attivo")',
+      [otraEmpresaId, `OTRA-${SELLO}`, `Otra Empresa ${SELLO}`]
+    );
+    await pool.execute(
+      'INSERT INTO utenti (id,fk_azienda,fk_ruolo,codice_usuario,nome,email,password_hash,stato) VALUES (?,?,?,?,?,?,?,"attivo")',
+      [crypto.randomUUID(), otraEmpresaId, rol[0].id, codigoOtra, `Admin Otra ${SELLO}`, `${codigoOtra}@lineabar.test`, hash[0].password_hash]
+    );
+    const otra = await iniciarSesion(base, codigoOtra, ADMIN.password);
+    assert.equal(otra.utente.empresa_id, otraEmpresaId);
+    const [clientesOtra, maquinasOtra, tareasOtra] = await Promise.all([
+      pedir(base, '/clienti', { token: otra.token }),
+      pedir(base, '/maquinas', { token: otra.token }),
+      pedir(base, '/attivita', { token: otra.token })
+    ]);
+    assert.deepEqual(clientesOtra.datos, []);
+    assert.deepEqual(maquinasOtra.datos, []);
+    assert.deepEqual(tareasOtra.datos, []);
+  });
+
   await t.test('defensas: inyección SQL, parámetros inválidos y límite de acceso', async () => {
     const inyeccion = await pedir(base, '/auth/login', {
       metodo: 'POST',
