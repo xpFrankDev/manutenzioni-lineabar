@@ -46,7 +46,13 @@ function respuestaSesion(usuario, token, refresco, csrf, menus) {
       id: usuario.id,
       nome: usuario.nome,
       codigo_usuario: usuario.codice_usuario,
-      ruolo: usuario.ruolo
+      ruolo: usuario.ruolo,
+      empresa_id: usuario.empresa_id
+    },
+    empresa: {
+      id: usuario.empresa_id,
+      nome: usuario.empresa_nome,
+      logo_url: usuario.empresa_logo
     },
     menus,
     scadeInMinuti: entorno.sesion.minutosVigencia,
