@@ -11,9 +11,9 @@ export const rutasCatalogos = Router();
 rutasCatalogos.get('/maquinas', exigirSesion, async (req, res) => {
   res.json(
     await consultar(
-      'SELECT m.id,m.codice_unico,m.matricola,m.modello,m.tipo_macchina,m.fk_marca,m.fk_fornitore,c.id cliente_id,c.nome cliente,c.indirizzo,c.tipo_cliente,cf.nome cliente_fornitore,COALESCE(f.nome,ma.nome) marca FROM macchine m JOIN clienti c ON c.id=m.fk_cliente LEFT JOIN fornitori cf ON cf.id=c.fk_fornitore LEFT JOIN fornitori f ON f.id=m.fk_fornitore LEFT JOIN marche ma ON ma.id=m.fk_marca WHERE m.stato="attivo" AND m.fk_azienda=? ORDER BY c.nome,m.modello'
-    ),
-    [req.empresaId]
+      'SELECT m.id,m.codice_unico,m.matricola,m.modello,m.tipo_macchina,m.fk_marca,m.fk_fornitore,c.id cliente_id,c.nome cliente,c.indirizzo,c.tipo_cliente,cf.nome cliente_fornitore,COALESCE(f.nome,ma.nome) marca FROM macchine m JOIN clienti c ON c.id=m.fk_cliente LEFT JOIN fornitori cf ON cf.id=c.fk_fornitore LEFT JOIN fornitori f ON f.id=m.fk_fornitore LEFT JOIN marche ma ON ma.id=m.fk_marca WHERE m.stato="attivo" AND m.fk_azienda=? ORDER BY c.nome,m.modello',
+      [req.empresaId]
+    )
   );
 });
 
