@@ -51,6 +51,10 @@ export function FormularioActividad({ c, alCerrar, alGuardar }) {
         setClientes(listaClientes);
         setMaquinas(listaMaquinas);
         setTecnicos(listaTecnicos);
+        setFormulario((actual) => ({
+          ...actual,
+          tecnici: actual.tecnici.length ? actual.tecnici : listaTecnicos[0] ? [listaTecnicos[0].id] : []
+        }));
       })
       .catch((e) => setError(e.message))
       .finally(() => setCargando(false));

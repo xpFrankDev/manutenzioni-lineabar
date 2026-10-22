@@ -49,21 +49,25 @@ rutasProgrammaciones.post('/programmazioni/genera', exigirSesion, autorizar('amm
     const vehiculos = furgoniIds.length ? furgoniIds : [furgoneId ?? null];
     const resultados = [];
     for (const vehiculo of vehiculos) {
-      resultados.push(
-        await generarProgramacion({
-          data,
-          tecnicoId,
-          maxTappe,
-          minutosMin: minutiMin,
-          minutosMax: minutiMax,
-          furgoneId: vehiculo,
-          tipoLavoroId,
-          numeroTecnici,
-          tecniciIds,
-          oraPartenza,
-          usuarioId: req.utente.sub
-        })
-      );
+      try {
+        resultados.push(
+          await generarProgramacion({
+            data,
+            tecnicoId,
+            maxTappe,
+            minutosMin: minutiMin,
+            minutosMax: minutiMax,
+            furgoneId: vehiculo,
+            tipoLavoroId,
+            numeroTecnici,
+            tecniciIds,
+            oraPartenza,
+            usuarioId: req.utente.sub
+          })
+        );
+      } catch (error) {
+        if (!resultados.length) throw error;
+      }
     }
     return res.status(201).json(resultados.length === 1 ? resultados[0] : { programmazioni: resultados });
   } catch (error) {

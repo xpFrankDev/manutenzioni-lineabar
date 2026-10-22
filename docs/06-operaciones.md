@@ -1,6 +1,6 @@
 # 06 — Operaciones
 
-> **Estado: GUÍA VERIFICADA PARCIALMENTE (revisión 2026-10-21).** Los comandos
+> **Estado: GUÍA VERIFICADA PARCIALMENTE (revisión 2026-10-22).** Los comandos
 > existen en el repositorio `[V]`; el despliegue en el VPS no se ejecutó en esta
 > sesión `[NV]`. Cualquier cambio en el VPS requiere aprobación explícita.
 
@@ -45,6 +45,7 @@ En otra terminal: `cd frontend && npm install && npm run dev` (Vite en
 - `LINEABAR_ACCESO_MINUTOS` (10) y `LINEABAR_REFRESCO_DIAS` (30).
 - `LINEABAR_CARGAR_ABRUZZO=1` carga los 15 bares de prueba con Google Maps; en
   una instalación real debe quedar en `0`.
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`: acceso con Google; el redirect debe coincidir exactamente con el autorizado en Google Cloud.
 - `LINEABAR_AI_ENDPOINT`, `LINEABAR_AI_API_KEY`, `LINEABAR_AI_MODELO` y
   `LINEABAR_AI_REASONING_EFFORT`: endpoint compatible con Chat Completions, clave
   **solo en el servidor**, modelo base (`deepseek-v4.1-flash`) y esfuerzo
@@ -61,7 +62,7 @@ imprime su contenido.
 ```bash
 cd backend
 npm run migraciones   # aplica pendientes y registra en migraciones_aplicadas
-npm run sembrar       # sincroniza maestros y administrador; demo con LINEABAR_CARGAR_DEMO=1; Abruzzo con LINEABAR_CARGAR_ABRUZZO=1
+npm run sembrar       # sincroniza maestros, empresa y administrador; demo con LINEABAR_CARGAR_DEMO=1; Abruzzo con LINEABAR_CARGAR_ABRUZZO=1
 ```
 
 Reglas: no modificar una migración aplicada; añadir el número siguiente; el runner

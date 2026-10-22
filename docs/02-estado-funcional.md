@@ -1,6 +1,6 @@
 # 02 — Estado funcional y cumplimiento del roadmap
 
-> **Estado: AUDITORÍA `[V]` (revisión 2026-10-21).** Contrasta cada objetivo de
+> **Estado: AUDITORÍA `[V]` (revisión 2026-10-22).** Contrasta cada objetivo de
 > `ROADMAP.md` y `PRODUCT.md` con el código real y con `05-verificacion.md`.
 > No sustituye al roadmap: lo audita.
 
@@ -65,6 +65,11 @@ Esto último se corrige con `docs/00`–`09`; lo no resuelto queda en `07`.
   sin `confirm()`/`alert()` nativos, con bloqueo de scroll del fondo en modales.
 - **Carga visible** `[V]`: skeletons en panel, listas, calendario, reportes,
   configuración, fichas y modales para evitar saltos y pantallas vacías.
+- **SaaS por empresa** `[V]`: `aziende` y `fk_azienda`; sesión con empresa, filtros de aislamiento en los módulos de negocio y prueba de integración con una segunda empresa sin datos compartidos. El alta de empresas sigue siendo administrativa (`D-19`).
+- **Google OAuth** `[V]`: flujo Authorization Code + PKCE + state, solo para emails ya autorizados; el botón aparece si hay credenciales. La prueba real requiere credenciales de Google `[NV]`.
+- **Actividades con voz** `[V]`: Web Speech API del navegador, declaración visible, extracción local de cliente/máquina/prioridad y texto editable. No se almacena audio.
+- **Prioridad explicada** `[V]`: las tareas con más de 30 días de vencimiento pasan a prioridad alta y guardan `motivo_priorita`; migración y pruebas.
+- **Recursos de programación** `[V]`: furgones, tipos de trabajo con duración, hora de salida, GPS de sede, equipo y varios furgones por generación.
 - **Programmazione giornaliera** `[V]`: `/lineabar/programmazione` agrupa
   manutenciones pendientes en un lote diario con 3–6 tappe, tiempos de viaje
   estimados y toma/estado por parte del técnico. Usa Google Maps/coordenadas de
@@ -87,6 +92,10 @@ Esto último se corrige con `docs/00`–`09`; lo no resuelto queda en `07`.
   tomar o cerrar.
 
 ## 4. Huecos funcionales declarados
+
+0. **Alta de empresas desde la interfaz** `[NV]`: el esquema aísla, pero no hay panel de plataforma (`D-19`).
+0bis. **Google OAuth real** `[NV]`: falta configurar credenciales y probar el consentimiento en producción.
+0ter. **Cimbali** `[NV]`: API de partner no disponible; ver `10-cimbali-api.md`.
 
 1. **Boleta con varias máquinas en una emisión** `[NV]`: el esquema
    (`boletas_macchine`) lo permite; el formulario y el servicio crean una sola.

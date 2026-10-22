@@ -161,14 +161,58 @@ dal dettaglio un amministratore può programmare l'attività per un tecnico,
 riprogrammare data e frequenza o sospendere la voce. La navigazione mostra il
 numero di manutenzioni da gestire e il pannello espone le più urgenti.
 
+## Aziende e accesso con Google
+
+Linea Bar è oggi l’azienda attiva. La base è già predisposta per un SaaS
+modulare: `aziende` contiene nome, logo, sede, GPS del magazzino e ora di
+partenza; le tabelle di business sono filtrate per `fk_azienda` e il JWT di
+sessione trasporta l’azienda. I dati di un’azienda non vengono restituiti a
+un’altra. La migrazione `0020_saas_empresas.sql` assegna i dati esistenti a
+Linea Bar. L’alta di nuove aziende è ancora amministrativa (`D-19`).
+
+In **Impostazioni → Dati azienda** si modificano logo, sede, GPS e ora di
+partenza. Il logo di Linea Bar è servito da `/lineabar/logo-linea-bar.svg`.
+
+### Acceso con Google
+
+Configurare nel `.env` del server:
+
+```env
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_REDIRECT_URI=https://vps-5586828-x.dattaweb.com/lineabar/api/auth/google/callback
+```
+
+In Google Cloud va autorizzato esattamente quel redirect URI. Il pulsante
+«Continua con Google» appare solo se le credenziali sono configurate. L’accesso
+usa OAuth 2.0 con `state` e PKCE; entra solo un’email già presente come utente
+attivo dell’azienda. Non crea account automaticamente e non salva token Google
+nel browser.
+
+## Attività manuali e voce
+
+La schermata **Attività** permette di creare un intervento con cliente,
+macchina, problema e priorità. La data di scadenza è proposta per oggi. Se una
+attività è scaduta da più di 30 giorni, il server la segna come priorità alta e
+salva il motivo (`motivo_priorita`), visibile in elenco e nel dettaglio.
+
+Il pulsante microfono usa la **Web Speech API del browser**. L’audio non viene
+inviato né salvato in Linea Bar; il browser può elaborarlo con il proprio
+provider. Il testo viene inviato a `/attivita/interpreta`, che prova a
+riconoscere cliente, macchina e priorità e compila il modulo per la revisione.
+Se il browser non supporta il dettato, resta il campo di testo normale.
+
 ## Programmazione giornaliera
 
 `/lineabar/programmazione` raggruppa le manutenzioni in un giro giornaliero.
-L’amministratore sceglie data, tecnico, numero massimo di tappe (3–6) e minuti
-minimi/massimi tra siti (10–30 di norma); il backend usa i link Google Maps e le
-coordinate dei clienti per stimare gli spostamenti. Il tecnico vede solo i giri
+L’amministratore sceglie data, tecnico o squadra, uno o più furgoni, il tipo di
+lavoro con la sua durata, l’ora di partenza, il numero massimo di tappe (3–6) e
+i minuti minimi/massimi tra siti (10–30 di norma); il backend usa i link Google Maps e le
+coordinate dei clienti e il GPS dell’azienda per stimare gli spostamenti. La
+sede è il punto di partenza e il tempo totale incluye el primer desplazamiento. Il tecnico vede solo i giri
 assegnati o ancora liberi, può prendere il lotto, segnare una tappa «in viaggio»
-e chiuderla; il lotto passa a «completata» quando tutte le tappe sono chiuse.
+e chiuderla; i tecnici e i furgoni sono cataloghi dell’azienda (`furgoni`,
+`tipi_lavoro`). il lotto passa a «completata» quando tutte le tappe sono chiuse.
 
 La generazione può usare un modello compatibile con Chat Completions (per
 default OpenCode Go). La chiave resta esclusivamente nel `.env` del server
@@ -178,6 +222,13 @@ default OpenCode Go). La chiave resta esclusivamente nel `.env` del server
 `deepseek-v4.1-flash#high`). Senza chiave il pianificatore locale deterministico
 produce comunque un giro valido e lo marca come `fallback`.
 Le istruzioni e il contratto JSON vivono in `backend/src/ai/programmazione/`.
+
+## Catalogo modelli e Cimbali
+
+Il catalogo commerciale si gestisce in **Impostazioni → Modelli macchina**.
+L’analisi dell’API delle attività Cimbali è in `docs/10-cimbali-api.md`: Service
+Square usa SAP Commerce OCC e richiede credenziali partner; non è stato
+implementato un connettore senza contratto.
 
 ## Catalogo modelli
 
