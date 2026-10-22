@@ -93,9 +93,9 @@ Esto último se corrige con `docs/00`–`09`; lo no resuelto queda en `07`.
 
 ## 4. Huecos funcionales declarados
 
-0. **Alta de empresas desde la interfaz** `[NV]`: el esquema aísla, pero no hay panel de plataforma (`D-19`).
-0bis. **Google OAuth real** `[NV]`: falta configurar credenciales y probar el consentimiento en producción.
-0ter. **Cimbali** `[NV]`: API de partner no disponible; ver `10-cimbali-api.md`.
+12. **Alta de empresas desde la interfaz** `[NV]`: el esquema aísla, pero no hay panel de plataforma (`D-19`).
+13. **Google OAuth real** `[NV]`: falta configurar credenciales y probar el consentimiento en producción.
+14. **Cimbali** `[NV]`: API de partner no disponible; ver `10-cimbali-api.md`.
 
 1. **Boleta con varias máquinas en una emisión** `[NV]`: el esquema
    (`boletas_macchine`) lo permite; el formulario y el servicio crean una sola.

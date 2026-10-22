@@ -1,6 +1,6 @@
 # 05 — Verificación
 
-> **Estado: EVIDENCIA `[V]` de la sesión del 2026-10-21.** Registra comandos y
+> **Estado: EVIDENCIA `[V]` de la sesión del 2026-10-22.** Registra comandos y
 > resultados **reales**. Lo no ejecutado se declara como `[NV]`; no se presenta
 > como aprobado.
 
@@ -9,10 +9,10 @@
 | Comando | Resultado real |
 | --- | --- |
 | `cd backend && npm run test:unidad` | **OK — 13/13** pruebas (código 0), incluidas coordenadas Google Maps y estimación de viaje. |
-| `cd backend && npm run verificar` | **OK** — sintaxis correcta en **48** archivos (código 0). |
+| `cd backend && npm run verificar` | **OK** — sintaxis correcta en **52** archivos (código 0). |
 | `cd frontend && npm test` | **OK — 8/8** pruebas (código 0). |
 | `cd frontend && npm run build` | **OK** — build de producción Vite (código 0); incluye la pantalla de programación y el catálogo de modelos. |
-| `cd backend && npm run test:integracion` | **`[NV]` en local**: no hay MariaDB en `127.0.0.1:3308`. **CI GitHub Actions:** job `Integración con MariaDB` **verde** en `main` para `6866f00`; 17/17 pruebas, incluidas programación, catálogo y transición `in_viaggio`. |
+| `cd backend && npm run test:integracion` | **`[NV]` en local**: no hay MariaDB en `127.0.0.1:3308`. **CI GitHub Actions:** job `Integración con MariaDB` **verde** en `main` para `9ee92f7`; **18/18** pruebas, incluidas aislamiento entre empresas, prioridad automática, audio, programación y catálogo. |
 | `cd backend && npm audit --omit=dev` | **OK — 0 vulnerabilidades** tras `npm audit fix`. |
 | `cd frontend && npm audit --omit=dev` | **OK — 0 vulnerabilidades** tras `npm audit fix`. |
 | Migración UUID sobre copia de la base de producción | **OK** — `0010_uuid_identificadores.js` aplicada sobre `lineabar_uuid_test` (copia de `lineabar`): conteos preservados (`clienti` 3, `macchine` 3, `manutenzioni` 7, `boletas` 4, `utenti` 1, `calendario` 3), `id` en `char(36)`, 35 claves foráneas y los 3 índices dependientes recreados. |
@@ -160,6 +160,22 @@ por esta comprobación técnica.
 | IA | El endpoint por defecto es OpenCode Go (`/inference/openai/v1/chat/completions`); `LINEABAR_AI_API_KEY` no está definida en el `.env` del VPS, así que el sistema usa el fallback local. Añadir la clave allí habilita el proveedor sin tocar el repositorio. |
 | Contenedores | `backend`, `frontend` y `mariadb` sanos. |
 | Revisión visual | **`[V]` parcial**: SPA construida renderizada a 390×844 con API simulada; la pantalla de programación muestra formulario, candidatos, tarjeta y navegación sin desbordes en tema oscuro. Falta repetir con sesión real, tema claro y iPhone físico `[NV]`. |
+
+## 3septies. SaaS, Google, voz y recursos (2026-10-22)
+
+| Comprobación | Resultado |
+| --- | --- |
+| Commit desplegado | `9ee92f7`; migración `0020_saas_empresas.sql` aplicada en producción. |
+| Copia previa | `backups/lineabar-pre-saas-20261022-154652.sql.gz`, modo `600`. |
+| Empresa actual | **1** empresa: Linea Bar (`00000000-0000-4000-8000-000000000001`). |
+| Sesión | Login 200; `empresa.nome=Linea Bar`; logo `/lineabar/logo-linea-bar.svg` (200). |
+| Recursos | 1 furgón, 3 tipos de trabajo, 27 modelos. |
+| Candidatos | 15 manutenciones candidatas para 2026-10-22. |
+| Google | `GET /auth/google/disponibile` → 200 `{"disponibile":false}` porque faltan credenciales en el `.env`; el botón queda oculto. |
+| Cimbali | Sin API pública/partner: documentado en `10-cimbali-api.md`; no se implementó conector. |
+| Aislamiento | Prueba de integración crea una segunda empresa y confirma clientes, máquinas y tareas vacíos. |
+| Voz | Reconocimiento Web Speech en navegador; no se almacena audio. No se probó micrófono físico `[NV]`. |
+| Visual | Revisión pendiente con sesión real, tema claro e iPhone físico `[NV]`. |
 
 ## 4. Suites existentes
 

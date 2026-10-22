@@ -165,7 +165,8 @@ export async function generarProgramacion({ data, tecnicoId, maxTappe, minutosMi
       ? await consultarUno('SELECT id,capacita_tecnici FROM furgoni WHERE id=? AND fk_azienda=? AND stato="attivo"', [furgoneId, empresaActual()], conexion)
       : null;
     if (furgoneId && !furgone) throw new Error('Furgone non disponibile');
-    if (furgone && Number(numeroTecnici) > Number(furgone.capacita_tecnici)) throw new Error('Il furgone non ha abbastanza posti');
+    const plazasNecesarias = Math.max(Number(numeroTecnici), equipo.length);
+    if (furgone && plazasNecesarias > Number(furgone.capacita_tecnici)) throw new Error('Il furgone non ha abbastanza posti');
     const tipoLavoro = tipoLavoroId
       ? await consultarUno('SELECT id,durata_minuti FROM tipi_lavoro WHERE id=? AND fk_azienda=? AND stato="attivo"', [tipoLavoroId, empresaActual()], conexion)
       : null;
@@ -214,7 +215,7 @@ export async function generarProgramacion({ data, tecnicoId, maxTappe, minutosMi
         tecnicoId,
         furgoneId,
         tipoLavoroId,
-        Math.max(Number(numeroTecnici), equipo.length),
+        plazasNecesarias,
         oraPartenza || azienda?.ora_partenza || '08:00:00',
         tipoLavoro?.durata_minuti ?? null,
         null,
