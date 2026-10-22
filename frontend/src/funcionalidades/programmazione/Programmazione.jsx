@@ -189,8 +189,10 @@ export function Programmazione({ c, idioma, usuario }) {
     data: fechaDeHoy(),
     tecnicoId: '',
     furgoneId: '',
+    furgoniIds: [],
     tipoLavoroId: '',
     numeroTecnici: 1,
+    tecniciIds: [],
     oraPartenza: '',
     maxTappe: 6,
     minutiMin: 10,
@@ -214,6 +216,7 @@ export function Programmazione({ c, idioma, usuario }) {
             ...actual,
             tecnicoId: actual.tecnicoId || lista[0]?.id || '',
             furgoneId: actual.furgoneId || configuracion.furgoni?.[0]?.id || '',
+            furgoniIds: actual.furgoniIds?.length ? actual.furgoniIds : configuracion.furgoni?.[0] ? [configuracion.furgoni[0].id] : [],
             tipoLavoroId: actual.tipoLavoroId || configuracion.tipiLavoro?.[0]?.id || '',
             oraPartenza: actual.oraPartenza || (configuracion.azienda?.ora_partenza ?? '08:00').slice(0, 5)
           }));
@@ -266,11 +269,44 @@ export function Programmazione({ c, idioma, usuario }) {
             </select>
           </label>
           <label>
-            {c.vehicle}
-            <select value={formulario.furgoneId} onChange={(e) => setFormulario({ ...formulario, furgoneId: e.target.value })}>
-              <option value="">{c.select}</option>
-              {parametros.furgoni.map((furgone) => <option key={furgone.id} value={furgone.id}>{furgone.nome} · {furgone.capacita_tecnici} {c.people}</option>)}
-            </select>
+            {c.team}
+            <span className="furgoni-picker">
+              {tecnicos.map((tecnico) => (
+                <span className="check-line" key={tecnico.id}>
+                  <input
+                    type="checkbox"
+                    checked={formulario.tecniciIds.includes(tecnico.id)}
+                    onChange={(e) => setFormulario({
+                      ...formulario,
+                      tecniciIds: e.target.checked
+                        ? [...formulario.tecniciIds, tecnico.id]
+                        : formulario.tecniciIds.filter((id) => id !== tecnico.id)
+                    })}
+                  />
+                  {tecnico.nome}
+                </span>
+              ))}
+            </span>
+          </label>
+          <label>
+            {c.vehicles}
+            <span className="furgoni-picker">
+              {parametros.furgoni.map((furgone) => (
+                <span className="check-line" key={furgone.id}>
+                  <input
+                    type="checkbox"
+                    checked={formulario.furgoniIds.includes(furgone.id)}
+                    onChange={(e) => setFormulario({
+                      ...formulario,
+                      furgoniIds: e.target.checked
+                        ? [...formulario.furgoniIds, furgone.id]
+                        : formulario.furgoniIds.filter((id) => id !== furgone.id)
+                    })}
+                  />
+                  {furgone.nome} · {furgone.capacita_tecnici} {c.people}
+                </span>
+              ))}
+            </span>
           </label>
           <label>
             {c.workType}
@@ -299,7 +335,7 @@ export function Programmazione({ c, idioma, usuario }) {
             {c.minutesMax}
             <input type="number" min="10" max="120" value={formulario.minutiMax} onChange={(e) => setFormulario({ ...formulario, minutiMax: Number(e.target.value) })} />
           </label>
-          <button className="primary" onClick={generar} disabled={generando || !formulario.tecnicoId}>
+          <button className="primary" onClick={generar} disabled={generando || !formulario.tecnicoId || !formulario.furgoniIds.length}>
             <Sparkles size={16} /> {generando ? c.loading : c.generateProgram}
           </button>
           <small>

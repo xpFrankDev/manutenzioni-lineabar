@@ -35,28 +35,37 @@ rutasProgrammaciones.post('/programmazioni/genera', exigirSesion, autorizar('amm
       minutiMin: z.coerce.number().int().min(5).max(90).default(10),
       minutiMax: z.coerce.number().int().min(10).max(120).default(30),
       furgoneId: uuid.nullable().optional().default(null),
+      furgoniIds: z.array(uuid).max(6).default([]),
       tipoLavoroId: uuid.nullable().optional().default(null),
       numeroTecnici: z.coerce.number().int().min(1).max(20).default(1),
+      tecniciIds: z.array(uuid).max(20).default([]),
       oraPartenza: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/).nullable().optional().default(null)
     })
     .refine((datos) => datos.minutiMin <= datos.minutiMax, 'Intervallo tempi non valido')
     .safeParse(req.body);
   if (!entrada.success) return res.status(422).json({ errore: 'Parametri di programmazione non validi', dettagli: entrada.error.flatten() });
   try {
-    const { data, tecnicoId, maxTappe, minutiMin, minutiMax, furgoneId, tipoLavoroId, numeroTecnici, oraPartenza } = entrada.data;
-    const resultado = await generarProgramacion({
-      data,
-      tecnicoId,
-      maxTappe,
-      minutosMin: minutiMin,
-      minutosMax: minutiMax,
-      furgoneId,
-      tipoLavoroId,
-      numeroTecnici,
-      oraPartenza,
-      usuarioId: req.utente.sub
-    });
-    return res.status(201).json(resultado);
+    const { data, tecnicoId, maxTappe, minutiMin, minutiMax, furgoneId, furgoniIds, tipoLavoroId, numeroTecnici, tecniciIds, oraPartenza } = entrada.data;
+    const vehiculos = furgoniIds.length ? furgoniIds : [furgoneId ?? null];
+    const resultados = [];
+    for (const vehiculo of vehiculos) {
+      resultados.push(
+        await generarProgramacion({
+          data,
+          tecnicoId,
+          maxTappe,
+          minutosMin: minutiMin,
+          minutosMax: minutiMax,
+          furgoneId: vehiculo,
+          tipoLavoroId,
+          numeroTecnici,
+          tecniciIds,
+          oraPartenza,
+          usuarioId: req.utente.sub
+        })
+      );
+    }
+    return res.status(201).json(resultados.length === 1 ? resultados[0] : { programmazioni: resultados });
   } catch (error) {
     if (process.env.NODE_ENV !== 'production') console.error('Errore programmazione:', error);
     return res.status(400).json({ errore: 'Impossibile generare la programmazione' });

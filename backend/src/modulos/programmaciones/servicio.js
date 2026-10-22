@@ -149,10 +149,18 @@ function normalizarPlan(plan, candidatos, maxTappe, minutosMin, minutosMax) {
   };
 }
 
-export async function generarProgramacion({ data, tecnicoId, maxTappe, minutosMin, minutosMax, furgoneId = null, tipoLavoroId = null, numeroTecnici = 1, oraPartenza = null, usuarioId }) {
+export async function generarProgramacion({ data, tecnicoId, maxTappe, minutosMin, minutosMax, furgoneId = null, tipoLavoroId = null, numeroTecnici = 1, tecniciIds = [], oraPartenza = null, usuarioId }) {
   return enTransaccion(async (conexion) => {
-    const tecnico = await consultarUno('SELECT id FROM utenti WHERE id=? AND fk_azienda=? AND stato="attivo"', [tecnicoId, empresaActual()], conexion);
-    if (!tecnico) throw new Error('Tecnico non disponibile');
+    const equipo = [...new Set([tecnicoId, ...tecniciIds].filter(Boolean))];
+    if (!equipo.length) throw new Error('Tecnico non disponibile');
+    const marcadoresEquipo = equipo.map(() => '?').join(',');
+    const tecnicos = await consultar(
+      `SELECT id FROM utenti WHERE fk_azienda=? AND stato="attivo" AND id IN (${marcadoresEquipo})`,
+      [empresaActual(), ...equipo],
+      conexion
+    );
+    if (tecnicos.length !== equipo.length) throw new Error('Tecnico non disponibile');
+    if (Number(numeroTecnici) > equipo.length) throw new Error('Seleziona abbastanza tecnici per il mezzo');
     const furgone = furgoneId
       ? await consultarUno('SELECT id,capacita_tecnici FROM furgoni WHERE id=? AND fk_azienda=? AND stato="attivo"', [furgoneId, empresaActual()], conexion)
       : null;
@@ -206,7 +214,7 @@ export async function generarProgramacion({ data, tecnicoId, maxTappe, minutosMi
         tecnicoId,
         furgoneId,
         tipoLavoroId,
-        numeroTecnici,
+        Math.max(Number(numeroTecnici), equipo.length),
         oraPartenza || azienda?.ora_partenza || '08:00:00',
         tipoLavoro?.durata_minuti ?? null,
         null,
@@ -221,6 +229,13 @@ export async function generarProgramacion({ data, tecnicoId, maxTappe, minutosMi
       ]
     );
 
+    for (const tecnicoEquipo of equipo) {
+      await conexion.execute(
+        'INSERT IGNORE INTO programmazione_tecnici (fk_programmazione,fk_tecnico,utente_crea) VALUES (?,?,?)',
+        [id, tecnicoEquipo, usuarioId]
+      );
+    }
+
     for (const tappa of plan.tappe) {
       const candidato = candidatos.find((fila) => fila.candidatoId === tappa.attivitaId);
       if (!candidato) continue;
@@ -229,7 +244,7 @@ export async function generarProgramacion({ data, tecnicoId, maxTappe, minutosMi
         {
           clienteId: candidato.clienteId,
           macchinaId: candidato.macchinaId,
-          tecnici: [tecnicoId],
+          tecnici: equipo,
           osservazione: `Manutenzione programmata: ${candidato.pezzo ?? 'controllo macchina'} ogni ${candidato.frequenza_mesi} mesi.`,
           scadenza: String(candidato.prossima_manutenzione).slice(0, 10),
           priorita: 'normale',
@@ -267,11 +282,12 @@ export async function listarProgramaciones(usuario) {
   const esTecnico = usuario.ruolo === 'tecnico';
   return consultar(
     `SELECT p.id,p.data,p.fk_tecnico,p.fk_furgone,p.fk_tipo_lavoro,p.numero_tecnici,p.ora_partenza,p.durata_stimata_minuti,p.minuti_totali,p.stato,p.max_tappe,p.minuti_min,p.minuti_max,p.origine,p.riepilogo,
-            MAX(u.nome) tecnico,
+            MAX(u.nome) tecnico,MAX(f.nome) furgone,
             COUNT(a.id) tappe,
             COALESCE(SUM(a.stato_attivita='completata'),0) completate
        FROM programmazioni p
        LEFT JOIN utenti u ON u.id=p.fk_tecnico
+       LEFT JOIN furgoni f ON f.id=p.fk_furgone
        LEFT JOIN attivita a ON a.fk_programmazione=p.id AND a.stato='attivo'
       WHERE p.stato_registro='attivo' AND p.fk_azienda=?${esTecnico ? ' AND (p.fk_tecnico=? OR p.fk_tecnico IS NULL)' : ''}
       GROUP BY p.id
@@ -283,8 +299,8 @@ export async function listarProgramaciones(usuario) {
 export async function obtenerProgramacion(id, usuario) {
   const esTecnico = usuario.ruolo === 'tecnico';
   const programacion = await consultarUno(
-    `SELECT p.id,p.data,p.fk_tecnico,p.fk_furgone,p.fk_tipo_lavoro,p.numero_tecnici,p.ora_partenza,p.durata_stimata_minuti,p.minuti_totali,p.stato,p.max_tappe,p.minuti_min,p.minuti_max,p.origine,p.riepilogo,p.creato_at,p.modificato_at,u.nome tecnico
-       FROM programmazioni p LEFT JOIN utenti u ON u.id=p.fk_tecnico
+    `SELECT p.id,p.data,p.fk_tecnico,p.fk_furgone,p.fk_tipo_lavoro,p.numero_tecnici,p.ora_partenza,p.durata_stimata_minuti,p.minuti_totali,p.stato,p.max_tappe,p.minuti_min,p.minuti_max,p.origine,p.riepilogo,p.creato_at,p.modificato_at,u.nome tecnico,f.nome furgone
+       FROM programmazioni p LEFT JOIN utenti u ON u.id=p.fk_tecnico LEFT JOIN furgoni f ON f.id=p.fk_furgone
       WHERE p.id=? AND p.stato_registro='attivo' AND p.fk_azienda=?${esTecnico ? ' AND (p.fk_tecnico=? OR p.fk_tecnico IS NULL)' : ''}`,
     esTecnico ? [id, empresaActual(), usuario.sub] : [id, empresaActual()]
   );

@@ -188,3 +188,6 @@ html[data-theme=dark] .photo-delete{background:#40201f;border-color:#6b3431;colo
 .voice-box small{color:var(--muted);font-size:10px;line-height:1.4}
 .voice-note{color:var(--blue)!important}
 .priority-reason{color:#d97706!important;font-weight:700}
+
+.furgoni-picker{display:flex;flex-wrap:wrap;gap:7px;padding:8px;border:1px solid var(--line);border-radius:9px;min-height:42px}
+.furgoni-picker .check-line{font-size:11px;background:var(--pale);border-radius:8px;padding:5px 7px}

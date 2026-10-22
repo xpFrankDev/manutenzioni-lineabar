@@ -62,6 +62,7 @@ export const it = {
   clients: 'Clienti',
   machines: 'Macchine',
   pieces: 'Ricambi',
+  team: 'Tecnici a bordo',
   vehicles: 'Furgoni',
   workTypes: 'Tipi di lavoro',
   vehicle: 'Furgone',

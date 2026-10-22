@@ -39,6 +39,7 @@
 | `0014_manutenzioni_ora.sql`, `0015_menu_e_permessi.sql`, `0016_parametri_italiani.sql`, `0017_macchine_matricola.sql` | Hora, menús/permisos, parámetros en italiano y matrícula. |
 | `0018_programmazione_giornaliera.sql` | `programmazioni`, columnas de ruta en `attivita`, coordenadas/Google Maps en clientes y menú de programación. |
 | `0019_modelli_macchina.sql` | Catálogo comercial `modelli_macchina` con imagen y scheda del fabricante. |
+| `0020_saas_empresas.sql` | `aziende`, `fk_azienda` en tablas de negocio, furgones, tipos de trabajo, programación por recursos y prioridad explicada. |
 
 El runner (`migraciones/ejecutar.js`) crea `migraciones_aplicadas`, aplica en
 orden, se detiene al primer error y registra cada archivo; es idempotente. Si
@@ -62,6 +63,9 @@ detecta una instalación anterior al control de versiones, registra lo ya aplica
 | `attivita`, `attivita_tecnici` | Tareas programadas y asignación; `in_viaggio`, orden de tapa y minutos desde la anterior. | `fk_cliente`, `fk_macchina`, `fk_tecnico`, `fk_programmazione` |
 | `programmazioni` | Lote diario de tareas con técnico, estado, límites de ruta, origen IA/fallback y resumen. | `fk_tecnico` |
 | `modelli_macchina` | Catálogo comercial por marca, tipo, imagen y scheda oficial. | `fk_marca` |
+| `aziende` | Tenant actual: nombre, logo, sede, GPS y hora de salida. | — |
+| `furgoni`, `tipi_lavoro` | Recursos y duración de trabajo por empresa. | `fk_azienda` |
+| `programmazione_tecnici` | Equipo asignado a un lote. | `fk_programmazione`, `fk_tecnico` |
 | `scontrini` | Imagen, texto OCR y nombre detectado. | `fk_cliente`, `fk_tecnico` |
 | `sesiones_refresco` | Refresh tokens (solo hash) con rotación. | `fk_utente` |
 | `parametros` | Tarifa, avisos, horizontes. | — |

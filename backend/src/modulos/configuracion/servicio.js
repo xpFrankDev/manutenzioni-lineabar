@@ -261,6 +261,14 @@ export async function crearRegistro(recurso, catalogo, registro, usuarioId) {
     return crearUsuario(pool, registro, usuarioId);
   }
 
+  if (registro.fk_marca) {
+    const marca = await consultarUno('SELECT id FROM marche WHERE id=? AND fk_azienda=?', [registro.fk_marca, empresaActual()]);
+    if (!marca) throw new Error('Marca non disponibile');
+  }
+  if (registro.fk_fornitore) {
+    const fornitore = await consultarUno('SELECT id FROM fornitori WHERE id=? AND fk_azienda=?', [registro.fk_fornitore, empresaActual()]);
+    if (!fornitore) throw new Error('Fornitore non disponibile');
+  }
   const id = nuevoId();
   const columnas = ['id', 'fk_azienda', ...catalogo.columnas, 'utente_crea', 'utente_modifica'];
   await pool.execute(
@@ -275,6 +283,10 @@ export async function crearRegistro(recurso, catalogo, registro, usuarioId) {
 
 export async function actualizarRegistro(recurso, catalogo, id, registro, usuarioId) {
   if (recurso === 'clienti') {
+    if (registro.fk_fornitore) {
+      const fornitore = await consultarUno('SELECT id FROM fornitori WHERE id=? AND fk_azienda=?', [registro.fk_fornitore, empresaActual()]);
+      if (!fornitore) throw new Error('Fornitore non disponibile');
+    }
     await pool.execute(
       'UPDATE clienti SET fk_fornitore=?,tipo_cliente=?,codice=COALESCE(?,codice),nome=?,indirizzo=?,url_mappe=?,latitudine=?,longitudine=?,citta=?,stato=?,utente_modifica=? WHERE id=? AND fk_azienda=?',
       [
@@ -304,6 +316,14 @@ export async function actualizarRegistro(recurso, catalogo, id, registro, usuari
     return;
   }
 
+  if (registro.fk_marca) {
+    const marca = await consultarUno('SELECT id FROM marche WHERE id=? AND fk_azienda=?', [registro.fk_marca, empresaActual()]);
+    if (!marca) throw new Error('Marca non disponibile');
+  }
+  if (registro.fk_fornitore) {
+    const fornitore = await consultarUno('SELECT id FROM fornitori WHERE id=? AND fk_azienda=?', [registro.fk_fornitore, empresaActual()]);
+    if (!fornitore) throw new Error('Fornitore non disponibile');
+  }
   await pool.execute(
     `UPDATE ${catalogo.tabla} SET ${catalogo.columnas.map((columna) => `${columna}=?`).join(',')},utente_modifica=? WHERE id=? AND fk_azienda=?`,
     [...catalogo.columnas.map((columna) => registro[columna]), usuarioId, id, empresaActual()]

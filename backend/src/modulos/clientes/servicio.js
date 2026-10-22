@@ -67,6 +67,10 @@ export async function siguienteCodigoCliente(cliente, conexion) {
  */
 export async function crearCliente(conexion, datos, usuarioId, intentos = 5) {
   const cliente = normalizarCliente(datos);
+  if (cliente.fk_fornitore) {
+    const fornitore = await consultarUno('SELECT id FROM fornitori WHERE id=? AND fk_azienda=?', [cliente.fk_fornitore, empresaActual()], conexion);
+    if (!fornitore) throw new Error('Fornitore non disponibile');
+  }
   let ultimoError;
 
   for (let intento = 0; intento < intentos; intento += 1) {

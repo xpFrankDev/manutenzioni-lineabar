@@ -31,6 +31,8 @@
 | **D-16** | Identificadores UUID en todas las tablas. | **Resuelta (instrucción del propietario, 2026-10-19).** Migración `0010_uuid_identificadores.js`; claves primarias y foráneas UUID. | Cumplida en esquema y código; validar la migración sobre una copia de la base real antes del despliegue. |
 | **D-17** | Proveedor de IA para la programación y tratamiento de datos de clientes. | La integración acepta un endpoint compatible con Chat Completions y mantiene la clave en `.env`; falta decidir proveedor, coste y garantías de tratamiento. | Proveedor aprobado, clave en el servidor, aviso de privacidad y prueba con datos reales minimizados. |
 | **D-18** | App compañera iOS para escribir NFC desde Linea Bar. | Safari/WebKit no expone Web NFC; hoy iOS copia el enlace para NFC Tools. | Decisión entre depender de NFC Tools o publicar una app con Core NFC y Universal Link. |
+| **D-19** | Alta de nuevas empresas y usuarios desde la interfaz SaaS. | El esquema ya aísla por empresa, pero el alta sigue siendo administrativa/SQL. | Panel de plataforma, invitación y provisión de datos base por empresa. |
+| **D-20** | Integración real con Cimbali Service Square. | Requiere credenciales de partner/SAP Commerce y autorización; ver `10-cimbali-api.md`. | Contrato, documentación OCC, usuario de servicio y prueba en entorno de partner. |
 
 ## Cómo se cierra una decisión
 

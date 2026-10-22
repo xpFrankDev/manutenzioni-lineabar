@@ -64,6 +64,7 @@ export const es = {
   clients: 'Clientes',
   machines: 'Máquinas',
   pieces: 'Piezas',
+  team: 'Técnicos a bordo',
   vehicles: 'Furgones',
   workTypes: 'Tipos de trabajo',
   vehicle: 'Furgón',

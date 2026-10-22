@@ -29,6 +29,8 @@ problema resuelto. Las decisiones `[D]` se cierran en `07-decisiones-abiertas.md
 | `07-decisiones-abiertas.md` | Registro | Decisiones humanas `[D]` abiertas y su motivo. |
 | `08-continuidad-agentes.md` | Normativo de trabajo | Objetivo activo, autonomía, decisiones reservadas y estados de informe. |
 | `09-post-roadmap.md` | Plan | Prioridades posteriores al roadmap, criterios de aceptación y deuda técnica. |
+| `10-cimbali-api.md` | Investigación `[V]` | Hallazgos sobre Service Square/OCC y condiciones para integrar tareas de Cimbali. |
+| `11-saas-empresas.md` | Diseño/estado `[V]` | Tenant, aislamiento, Google, audio, furgones y tipos de trabajo. |
 | `../ROADMAP.md` | Plan histórico | Roadmap cerrado de septiembre de 2026, conservado como registro. |
 | `../PRODUCT.md` | Producto | Plataforma, usuarios, propósito, principios y restricciones. |
 | `../DESIGN.md` | Diseño | Dirección visual, tokens e interacción. |
